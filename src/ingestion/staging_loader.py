@@ -982,6 +982,8 @@ class StagingLoader:
         
         tlc_dir = data_root_path / "raw" / "tlc"
         if not tlc_dir.exists():
+            tlc_dir = data_root_path / "tlc"
+        if not tlc_dir.exists():
             tlc_dir = REPO_ROOT / "data" / "raw" / "tlc"
             
         csv_files = sorted(list(tlc_dir.glob("year=*/month=*/*.csv"))) if tlc_dir.exists() else []
@@ -1006,7 +1008,7 @@ class StagingLoader:
             print(f"[*] Limiting TLC import to {limit_files} files for testing.")
 
         for file_path in csv_files:
-            rel_file = file_path.relative_to(REPO_ROOT).as_posix() if file_path.is_relative_to(REPO_ROOT) else f"data/raw/tlc/{file_path.name}"
+            rel_file = file_path.relative_to(tlc_dir).as_posix()
             print(f"[*] Processing TLC file: {rel_file}")
             
             try:

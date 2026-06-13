@@ -182,8 +182,9 @@ thực sự dùng incremental extraction.
 
 ## NDS
 
-Các bảng dự kiến:
+Các bảng đã triển khai:
 
+- `ref_source_system`
 - `nds_driver`
 - `nds_driver_history`
 - `nds_vehicle`
@@ -209,12 +210,14 @@ Dimensions:
 - `dim_vehicle` - SCD Type 2
 - `dim_vendor` - SCD Type 1
 - `dim_location` - Type 0 cho phạm vi case study
-- `dim_shift`
 
 Facts:
 
 - `fact_driver_trip`
 - `fact_driver_shift`
+
+`shift_id` là degenerate dimension trong hai fact; không tạo `dim_shift` vì
+quan hệ 1:1 với `fact_driver_shift` không tạo thêm giá trị phân tích.
 
 ## Tại sao không dùng ODS
 

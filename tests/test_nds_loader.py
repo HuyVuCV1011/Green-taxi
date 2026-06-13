@@ -238,6 +238,24 @@ class TestNDSLoaderDQAndLogic(unittest.TestCase):
         self.assertEqual(rule_code, "DQ_NEGATIVE_VAL")
         self.assertEqual(severity, "WARN")
 
+class TestNDSIntegrationContracts(unittest.TestCase):
+    def test_trip_loader_uses_assignment_trip_key_and_keyset_pagination(self) -> None:
+        import inspect
+        from src.warehouse import nds_loader as mod
+
+        source = inspect.getsource(mod.NDSLoader.load_trips)
+        self.assertIn("ta.trip_key", source)
+        self.assertIn("t.staging_row_id > %s", source)
+        self.assertNotIn("OFFSET", source)
+
+    def test_quarantine_uses_generic_payload_contract(self) -> None:
+        import inspect
+        from src.warehouse import nds_loader as mod
+
+        source = inspect.getsource(mod.NDSLoader.write_quarantine)
+        self.assertIn("dq.quarantine_record", source)
+        self.assertIn("source_system_code", source)
+
 
 if __name__ == "__main__":
     unittest.main()

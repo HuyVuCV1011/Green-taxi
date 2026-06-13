@@ -67,6 +67,7 @@ def main() -> int:
     loaded_total = 0
     success = True
     error_msg = None
+    dq_results: dict[str, int] = {}
 
     try:
         print("\n[*] Loading dim_date...")

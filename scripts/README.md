@@ -91,9 +91,16 @@ python scripts/load_staging.py --release-id green-taxi-full-v1 --source all
 - `--limit-rows`: Giới hạn số lượng dòng được nạp trên mỗi tệp tin TLC CSV.
 - `--data-root`: Đường dẫn tương đối hoặc tuyệt đối tới thư mục dữ liệu. Mặc định lấy từ biến môi trường `DATA_ROOT` hoặc thư mục `data`.
 
+## Load NDS và DDS
+
+```powershell
+python scripts/load_nds.py --release-id green-taxi-full-v1
+python scripts/load_dds.py --release-id green-taxi-full-v1
+```
+
+`load_nds.py` thực thi DQ Gate 1, quarantine và chuẩn hóa 3NF.
+`load_dds.py` thực thi DQ Gate 2, SCD2 và upsert hai fact theo business key.
+
 ## Planned entry points
 
-- `run_dq`
-- `load_nds`
-- `load_dds`
 - `validate_pipeline`

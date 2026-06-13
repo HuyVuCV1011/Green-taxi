@@ -63,8 +63,8 @@ class DDSLoader:
 
         self.vendor_cache: dict[int, int] = {}
         self.location_cache: dict[int, int] = {}
-        self.driver_key_cache: dict[tuple[str, bool], int] = {}
-        self.vehicle_key_cache: dict[tuple[str, bool], int] = {}
+        self.driver_key_cache: dict[tuple[str, datetime], int] = {}
+        self.vehicle_key_cache: dict[tuple[str, datetime], int] = {}
         self.date_key_cache: dict[date, int] = {}
         self.time_key_cache: dict[int, int] = {}
         self.junk_trip_cache: dict[tuple, int] = {}
@@ -120,7 +120,7 @@ class DDSLoader:
                     "warehouse_dds",
                     "STARTED",
                     datetime.now(timezone.utc),
-                    "NDS",
+                    None,
                     os.getenv("BUSINESS_TIMEZONE", "America/New_York"),
                     "UTC",
                     json.dumps(input_params or {}),
@@ -175,7 +175,7 @@ class DDSLoader:
             cur.execute(
                 """
                 INSERT INTO dq.dq_issue (
-                    batch_id, release_id, source_system, source_entity,
+                    batch_id, release_id, source_system_code, source_entity,
                     source_record_id, rule_code, severity, issue_message, issue_payload
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
@@ -236,7 +236,7 @@ class DDSLoader:
     def _lookup_driver_key(
         self, conn: Any, driver_nk: str, event_time: datetime
     ) -> int:
-        cache_key = (driver_nk, True)
+        cache_key = (driver_nk, event_time)
         if cache_key in self.driver_key_cache:
             return self.driver_key_cache[cache_key]
         with conn.cursor() as cur:
@@ -261,7 +261,7 @@ class DDSLoader:
     def _lookup_vehicle_key(
         self, conn: Any, vehicle_nk: str, event_time: datetime
     ) -> int:
-        cache_key = (vehicle_nk, True)
+        cache_key = (vehicle_nk, event_time)
         if cache_key in self.vehicle_key_cache:
             return self.vehicle_key_cache[cache_key]
         with conn.cursor() as cur:
@@ -335,8 +335,16 @@ class DDSLoader:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT MIN(pickup_datetime), MAX(dropoff_datetime)
-                FROM nds.nds_trip
+                SELECT MIN(min_ts), MAX(max_ts)
+                FROM (
+                    SELECT MIN(pickup_datetime) AS min_ts,
+                           MAX(dropoff_datetime) AS max_ts
+                    FROM nds.nds_trip
+                    UNION ALL
+                    SELECT MIN(shift_start) AS min_ts,
+                           MAX(shift_end) AS max_ts
+                    FROM nds.nds_shift
+                ) bounds
                 """
             )
             row = cur.fetchone()
@@ -344,12 +352,6 @@ class DDSLoader:
                 return 0, 0
             min_date = row[0].date() if isinstance(row[0], datetime) else row[0]
             max_date = row[1].date() if isinstance(row[1], datetime) else row[1]
-
-        with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(*) FROM dds.dim_date")
-            existing = cur.fetchone()[0]
-            if existing > 0:
-                return existing, 0
 
         rows_to_insert = []
         current = min_date
@@ -513,7 +515,16 @@ class DDSLoader:
                 SELECT d.driver_nk, d.driver_code, d.display_name,
                        d.home_borough, d.employment_status, d.license_status,
                        d.license_expiry_date, d.experience_years,
-                       d.created_at
+                       LEAST(
+                           d.hire_date::timestamp,
+                           d.created_at::timestamp,
+                           COALESCE(
+                               (SELECT MIN(s.shift_start)
+                                FROM nds.nds_shift s
+                                WHERE s.driver_sk = d.driver_sk),
+                               d.created_at::timestamp
+                           )
+                       )
                 FROM nds.nds_driver d
                 ORDER BY d.driver_nk
                 """
@@ -561,7 +572,7 @@ class DDSLoader:
                             str(self.batch_id),
                         ),
                     )
-                    self.driver_key_cache[(driver_nk, True)] = cur.fetchone()[0]
+                    self.driver_key_cache[(driver_nk, created_at or now_ts)] = cur.fetchone()[0]
                 new_versions += 1
             else:
                 existing_key, existing_hash = current
@@ -593,10 +604,27 @@ class DDSLoader:
                                 str(self.batch_id),
                             ),
                         )
-                        self.driver_key_cache[(driver_nk, True)] = cur.fetchone()[0]
+                        self.driver_key_cache[(driver_nk, close_ts)] = cur.fetchone()[0]
                     new_versions += 1
                 else:
-                    self.driver_key_cache[(driver_nk, True)] = existing_key
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            """
+                            UPDATE dds.dim_driver
+                            SET driver_code = %s,
+                                display_name = %s,
+                                license_status = %s,
+                                license_expiry_date = %s,
+                                experience_years = %s,
+                                start_date = LEAST(start_date, %s)
+                            WHERE driver_key = %s
+                            """,
+                            (
+                                driver_code, display_name, license_status,
+                                license_expiry_date, experience_years,
+                                created_at or now_ts, existing_key,
+                            ),
+                        )
                     no_op += 1
 
         conn.commit()
@@ -609,7 +637,16 @@ class DDSLoader:
                 """
                 SELECT v.vehicle_nk, v.plate_token, v.model_year,
                        v.vehicle_type, v.vehicle_status, v.last_inspection_date,
-                       v.created_at
+                       LEAST(
+                           v.service_start_date::timestamp,
+                           v.created_at::timestamp,
+                           COALESCE(
+                               (SELECT MIN(s.shift_start)
+                                FROM nds.nds_shift s
+                                WHERE s.vehicle_sk = v.vehicle_sk),
+                               v.created_at::timestamp
+                           )
+                       )
                 FROM nds.nds_vehicle v
                 ORDER BY v.vehicle_nk
                 """
@@ -654,7 +691,7 @@ class DDSLoader:
                             created_at or now_ts, scd_hash, str(self.batch_id),
                         ),
                     )
-                    self.vehicle_key_cache[(vehicle_nk, True)] = cur.fetchone()[0]
+                    self.vehicle_key_cache[(vehicle_nk, created_at or now_ts)] = cur.fetchone()[0]
                 new_versions += 1
             else:
                 existing_key, existing_hash = current
@@ -684,10 +721,26 @@ class DDSLoader:
                                 close_ts, scd_hash, str(self.batch_id),
                             ),
                         )
-                        self.vehicle_key_cache[(vehicle_nk, True)] = cur.fetchone()[0]
+                        self.vehicle_key_cache[(vehicle_nk, close_ts)] = cur.fetchone()[0]
                     new_versions += 1
                 else:
-                    self.vehicle_key_cache[(vehicle_nk, True)] = existing_key
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            """
+                            UPDATE dds.dim_vehicle
+                            SET plate_token = %s,
+                                model_year = %s,
+                                vehicle_type = %s,
+                                last_inspection_date = %s,
+                                start_date = LEAST(start_date, %s)
+                            WHERE vehicle_key = %s
+                            """,
+                            (
+                                plate_token, model_year, vehicle_type,
+                                last_inspection_date, created_at or now_ts,
+                                existing_key,
+                            ),
+                        )
                     no_op += 1
 
         conn.commit()
@@ -875,7 +928,7 @@ class DDSLoader:
 
     def load_fact_driver_trip(self) -> tuple[int, int]:
         conn = self.connect_warehouse()
-        offset = 0
+        last_trip_nk: str | None = None
         batch_size = 5000
         loaded = 0
 
@@ -887,27 +940,44 @@ class DDSLoader:
                            t.passenger_count, t.trip_distance,
                            t.fare_amount, t.extra, t.mta_tax, t.tip_amount,
                            t.tolls_amount, t.improvement_surcharge, t.total_amount,
-                           t.vendor_sk,
-                           t.pickup_location_sk, t.dropoff_location_sk,
+                           dv.vendor_key,
+                           dpl.location_key, ddl.location_key,
                            t.ratecode_id, t.payment_type, t.trip_type,
                            t.source_file, t.source_row_number, t.is_anomaly,
                            ta.assignment_timestamp, ta.assignment_method,
-                           ta.driver_sk, ta.vehicle_sk,
+                           dd.driver_key, dveh.vehicle_key,
                            s.shift_nk
                     FROM nds.nds_trip t
                     JOIN nds.nds_trip_assignment ta ON t.trip_sk = ta.trip_sk
                     JOIN nds.nds_shift s ON ta.shift_sk = s.shift_sk
+                    JOIN nds.nds_driver nd ON ta.driver_sk = nd.driver_sk
+                    JOIN dds.dim_driver dd
+                      ON dd.driver_id = nd.driver_nk
+                     AND dd.start_date <= t.pickup_datetime
+                     AND (dd.end_date IS NULL OR t.pickup_datetime < dd.end_date)
+                    JOIN nds.nds_vehicle nv ON ta.vehicle_sk = nv.vehicle_sk
+                    JOIN dds.dim_vehicle dveh
+                      ON dveh.vehicle_id = nv.vehicle_nk
+                     AND dveh.start_date <= t.pickup_datetime
+                     AND (dveh.end_date IS NULL OR t.pickup_datetime < dveh.end_date)
+                    JOIN nds.nds_vendor nvend ON t.vendor_sk = nvend.vendor_sk
+                    JOIN dds.dim_vendor dv ON dv.vendor_id = nvend.vendor_nk
+                    JOIN nds.nds_location npl ON t.pickup_location_sk = npl.location_sk
+                    JOIN dds.dim_location dpl ON dpl.location_id = npl.location_nk
+                    JOIN nds.nds_location ndl ON t.dropoff_location_sk = ndl.location_sk
+                    JOIN dds.dim_location ddl ON ddl.location_id = ndl.location_nk
+                    WHERE (%s IS NULL OR t.trip_nk > %s)
                     ORDER BY t.trip_nk
-                    LIMIT %s OFFSET %s
+                    LIMIT %s
                     """,
-                    (batch_size, offset),
+                    (last_trip_nk, last_trip_nk, batch_size),
                 )
                 rows = cur.fetchall()
 
             if not rows:
                 break
 
-            offset += len(rows)
+            last_trip_nk = rows[-1][0]
             trip_rows = []
 
             for r in rows:
@@ -916,12 +986,12 @@ class DDSLoader:
                     passenger_count, trip_distance,
                     fare_amount, extra, mta_tax, tip_amount,
                     tolls_amount, improvement_surcharge, total_amount,
-                    vendor_sk_nds,
-                    pickup_loc_sk, dropoff_loc_sk,
+                    vendor_key,
+                    pickup_location_key, dropoff_location_key,
                     ratecode_id, payment_type, trip_type,
                     source_file, source_row_number, is_anomaly,
                     assignment_ts, assignment_method,
-                    driver_sk_nds, vehicle_sk_nds,
+                    driver_key, vehicle_key,
                     shift_nk,
                 ) = r
 
@@ -929,25 +999,6 @@ class DDSLoader:
                 pickup_time_key = self._get_time_key(pickup_dt)
                 dropoff_date_key = self._get_date_key(conn, dropoff_dt)
                 dropoff_time_key = self._get_time_key(dropoff_dt)
-
-                driver_key = self._lookup_driver_key(conn, self._resolve_driver_nk(conn, driver_sk_nds), pickup_dt)
-                vehicle_key = self._lookup_vehicle_key(conn, self._resolve_vehicle_nk(conn, vehicle_sk_nds), pickup_dt)
-
-                with conn.cursor() as cur:
-                    cur.execute(
-                        "SELECT vendor_id FROM dds.dim_vendor WHERE vendor_key = %s",
-                        (self._get_vendor_key(conn, self._resolve_vendor_nk(conn, vendor_sk_nds)),),
-                    )
-                    row = cur.fetchone()
-                    vendor_nk = row[0] if row else 0
-                vendor_key = self._get_vendor_key(conn, vendor_nk)
-
-                pickup_location_key = self._get_location_key(
-                    conn, self._resolve_location_nk(conn, pickup_loc_sk)
-                )
-                dropoff_location_key = self._get_location_key(
-                    conn, self._resolve_location_nk(conn, dropoff_loc_sk)
-                )
 
                 junk_trip_key = self._get_junk_trip_key(
                     conn, payment_type, ratecode_id, trip_type,
@@ -1091,7 +1142,7 @@ class DDSLoader:
 
     def load_fact_driver_shift(self) -> tuple[int, int]:
         conn = self.connect_warehouse()
-        offset = 0
+        last_shift_nk: str | None = None
         batch_size = 5000
         loaded = 0
 
@@ -1100,47 +1151,60 @@ class DDSLoader:
                 cur.execute(
                     """
                     SELECT s.shift_nk, s.shift_start, s.shift_end,
-                           s.shift_status, s.vendor_sk,
-                           s.driver_sk, s.vehicle_sk,
-                           d.driver_nk, v.vehicle_nk
+                           s.shift_status, dd.driver_key, dveh.vehicle_key,
+                           dv.vendor_key, COUNT(t.trip_sk),
+                           COALESCE(SUM(
+                               EXTRACT(EPOCH FROM (t.dropoff_datetime - t.pickup_datetime)) / 60
+                           ), 0),
+                           COALESCE(SUM(t.total_amount), 0),
+                           COALESCE(SUM(t.tip_amount), 0),
+                           COALESCE(BOOL_OR(
+                               t.pickup_datetime < s.shift_start
+                               OR t.dropoff_datetime > s.shift_end
+                           ), false)
                     FROM nds.nds_shift s
                     JOIN nds.nds_driver d ON s.driver_sk = d.driver_sk
                     JOIN nds.nds_vehicle v ON s.vehicle_sk = v.vehicle_sk
+                    JOIN nds.nds_vendor nv ON s.vendor_sk = nv.vendor_sk
+                    JOIN dds.dim_driver dd
+                      ON dd.driver_id = d.driver_nk
+                     AND dd.start_date <= s.shift_start
+                     AND (dd.end_date IS NULL OR s.shift_start < dd.end_date)
+                    JOIN dds.dim_vehicle dveh
+                      ON dveh.vehicle_id = v.vehicle_nk
+                     AND dveh.start_date <= s.shift_start
+                     AND (dveh.end_date IS NULL OR s.shift_start < dveh.end_date)
+                    JOIN dds.dim_vendor dv ON dv.vendor_id = nv.vendor_nk
+                    LEFT JOIN nds.nds_trip_assignment ta ON ta.shift_sk = s.shift_sk
+                    LEFT JOIN nds.nds_trip t ON t.trip_sk = ta.trip_sk
+                    WHERE (%s IS NULL OR s.shift_nk > %s)
+                      AND s.shift_status = 'COMPLETED'
+                    GROUP BY s.shift_nk, s.shift_start, s.shift_end,
+                             s.shift_status, dd.driver_key,
+                             dveh.vehicle_key, dv.vendor_key
                     ORDER BY s.shift_nk
-                    LIMIT %s OFFSET %s
+                    LIMIT %s
                     """,
-                    (batch_size, offset),
+                    (last_shift_nk, last_shift_nk, batch_size),
                 )
                 rows = cur.fetchall()
 
             if not rows:
                 break
 
-            offset += len(rows)
+            last_shift_nk = rows[-1][0]
             shift_rows = []
 
             for r in rows:
                 (
                     shift_nk, shift_start, shift_end,
-                    shift_status, vendor_sk_nds,
-                    driver_sk_nds, vehicle_sk_nds,
-                    driver_nk, vehicle_nk,
+                    shift_status, driver_key, vehicle_key, vendor_key,
+                    trip_count, occupied_raw, revenue_raw, tips_raw,
+                    is_anomaly,
                 ) = r
 
                 shift_start_date_key = self._get_date_key(conn, shift_start)
                 shift_start_time_key = self._get_time_key(shift_start)
-
-                driver_key = self._lookup_driver_key(conn, driver_nk, shift_start)
-                vehicle_key = self._lookup_vehicle_key(conn, vehicle_nk, shift_start)
-
-                with conn.cursor() as cur:
-                    cur.execute(
-                        "SELECT vendor_nk FROM nds.nds_vendor WHERE vendor_sk = %s",
-                        (vendor_sk_nds,),
-                    )
-                    row = cur.fetchone()
-                    vendor_nk = row[0] if row else 0
-                vendor_key = self._get_vendor_key(conn, vendor_nk)
 
                 duration_minutes = Decimal("0.00")
                 if shift_start and shift_end:
@@ -1149,33 +1213,15 @@ class DDSLoader:
                         Decimal("0.01"), rounding=ROUND_HALF_UP
                     )
 
-                with conn.cursor() as cur:
-                    cur.execute(
-                        """
-                        SELECT COUNT(*),
-                               COALESCE(SUM(
-                                   EXTRACT(EPOCH FROM (t.dropoff_datetime - t.pickup_datetime)) / 60
-                               ), 0),
-                               COALESCE(SUM(t.total_amount), 0),
-                               COALESCE(SUM(t.tip_amount), 0)
-                        FROM nds.nds_trip t
-                        JOIN nds.nds_trip_assignment ta ON t.trip_sk = ta.trip_sk
-                        JOIN nds.nds_shift s2 ON ta.shift_sk = s2.shift_sk
-                        WHERE s2.shift_nk = %s
-                        """,
-                        (shift_nk,),
-                    )
-                    agg = cur.fetchone()
-                    trip_count = agg[0] if agg else 0
-                    occupied_minutes = Decimal(str(agg[1])).quantize(
-                        Decimal("0.01"), rounding=ROUND_HALF_UP
-                    )
-                    total_revenue = Decimal(str(agg[2])).quantize(
-                        Decimal("0.01"), rounding=ROUND_HALF_UP
-                    )
-                    total_tips = Decimal(str(agg[3])).quantize(
-                        Decimal("0.01"), rounding=ROUND_HALF_UP
-                    )
+                occupied_minutes = Decimal(str(occupied_raw)).quantize(
+                    Decimal("0.01"), rounding=ROUND_HALF_UP
+                )
+                total_revenue = Decimal(str(revenue_raw)).quantize(
+                    Decimal("0.01"), rounding=ROUND_HALF_UP
+                )
+                total_tips = Decimal(str(tips_raw)).quantize(
+                    Decimal("0.01"), rounding=ROUND_HALF_UP
+                )
 
                 idle_minutes = duration_minutes - occupied_minutes
                 if idle_minutes < 0:
@@ -1186,21 +1232,6 @@ class DDSLoader:
                     utilization_rate = (occupied_minutes / duration_minutes).quantize(
                         Decimal("0.0001"), rounding=ROUND_HALF_UP
                     )
-
-                with conn.cursor() as cur:
-                    cur.execute(
-                        """
-                        SELECT 1 FROM nds.nds_trip t
-                        JOIN nds.nds_trip_assignment ta ON t.trip_sk = ta.trip_sk
-                        JOIN nds.nds_shift s2 ON ta.shift_sk = s2.shift_sk
-                        WHERE s2.shift_nk = %s
-                          AND (t.pickup_datetime < s2.shift_start
-                               OR t.dropoff_datetime > s2.shift_end)
-                        LIMIT 1
-                        """,
-                        (shift_nk,),
-                    )
-                    is_anomaly = cur.fetchone() is not None
 
                 shift_rows.append((
                     shift_nk,

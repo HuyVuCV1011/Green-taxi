@@ -10,7 +10,7 @@
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?style=flat-square&logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Power BI](https://img.shields.io/badge/Power_BI-Analysis-F2C811?style=flat-square&logo=power-bi&logoColor=black)](https://powerbi.microsoft.com/)
-[![Milestone](https://img.shields.io/badge/Status-Staging_Load_Implemented-2EA44F?style=flat-square)](https://github.com/HuyVuCV1011/Green-taxi)
+[![Milestone](https://img.shields.io/badge/Status-DQ_NDS_DDS_Implemented-2EA44F?style=flat-square)](https://github.com/HuyVuCV1011/Green-taxi)
 
 [Tổng quan](#tổng-quan) • [Điểm nổi bật](#điểm-nổi-bật) • [Kiến trúc dữ liệu (Data Flow)](#kiến-trúc-dữ-liệu-data-flow) • [Bắt đầu nhanh (Quick Start)](#bắt-đầu-nhanh-quick-start) • [Ma trận dịch vụ Docker (Service Matrix)](#ma-trận-dịch-vụ-docker-service-matrix) • [Bản đồ tài liệu](#bản-đồ-tài-liệu) • [Lộ trình dự án (Project Roadmap)](#lộ-trình-dự-án-project-roadmap) • [Quy tắc dữ liệu (Data & Security Policy)](#quy-tắc-dữ-liệu-data--security-policy)
 
@@ -44,7 +44,7 @@ Dự án tập trung vào việc giải quyết 5 nhóm câu hỏi vận hành c
 
 - **Mô phỏng nguồn dữ liệu đa dạng:** Khởi tạo các hệ thống nguồn mô phỏng đa dạng (MySQL, MongoDB, PostgreSQL) từ một gói dữ liệu release chuẩn nhằm tái lập môi trường thực tế của doanh nghiệp.
 - **Hợp đồng dữ liệu (Data Contracts):** Thiết lập quy định chặt chẽ về schema, kiểu dữ liệu, các business key cho từng nguồn dữ liệu thô.
-- **Quản lý chất lượng dữ liệu (DQ):** Thiết kế lớp kiểm tra schema, tính toàn vẹn tham chiếu, tính hợp lệ thời gian và quy trình quarantine cho các milestone tiếp theo.
+- **Quản lý chất lượng dữ liệu (DQ):** Kiểm tra khóa, enum, thời gian, tham chiếu; lỗi `ERROR` được ghi audit và cách ly trước NDS.
 - **Khả năng kiểm toán (Auditability):** Sử dụng cơ chế Manifest, mã băm SHA-256 cho các gói dữ liệu và hệ thống metadata lưu vết xử lý đến từng dòng (Row-level traceability).
 - **Mô hình hóa dữ liệu kho:** Thiết kế kho dữ liệu chuẩn hóa NDS (Normalized Data Store) tích hợp và kho dữ liệu DDS (Dimensional Data Store) dạng Star Schema tối ưu hóa cho truy vấn phân tích.
 
@@ -186,7 +186,7 @@ python scripts/seed_postgres_dispatch.py --release-id green-taxi-full-v1
 
 #### Bước 5: Áp dụng DDL để khởi tạo cấu trúc Kho dữ liệu PostgreSQL
 ```powershell
-# Khởi tạo các schema staging, audit, dq và các bảng mirror tương ứng trong Warehouse
+# Khởi tạo đầy đủ staging, audit, dq, NDS và DDS
 python scripts/apply_warehouse_ddl.py --mode docker
 ```
 
@@ -194,6 +194,12 @@ python scripts/apply_warehouse_ddl.py --mode docker
 ```powershell
 # Trích xuất và nạp toàn bộ dữ liệu từ các nguồn vào Staging
 python scripts/load_staging.py --release-id green-taxi-full-v1 --source all
+
+# DQ Gate 1 và chuẩn hóa Staging -> NDS
+python scripts/load_nds.py --release-id green-taxi-full-v1
+
+# DQ Gate 2, SCD2 và NDS -> DDS
+python scripts/load_dds.py --release-id green-taxi-full-v1
 ```
 
 #### Bước 7: Khởi chạy Giao diện điều khiển (Pipeline Control Panel) - Optional
@@ -264,7 +270,8 @@ Dự án tuân thủ nguyên tắc thiết kế **docs-first** và **data-contra
 * **[Data sources](docs/04-data-sources.md):** Danh sách chi tiết các hệ thống nguồn và đặc tính dữ liệu.
 * **[Data contracts](docs/08-data-contracts.md):** Các cam kết về schema và kiểu dữ liệu đầu vào.
 * **[Source-to-target plan](docs/10-source-to-target-plan.md):** Thiết kế ánh xạ và chuyển đổi dữ liệu từ nguồn vào NDS và DDS.
-* **[Warehouse DDL Baseline](docs/14-warehouse-ddl.md):** Chi tiết cấu trúc bảng và schema trong kho dữ liệu PostgreSQL.
+* **[Warehouse Physical Model Specification](docs/14-warehouse-ddl.md):** DDL executable và mô hình vật lý Staging/DQ/NDS/DDS.
+* **[NDS/DDS implementation notes](docs/18-nds-dds-implementation-notes.md):** Ghi chú triển khai, tối ưu, idempotency và reconciliation.
 * **[Staging Load](docs/15-staging-load.md):** Cơ chế source adapters, row hash, audit metadata và source-to-staging reconciliation.
 * **[Pipeline Control Panel](docs/16-pipeline-control-panel.md):** Giao diện điều khiển Streamlit giám sát sức khoẻ kết nối database và đối soát dữ liệu sau seed.
 * **[Documentation index](docs/README.md):** Danh mục tài liệu đầy đủ và gợi ý lộ trình đọc.
@@ -273,19 +280,18 @@ Dự án tuân thủ nguyên tắc thiết kế **docs-first** và **data-contra
 
 ## Lộ trình dự án (Project Roadmap)
 
-### Những phần đã hoàn thành (Milestone 1 & 2 - Staging Load)
+### Những phần đã hoàn thành (Milestone 1-3)
 - [x] Xác định phạm vi nghiệp vụ và chốt kiến trúc dữ liệu không sử dụng ODS.
 - [x] Thiết kế Data Contracts và đóng gói thư viện sinh dữ liệu mô phỏng (`scripts/generate_synthetic_sources.py`).
 - [x] Tạo Manifest, validation report và tích hợp dữ liệu mẫu (sample data) vào Git phục vụ test nhanh.
 - [x] Thiết lập Docker Compose cho các dịch vụ cơ sở dữ liệu nguồn và kho dữ liệu đích.
-- [x] Tạo DDL baseline cho PostgreSQL staging và schema cho hệ thống audit/dq.
+- [x] Tạo DDL executable cho PostgreSQL Staging, Audit, DQ, NDS và DDS.
 - [x] Viết tập lệnh seed dữ liệu idempotent cho MySQL HR, MongoDB Fleet và PostgreSQL Dispatch.
 - [x] Xây dựng adapters trích xuất dữ liệu từ các nguồn (MySQL, MongoDB, PostgreSQL) và tệp thô vào staging.
+- [x] Triển khai DQ Gate 1, quarantine, NDS 3NF và lineage theo batch/release.
+- [x] Triển khai DDS, SCD2, degenerate `shift_id` và fact upsert idempotent.
 
-### Lộ trình tiếp theo (Milestone 3+)
-- [ ] Triển khai các quy tắc kiểm tra chất lượng dữ liệu (DQ Rules), hệ thống cách ly (Quarantine) và kiểm toán.
-- [ ] Thực hiện ETL chuẩn hóa và tích hợp dữ liệu từ Staging vào NDS (Normalized Data Store).
-- [ ] Xây dựng mô hình hình sao DDS (Dimensional Data Store - Driver Operations) để tối ưu hóa truy vấn.
+### Lộ trình tiếp theo (Milestone 4+)
 - [ ] Thiết kế và xây dựng Dashboard phân tích hiệu suất và phát hiện các điểm bất thường vận hành (Anomaly Analysis).
 - [ ] Hoàn thiện báo cáo học thuật, slide báo cáo và tài liệu hướng dẫn tái lập kết quả.
 

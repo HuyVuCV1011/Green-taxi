@@ -18,8 +18,10 @@ Tùy thuộc vào vai trò của bạn khi tiếp cận repository này, hãy th
 2. **[docs/04-data-sources.md](04-data-sources.md):** Danh mục chi tiết các nguồn dữ liệu thật và dữ liệu mô phỏng.
 3. **[docs/08-data-contracts.md](08-data-contracts.md):** Các cam kết về schema và kiểu dữ liệu đầu vào.
 4. **[docs/10-source-to-target-plan.md](10-source-to-target-plan.md):** Logic ánh xạ, chuyển đổi dữ liệu và SCD Type 1/2.
-5. **[docs/14-warehouse-ddl.md](14-warehouse-ddl.md):** Cấu trúc chi tiết các bảng trong PostgreSQL Warehouse.
+5. **[docs/14-warehouse-ddl.md](14-warehouse-ddl.md):** DDL executable và mô hình vật lý Staging/DQ/NDS/DDS.
 6. **[docs/15-staging-load.md](15-staging-load.md):** Hướng dẫn cơ chế nạp Staging, sinh row hash và đối soát.
+7. **[docs/17-data-quality-and-etl-spec.md](17-data-quality-and-etl-spec.md):** Đặc tả quy tắc kiểm soát chất lượng dữ liệu, cách cách ly và xử lý dữ liệu đến trễ.
+8. **[docs/18-nds-dds-implementation-notes.md](18-nds-dds-implementation-notes.md):** Ghi chú triển khai, tối ưu và reconciliation NDS/DDS.
 
 ### Dành cho Giảng viên & Người đánh giá (Reviewer)
 1. **[docs/01-project-context.md](01-project-context.md):** Bối cảnh và định hướng phân tích của đồ án.
@@ -47,8 +49,10 @@ Tùy thuộc vào vai trò của bạn khi tiếp cận repository này, hãy th
 | 📄 [05-architecture.md](05-architecture.md) | Kiến trúc | Thiết kế kiến trúc logic, vật lý, bootstrap và múi giờ |
 | 📄 [08-data-contracts.md](08-data-contracts.md) | Hợp đồng dữ liệu | Quy định ràng buộc cấu trúc đầu vào cho từng nguồn |
 | 📄 [10-source-to-target-plan.md](10-source-to-target-plan.md) | ETL Mapping | Ánh xạ chi tiết từ nguồn vào NDS và DDS |
-| 📄 [14-warehouse-ddl.md](14-warehouse-ddl.md) | Schema DDL | Baseline cấu trúc bảng PostgreSQL Warehouse |
+| 📄 [14-warehouse-ddl.md](14-warehouse-ddl.md) | Physical model | DDL executable và contract vật lý Staging/DQ/NDS/DDS |
 | 📄 [15-staging-load.md](15-staging-load.md) | Ingestion | Hướng dẫn cơ chế nạp Staging, sinh row hash và đối soát |
+| 📄 [17-data-quality-and-etl-spec.md](17-data-quality-and-etl-spec.md) | ETL & DQ Spec | Quy tắc kiểm soát chất lượng dữ liệu, cách cách ly và xử lý dữ liệu đến trễ |
+| 📄 [18-nds-dds-implementation-notes.md](18-nds-dds-implementation-notes.md) | Implementation | Ghi chú loader, index, phân trang, idempotency và full-load reconciliation |
 | 📂 **Quản lý & Hướng dẫn Vận hành** | | |
 | 📄 [07-implementation-plan.md](07-implementation-plan.md) | Kế hoạch | Kế hoạch triển khai chi tiết mã nguồn và definition of done |
 | 📄 [11-work-breakdown.md](11-work-breakdown.md) | Milestone | Phân chia công việc theo Work Breakdown Structure |

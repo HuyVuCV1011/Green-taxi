@@ -478,6 +478,33 @@ class TestCloseAll(unittest.TestCase):
         self.assertIsNone(loader.pg_conn)
         self.assertIsNone(loader.audit_conn)
 
+class TestDDSIntegrationContracts(unittest.TestCase):
+    def test_dq_issue_uses_source_system_code(self) -> None:
+        import inspect
+        from src.warehouse import dds_loader as mod
+
+        source = inspect.getsource(mod.DDSLoader.log_dq_issue)
+        self.assertIn("source_system_code", source)
+        self.assertNotIn("batch_id, release_id, source_system, source_entity", source)
+
+    def test_fact_loaders_use_keyset_pagination(self) -> None:
+        import inspect
+        from src.warehouse import dds_loader as mod
+
+        trip_source = inspect.getsource(mod.DDSLoader.load_fact_driver_trip)
+        shift_source = inspect.getsource(mod.DDSLoader.load_fact_driver_shift)
+        self.assertNotIn("OFFSET", trip_source)
+        self.assertNotIn("OFFSET", shift_source)
+        self.assertIn("t.trip_nk > %s", trip_source)
+        self.assertIn("s.shift_nk > %s", shift_source)
+
+    def test_shift_fact_filters_completed_grain(self) -> None:
+        import inspect
+        from src.warehouse import dds_loader as mod
+
+        source = inspect.getsource(mod.DDSLoader.load_fact_driver_shift)
+        self.assertIn("s.shift_status = 'COMPLETED'", source)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -113,6 +113,16 @@ class WarehouseDdlContractTest(unittest.TestCase):
     def test_no_batch_delete_rollback_pattern_in_scd_tables(self) -> None:
         self.assertNotRegex(self.dds_sql, re.compile(r"DELETE\s+FROM\s+dds\.dim_(driver|vehicle).*batch_id", re.IGNORECASE | re.DOTALL))
 
+    def test_trip_distance_preserves_source_outliers(self) -> None:
+        self.assertRegexIgnoreCase(
+            self.nds_sql,
+            r"trip_distance\s+DECIMAL\(12,\s*4\)",
+        )
+        self.assertRegexIgnoreCase(
+            self.dds_sql,
+            r"trip_distance\s+DECIMAL\(12,\s*4\)",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
