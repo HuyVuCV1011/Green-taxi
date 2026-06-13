@@ -3,11 +3,18 @@ Project NYC_Green_Taxi_NDS {
   Note: 'Mô hình chuẩn hóa quan hệ 3NF tầng NDS'
 }
 
+Table ref_source_system [headerColor: #7f8c8d] {
+  source_system_code varchar(50) [pk]
+  source_system_name varchar(100) [not null]
+  source_type varchar(30) [not null]
+  is_active boolean [not null, default: true]
+}
+
 Table nds_vendor [headerColor: #3498db] {
   vendor_sk int [pk, increment]
   vendor_nk int [unique, not null]
   vendor_name varchar(100) [not null]
-  source_system_code int [not null]
+  source_system_code varchar(50) [ref: > ref_source_system.source_system_code, not null]
   created_at timestamptz
   updated_at timestamptz
 }
@@ -18,7 +25,7 @@ Table nds_location [headerColor: #3498db] {
   borough varchar(100) [not null]
   zone varchar(100) [not null]
   service_zone varchar(50)
-  source_system_code int [not null]
+  source_system_code varchar(50) [ref: > ref_source_system.source_system_code, not null]
   created_at timestamptz
   updated_at timestamptz
 }
@@ -36,7 +43,7 @@ Table nds_driver [headerColor: #3498db] {
   experience_years int [not null]
   home_borough varchar(100) [not null]
   is_inferred boolean [not null, default: false]
-  source_system_code int [not null]
+  source_system_code varchar(50) [ref: > ref_source_system.source_system_code, not null]
   created_at timestamptz
   updated_at timestamptz
 }
@@ -44,7 +51,7 @@ Table nds_driver [headerColor: #3498db] {
 Table nds_driver_history [headerColor: #e67e22] {
   driver_history_id bigint [pk, increment]
   driver_sk int [ref: > nds_driver.driver_sk, not null]
-  event_id varchar(50)
+  event_id varchar(50) [unique, not null]
   effective_at timestamp [not null]
   delivered_at timestamp [not null]
   attribute_name varchar(100) [not null]
@@ -64,7 +71,7 @@ Table nds_vehicle [headerColor: #3498db] {
   vehicle_status varchar(50) [not null]
   last_inspection_date date [not null]
   is_inferred boolean [not null, default: false]
-  source_system_code int [not null]
+  source_system_code varchar(50) [ref: > ref_source_system.source_system_code, not null]
   created_at timestamptz
   updated_at timestamptz
 }
@@ -83,14 +90,14 @@ Table nds_shift [headerColor: #2ecc71] {
   occupied_minutes_source decimal [not null]
   idle_minutes_source decimal [not null]
   shift_status varchar(50) [not null]
-  source_system_code int [not null]
+  source_system_code varchar(50) [ref: > ref_source_system.source_system_code, not null]
   created_at timestamptz
   updated_at timestamptz
 }
 
 Table nds_trip [headerColor: #2ecc71] {
   trip_sk bigint [pk, increment]
-  trip_nk varchar(50) [unique, not null]
+  trip_nk text [unique, not null, note: 'Full staging trip_key; no truncation']
   vendor_sk int [ref: > nds_vendor.vendor_sk, not null]
   pickup_datetime timestamp [not null]
   dropoff_datetime timestamp [not null]
@@ -112,7 +119,7 @@ Table nds_trip [headerColor: #2ecc71] {
   source_file varchar(255) [not null]
   source_row_number int [not null]
   is_anomaly boolean [not null, default: false]
-  source_system_code int [not null]
+  source_system_code varchar(50) [ref: > ref_source_system.source_system_code, not null]
   created_at timestamptz
   updated_at timestamptz
 }
@@ -125,7 +132,7 @@ Table nds_trip_assignment [headerColor: #2ecc71] {
   shift_sk bigint [ref: > nds_shift.shift_sk, not null]
   assignment_timestamp timestamp [not null]
   assignment_method varchar(50) [not null]
-  source_system_code int [not null]
+  source_system_code varchar(50) [ref: > ref_source_system.source_system_code, not null]
   created_at timestamptz
   updated_at timestamptz
 }
