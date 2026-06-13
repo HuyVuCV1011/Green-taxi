@@ -26,7 +26,7 @@ Raw synthetic data bị Git ignore; generator, config, manifest và validation
 report được version-control để bảo đảm khả năng tái tạo.
 
 Thành viên lấy full dataset đã được kiểm tra từ Google Drive theo
-`docs/13-team-onboarding-and-data-setup.md` và không tự chạy generator.
+`docs/00-team-onboarding-and-data-setup.md` và không tự chạy generator.
 
 ## Runtime dependencies
 

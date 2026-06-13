@@ -10,7 +10,7 @@ Tùy thuộc vào vai trò của bạn khi tiếp cận repository này, hãy th
 
 ### Dành cho Thành viên mới (New Team Member)
 1. **[README.md](../README.md):** Tổng quan nhanh về dự án, cách khởi động local và trạng thái hiện tại.
-2. **[docs/13-team-onboarding-and-data-setup.md](13-team-onboarding-and-data-setup.md):** Cẩm nang thiết lập môi trường phát triển local, tải, xác thực checksum và nạp dữ liệu nguồn.
+2. **[docs/00-team-onboarding-and-data-setup.md](00-team-onboarding-and-data-setup.md):** Cẩm nang thiết lập môi trường phát triển local, tải, xác thực checksum và nạp dữ liệu nguồn.
 3. **[docs/03-scope.md](03-scope.md):** Nắm vững các câu hỏi nghiệp vụ và phạm vi phân tích của đồ án.
 
 ### Dành cho Kỹ sư dữ liệu (Data Engineer / Developer)
@@ -35,6 +35,8 @@ Tùy thuộc vào vai trò của bạn khi tiếp cận repository này, hãy th
 
 | Tên tài liệu | Phân loại | Nội dung chính |
 |---|---|---|
+| 📂 **Thiết lập ban đầu** | | |
+| 📄 [00-team-onboarding-and-data-setup.md](00-team-onboarding-and-data-setup.md) | Hướng dẫn | Cách cấu hình môi trường local, seed nguồn và chạy unittest |
 | 📂 **Tổng quan & Bối cảnh** | | |
 | 📄 [01-project-context.md](01-project-context.md) | Bối cảnh | Lý do lựa chọn đề tài và mục tiêu tổng quát của đồ án |
 | 📄 [02-teacher-feedback.md](02-teacher-feedback.md) | Phản hồi | Nhật ký tiếp thu ý kiến của giáo viên và phương án điều chỉnh |
@@ -51,7 +53,6 @@ Tùy thuộc vào vai trò của bạn khi tiếp cận repository này, hãy th
 | 📄 [07-implementation-plan.md](07-implementation-plan.md) | Kế hoạch | Kế hoạch triển khai chi tiết mã nguồn và definition of done |
 | 📄 [11-work-breakdown.md](11-work-breakdown.md) | Milestone | Phân chia công việc theo Work Breakdown Structure |
 | 📄 [12-synthetic-generation-report.md](12-synthetic-generation-report.md) | Dữ liệu mô phỏng | Báo cáo chi tiết thuật toán sinh dữ liệu và validation |
-| 📄 [13-team-onboarding-and-data-setup.md](13-team-onboarding-and-data-setup.md) | Hướng dẫn | Cách cấu hình môi trường local, seed nguồn và chạy unittest |
 | 📄 [16-pipeline-control-panel.md](16-pipeline-control-panel.md) | Hướng dẫn | Tài liệu hướng dẫn sử dụng và đặc tả của Streamlit Control Panel |
 | 📂 **Thư mục mở rộng** | | |
 | 📁 [decisions/](decisions/) | Kiến trúc (ADR) | Lưu trữ các quyết định thiết kế hệ thống quan trọng (Architecture Decision Records) |

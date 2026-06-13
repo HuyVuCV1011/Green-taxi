@@ -12,7 +12,7 @@ Status: `APPROVED FOR IMPLEMENTATION`
 6. Không thêm ODS, MinIO, streaming hoặc CDC khi chưa có business requirement.
 
 Team member tải release `green-taxi-full-v1.zip` từ Google Drive, kiểm SHA-256
-và giải nén theo `docs/13-team-onboarding-and-data-setup.md` trước khi chạy full
+và giải nén theo `docs/00-team-onboarding-and-data-setup.md` trước khi chạy full
 mode.
 
 ## Logical architecture
