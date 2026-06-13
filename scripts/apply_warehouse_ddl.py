@@ -22,7 +22,12 @@ DEFAULT_FILES = (
     "00_create_schemas.sql",
     "01_audit_metadata.sql",
     "02_staging_tables.sql",
+    "03_nds_tables.sql",
+    "04_dds_tables.sql",
+    "05_dq_quarantine.sql",
 )
+
+VERIFY_SCHEMAS = ("staging", "audit", "dq", "nds", "dds")
 
 
 def load_dotenv(path: Path) -> None:
@@ -95,13 +100,17 @@ def verify_with_psycopg() -> bool:
     query = """
         SELECT table_schema, table_name
         FROM information_schema.tables
-        WHERE table_schema IN ('audit', 'dq', 'staging')
+        WHERE table_schema = ANY(%s)
         ORDER BY table_schema, table_name;
     """
     with psycopg.connect(**warehouse_conninfo()) as conn:
         with conn.cursor() as cur:
-            cur.execute(query)
+            cur.execute(query, (list(VERIFY_SCHEMAS),))
             rows = cur.fetchall()
+            schemas_seen = {schema for schema, _table in rows}
+    missing = set(VERIFY_SCHEMAS) - schemas_seen
+    if missing:
+        raise RuntimeError(f"DDL verification found no tables in schemas: {', '.join(sorted(missing))}")
     for schema, table in rows:
         print(f"{schema}.{table}")
     return True
@@ -132,11 +141,31 @@ def verify_with_docker_compose() -> None:
     user = env("POSTGRES_WAREHOUSE_USER", "DB_USER") or "green_taxi_warehouse_app"
     database = env("POSTGRES_WAREHOUSE_DATABASE", "DB_NAME") or "green_taxi_warehouse"
     service = os.environ.get("POSTGRES_WAREHOUSE_SERVICE", "postgres_warehouse")
-    query = """
+    schema_list = ", ".join(f"'{schema}'" for schema in VERIFY_SCHEMAS)
+    query = f"""
         SELECT table_schema, table_name
         FROM information_schema.tables
-        WHERE table_schema IN ('audit', 'dq', 'staging')
+        WHERE table_schema IN ({schema_list})
         ORDER BY table_schema, table_name;
+
+        DO $$
+        DECLARE
+            missing_schema TEXT;
+        BEGIN
+            SELECT expected.schema_name
+            INTO missing_schema
+            FROM unnest(ARRAY[{schema_list}]) AS expected(schema_name)
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM information_schema.tables t
+                WHERE t.table_schema = expected.schema_name
+            )
+            LIMIT 1;
+
+            IF missing_schema IS NOT NULL THEN
+                RAISE EXCEPTION 'DDL verification found no tables in schema: %', missing_schema;
+            END IF;
+        END $$;
     """
     command = [
         "docker",
