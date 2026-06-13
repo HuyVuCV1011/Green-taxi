@@ -1,8 +1,9 @@
 # Scripts
 
-## Sinh synthetic source systems
+## Công cụ dành cho data owner
 
-Chạy tại repository root:
+Các lệnh dưới đây chỉ dùng khi data owner chủ động tạo một data release mới,
+không phải bước setup dành cho thành viên:
 
 ```powershell
 python scripts/generate_synthetic_sources.py
@@ -24,8 +25,13 @@ và tạo:
 Raw synthetic data bị Git ignore; generator, config, manifest và validation
 report được version-control để bảo đảm khả năng tái tạo.
 
-Các entry point pipeline tiếp theo:
+Thành viên lấy full dataset đã được kiểm tra từ Google Drive theo
+`docs/13-team-onboarding-and-data-setup.md` và không tự chạy generator.
 
+Các entry point dự kiến cho Milestone 2 (chưa được triển khai):
+
+- `seed_sources`
+- `validate_source_seed`
 - `load_staging`
 - `run_dq`
 - `load_nds`

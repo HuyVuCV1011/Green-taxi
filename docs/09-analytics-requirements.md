@@ -14,7 +14,7 @@
 
 - `trip_count = COUNT(*)`
 - `occupied_minutes = SUM(trip_duration_minutes)`
-- `idle_minutes = SUM(gap_to_previous_trip_minutes)`
+- `idle_minutes = shift_minutes - occupied_minutes`, gồm buffer đầu/cuối ca và gap giữa trip
 - `shift_minutes = shift_end - shift_start`
 - `utilization_rate = occupied_minutes / shift_minutes`
 - `revenue_per_hour = SUM(total_amount) / occupied_hours`
@@ -25,4 +25,3 @@
 - `anomaly_count`
 
 Ratios phải được tính từ tổng tử số/tổng mẫu số, không cộng các ratio cấp dòng.
-

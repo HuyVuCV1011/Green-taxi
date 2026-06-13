@@ -1,14 +1,17 @@
 {
-  "validated_at": "2026-06-13T23:56:22",
+  "validated_at": "2026-06-14T00:37:17",
   "driver_count": 860,
   "vehicle_count": 860,
-  "shift_count": 157362,
+  "shift_count": 157379,
   "assignment_count": 2304276,
   "issues": {},
   "passed": true,
   "notes": [
     "Assignments were checked against the original TLC source rows.",
-    "Driver and vehicle temporal overlap were validated across all months.",
+    "Driver and vehicle trip/shift overlap were validated across all months.",
+    "Shift occupied and idle minutes were reconciled to shift duration.",
+    "Vehicle inspection dates were checked against service start dates.",
+    "Driver, vehicle and shift vendors were checked against vendor lookup.",
     "Source-period and invalid-duration exceptions are stored separately."
   ]
 }

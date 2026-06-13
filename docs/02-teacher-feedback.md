@@ -21,3 +21,12 @@ Nguồn: `[AdvancedBI] Feedback mid project.txt`.
 Thiết kế cũ được giữ lại trong `archive/` để tham khảo. Thiết kế mới chỉ được
 chốt sau khi hoàn thành `03-scope.md`, `04-data-sources.md` và ADR tương ứng.
 
+Để phản hồi trực tiếp nhận xét “nhiều định dạng không đồng nghĩa với nhiều
+nguồn”, project phân biệt:
+
+- Data release dạng file dùng để phân phối và seed dữ liệu đồng nhất.
+- Các hệ thống nguồn nghiệp vụ mô phỏng có storage/interface độc lập.
+- Warehouse PostgreSQL đích không dùng chung database với PostgreSQL nguồn.
+
+Thiết kế này tạo ra bài toán tích hợp file, relational database và document
+database nhưng vẫn giữ một nguồn dữ liệu chuẩn để các máy có kết quả giống nhau.

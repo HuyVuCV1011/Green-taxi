@@ -12,13 +12,24 @@ Status: `COMPLETED`
 
 ## Milestone 2 - Staging
 
-- PostgreSQL schemas and DDL.
-- Source-specific loaders.
-- Batch metadata and file checksum.
-- Row hash and raw row traceability.
-- Idempotent reload test.
+### M2A - Warehouse staging baseline
 
-Deliverable: raw files loaded into staging with audit counts.
+- PostgreSQL warehouse schemas and DDL.
+- Common staging metadata contract.
+- Sample/file adapters for lightweight tests.
+- Batch metadata, checksum/watermark and row hash.
+- Idempotent staging reload test.
+
+### M2B - Heterogeneous source simulation
+
+- Docker Compose cho MySQL HR, MongoDB Fleet, PostgreSQL Dispatch và warehouse.
+- Idempotent seed scripts từ Google Drive release.
+- MySQL, MongoDB và PostgreSQL source adapters.
+- Source health checks và connection configuration.
+- Release-to-source và source-to-staging reconciliation.
+
+Deliverable: source systems được seed đồng nhất và records được extract vào
+staging với audit counts/lineage.
 
 ## Milestone 3 - DQ and NDS
 
@@ -64,8 +75,7 @@ Deliverable: dashboard answering BQ01-BQ05.
 
 | Workstream | Owner | Reviewer |
 |---|---|---|
-| Data generation and ingestion | Member A | Member B |
+| Data release, source seeding and ingestion | Member A | Member B |
 | DQ, NDS and SQL | Member B | Member C |
 | DDS, dashboard and analytics | Member C | Member A |
 | Report/slide integration | Team lead | All |
-

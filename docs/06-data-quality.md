@@ -16,6 +16,28 @@
 | DQ10 | Assignment hoặc source row trùng | Deduplicate bằng business key/row hash |
 | DQ11 | Pickup/dropoff location không tồn tại | Unknown location |
 | DQ12 | Fare/distance âm hoặc bất hợp lý | Flag, không mặc định xóa |
+| DQ13 | Release checksum hoặc seed row count không khớp | Dừng seed/ingestion |
+| DQ14 | Source extract count không khớp staging accepted + rejected | Fail reconciliation |
+| DQ15 | Cùng source identity có payload khác nhưng không có change event | Quarantine/flag |
+| DQ16 | Vehicle inspection trước service start | Quarantine hoặc reject master |
+| DQ17 | Required field null/rỗng hoặc enum ngoài contract | Quarantine/reject |
+| DQ18 | Business timestamp bị parse như UTC hoặc sai timezone contract | Fail batch |
+| DQ19 | Local timestamp rơi vào DST ambiguous/nonexistent interval | Quarantine/flag |
+| DQ20 | Staging row thiếu `release_id` hoặc lineage bắt buộc | Fail batch |
+
+## Source and ingestion controls
+
+| Control | File source | Database/document source |
+|---|---|---|
+| Source identity | File path + row number | Table/collection + primary/natural key |
+| Batch identity | File checksum + release ID | Release ID + extract timestamp/watermark |
+| Duplicate control | Row hash/business key | Source key + row/document hash |
+| Reconciliation | File rows = staged + rejected | Extracted rows = staged + rejected |
+| Restart | Reload/skip theo checksum | Reload/skip theo source extract identity |
+
+Seed validation và ingestion validation là hai bước khác nhau. Seed validation
+chứng minh source containers khớp canonical release; ingestion validation chứng
+minh staging khớp những gì adapters đã extract từ source systems.
 
 ## Business anomalies
 
@@ -33,4 +55,3 @@ Các trường hợp sau được giữ lại để phân tích:
 Data quality trả lời “record có đủ tin cậy để tích hợp không?”. Business anomaly
 trả lời “hoạt động có khác thường và cần điều tra không?”. Không dùng hai khái
 niệm thay thế cho nhau.
-

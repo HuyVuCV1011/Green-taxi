@@ -39,6 +39,7 @@ class Shift:
     vehicle_id: str
     vendor_id: int
     start: datetime
+    first_pickup: datetime
     first_zone: int
     last_dropoff: datetime
     last_zone: int
@@ -131,6 +132,33 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def write_vendor_lookup(source_path: Path, target_path: Path) -> None:
+    vendors: dict[int, str] = {0: "Legacy / Unknown Pool"}
+    if source_path.exists():
+        with source_path.open(encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            for row in reader:
+                normalized = {key.strip(): value for key, value in row.items()}
+                vendor_id = parse_int(normalized.get("vendor_id"), default=-1)
+                vendor_name = (normalized.get("vendor_name") or "").strip()
+                if vendor_id >= 0 and vendor_name:
+                    vendors[vendor_id] = vendor_name
+
+    with target_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=["vendor_id", "vendor_name"],
+        )
+        writer.writeheader()
+        for vendor_id, vendor_name in sorted(vendors.items()):
+            writer.writerow(
+                {
+                    "vendor_id": vendor_id,
+                    "vendor_name": vendor_name,
+                }
+            )
+
+
 def parse_int(value: str | None, default: int = 0) -> int:
     try:
         return int(float(value or ""))
@@ -208,6 +236,7 @@ def write_vehicles(
     resources: list[Resource],
     randomizer: random.Random,
     period_start: date,
+    period_end: date,
 ) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as handle:
@@ -216,6 +245,10 @@ def write_vehicles(
             service_start = max(
                 date(model_year, 1, 1),
                 period_start - timedelta(days=randomizer.randint(60, 1800)),
+            )
+            inspection_date = min(
+                service_start + timedelta(days=randomizer.randint(5, 365)),
+                period_end,
             )
             record = {
                 "vehicle_id": resource.vehicle_id,
@@ -227,8 +260,8 @@ def write_vehicles(
                 )[0],
                 "service_start_date": service_start.isoformat(),
                 "vehicle_status": "ACTIVE",
-                "last_inspection_date": "2019-12-01",
-                "source_updated_at": "2019-12-15T00:00:00",
+                "last_inspection_date": inspection_date.isoformat(),
+                "source_updated_at": f"{period_end.isoformat()}T23:59:59",
             }
             handle.write(json.dumps(record, ensure_ascii=True) + "\n")
 
@@ -288,19 +321,35 @@ def build_resources(config: dict[str, Any], randomizer: random.Random) -> list[R
     return resources
 
 
+def calculate_shift_end(
+    shift: Shift,
+    buffer_minutes: int,
+    next_pickup: datetime | None = None,
+) -> datetime:
+    if next_pickup is None:
+        return shift.last_dropoff + timedelta(minutes=buffer_minutes)
+    gap_seconds = max(0.0, (next_pickup - shift.last_dropoff).total_seconds())
+    return shift.last_dropoff + timedelta(
+        seconds=min(buffer_minutes * 60, gap_seconds / 2)
+    )
+
+
+def calculate_total_idle_minutes(shift: Shift, end: datetime) -> float:
+    start_idle = max(
+        0.0, (shift.first_pickup - shift.start).total_seconds() / 60
+    )
+    end_idle = max(0.0, (end - shift.last_dropoff).total_seconds() / 60)
+    return shift.idle_minutes + start_idle + end_idle
+
+
 def finalize_shift(
     writer: csv.DictWriter,
     shift: Shift,
     buffer_minutes: int,
     next_pickup: datetime | None = None,
 ) -> None:
-    if next_pickup is None:
-        end = shift.last_dropoff + timedelta(minutes=buffer_minutes)
-    else:
-        gap_seconds = max(0.0, (next_pickup - shift.last_dropoff).total_seconds())
-        end = shift.last_dropoff + timedelta(
-            seconds=min(buffer_minutes * 60, gap_seconds / 2)
-        )
+    end = calculate_shift_end(shift, buffer_minutes, next_pickup)
+    total_idle_minutes = calculate_total_idle_minutes(shift, end)
     writer.writerow(
         {
             "shift_id": shift.shift_id,
@@ -313,7 +362,7 @@ def finalize_shift(
             "actual_end_zone": shift.last_zone,
             "trip_count": shift.trip_count,
             "occupied_minutes": f"{shift.occupied_minutes:.2f}",
-            "idle_minutes": f"{shift.idle_minutes:.2f}",
+            "idle_minutes": f"{total_idle_minutes:.2f}",
             "shift_status": "COMPLETED",
         }
     )
@@ -345,6 +394,7 @@ def generate(config_path: Path) -> None:
         pools[vendor_id] = VendorPool(vendor_resources)
 
     period_start = date(2020, 1, 1)
+    period_end = date(2021, 7, 31)
     drivers = write_drivers(
         output_root / "driver_hr" / "drivers.csv",
         resources,
@@ -356,6 +406,7 @@ def generate(config_path: Path) -> None:
         resources,
         randomizer,
         period_start,
+        period_end,
     )
     change_count = write_driver_changes(
         output_root / "driver_hr" / "driver_changes.jsonl",
@@ -367,10 +418,13 @@ def generate(config_path: Path) -> None:
 
     lookup_target = repo_root / "data" / "lookup"
     lookup_target.mkdir(parents=True, exist_ok=True)
-    for filename in ["taxi_zone.csv", "vendor.csv"]:
-        source = lookup_root / filename
-        if source.exists():
-            shutil.copyfile(source, lookup_target / filename)
+    taxi_zone_source = lookup_root / "taxi_zone.csv"
+    if taxi_zone_source.exists():
+        shutil.copyfile(taxi_zone_source, lookup_target / "taxi_zone.csv")
+    write_vendor_lookup(
+        lookup_root / "vendor.csv",
+        lookup_target / "vendor.csv",
+    )
 
     shift_path = output_root / "dispatch" / "shifts.tsv"
     exception_path = output_root / "trip_assignment" / "assignment_exceptions.csv"
@@ -514,7 +568,13 @@ def generate(config_path: Path) -> None:
                             and dropoff - current.start <= max_shift
                         )
                     if not can_continue:
+                        previous_shift_end = None
                         if current is not None:
+                            previous_shift_end = calculate_shift_end(
+                                current,
+                                buffer_minutes,
+                                next_pickup=pickup,
+                            )
                             finalize_shift(
                                 shift_writer,
                                 current,
@@ -524,14 +584,15 @@ def generate(config_path: Path) -> None:
                             counters["shifts"] += 1
                         shift_serial += 1
                         shift_start = pickup - timedelta(minutes=buffer_minutes)
-                        if current is not None and shift_start < current.last_dropoff:
-                            shift_start = pickup
+                        if previous_shift_end is not None:
+                            shift_start = max(shift_start, previous_shift_end)
                         current = Shift(
                             shift_id=f"SHF{shift_serial:010d}",
                             driver_id=resource.driver_id,
                             vehicle_id=resource.vehicle_id,
                             vendor_id=vendor_id,
                             start=shift_start,
+                            first_pickup=pickup,
                             first_zone=pickup_zone,
                             last_dropoff=dropoff,
                             last_zone=dropoff_zone,

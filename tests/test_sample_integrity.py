@@ -49,6 +49,41 @@ class SampleIntegrityTest(unittest.TestCase):
                 shifts[assignment["shift_id"]]["vehicle_id"],
             )
 
+    def test_sample_vendors_exist_in_lookup(self):
+        lookup = self.sample.parent / "lookup" / "vendor.csv"
+        with lookup.open(encoding="utf-8", newline="") as handle:
+            vendors = {
+                int(row["vendor_id"])
+                for row in csv.DictReader(handle)
+            }
+
+        observed = set()
+        with (self.sample / "drivers_sample.csv").open(
+            encoding="utf-8", newline=""
+        ) as handle:
+            observed.update(
+                int(row["vendor_id"])
+                for row in csv.DictReader(handle)
+            )
+        with (self.sample / "vehicles_sample.jsonl").open(
+            encoding="utf-8"
+        ) as handle:
+            observed.update(
+                int(json.loads(line)["vendor_id"])
+                for line in handle
+                if line.strip()
+            )
+        with (self.sample / "shifts_sample.tsv").open(
+            encoding="utf-8", newline=""
+        ) as handle:
+            observed.update(
+                int(row["vendor_id"])
+                for row in csv.DictReader(handle, delimiter="\t")
+            )
+
+        self.assertIn(0, vendors)
+        self.assertTrue(observed.issubset(vendors))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-13T23:56:02",
+  "generated_at": "2026-06-14T00:15:44",
   "seed": 20260613,
   "trip_period": {
     "start": "2020-01",
@@ -7,12 +7,12 @@
   },
   "driver_count": 860,
   "vehicle_count": 860,
-  "driver_change_count": 69,
+  "driver_change_count": 77,
   "counts": {
     "assigned_trips": 2304276,
     "invalid_duration": 56,
     "outside_source_period": 185,
-    "shifts": 157362,
+    "shifts": 157379,
     "vendor_0_trips": 777155,
     "vendor_1_trips": 263291,
     "vendor_2_trips": 1263830
@@ -27,7 +27,7 @@
       "assigned_rows": 447702,
       "source_sha256": "c4e97e0b7e53d24dc5677cf68c988d03cf4fd6653fc9981c0320d96151e9dbe0",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2020/month=01/trip_assignment_2020-01.csv",
-      "assignment_sha256": "defa3d902fa40db2f73706fa46e3dc108bd551fb21707188d55867a7e6cae756"
+      "assignment_sha256": "dc060bc7040e1d8d882c72b2bd8a04a64d3c168feac415cfd88b26ee75bf8690"
     },
     {
       "source_file": "year=2020/month=02/green_tripdata_2020-02.csv",
@@ -38,7 +38,7 @@
       "assigned_rows": 398587,
       "source_sha256": "ffddc75105e4fcd95f902bcb80f93757428c1af3c962633a4bd323dd80f38440",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2020/month=02/trip_assignment_2020-02.csv",
-      "assignment_sha256": "85aa6e094b88db14c68a4d1c23b70338451205310024703392ae91ac29bca316"
+      "assignment_sha256": "d8e23e58f31bae54a89bdb248bd9bc6a1eafbde7c13971b905fb823bba256fd4"
     },
     {
       "source_file": "year=2020/month=03/green_tripdata_2020-03.csv",
@@ -49,7 +49,7 @@
       "assigned_rows": 223372,
       "source_sha256": "e4e63de20df0f9d7f65a22359df9a57c501348ebcab723804a3cccf5c0fe7afb",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2020/month=03/trip_assignment_2020-03.csv",
-      "assignment_sha256": "366ade54f43c73a0e43e63a2578af80b5824225e692279565f73aaed65e1ffd8"
+      "assignment_sha256": "39d525d53aa9098d453fa1ebfa104f2ecdb1c24e305f8f4913f2c4b52d6c59d7"
     },
     {
       "source_file": "year=2020/month=04/green_tripdata_2020-04.csv",
@@ -60,7 +60,7 @@
       "assigned_rows": 35606,
       "source_sha256": "981c16e00d01d118a57f866989bc5e78091b48d07fff3ea24800d8d967f598e6",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2020/month=04/trip_assignment_2020-04.csv",
-      "assignment_sha256": "11ed2f654b214ae60cf55d4a8cd2c8d05fd5cb07123d7d03993df5c5a59fcd37"
+      "assignment_sha256": "d7a4a71a2e4fbefe1c9f17694ba9f782daf67f091c55d02ae4a120f88fa75602"
     },
     {
       "source_file": "year=2020/month=05/green_tripdata_2020-05.csv",
@@ -71,7 +71,7 @@
       "assigned_rows": 57359,
       "source_sha256": "4848828b24a59b541401d58411489d139255b8ba3199835bc58129f14d4b846b",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2020/month=05/trip_assignment_2020-05.csv",
-      "assignment_sha256": "eca29d3594e2bc916da78e0e0ddbeab5e1a77fdb1347343cd5d81ed96bf52fe9"
+      "assignment_sha256": "efaa09711d00f859aa7e9b344782be33f999c07b22dd78e91a4f073704a27474"
     },
     {
       "source_file": "year=2020/month=06/green_tripdata_2020-06.csv",
@@ -82,7 +82,7 @@
       "assigned_rows": 63107,
       "source_sha256": "15df2fbb65593defb162fe95ae266379c1cbfdccbbc569f29c3926a38f452256",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2020/month=06/trip_assignment_2020-06.csv",
-      "assignment_sha256": "3937bb4568be1071577f56e7046f6dfe051cd311833fd2d53fe7427186e24092"
+      "assignment_sha256": "ffbf57a76f1e2d5823a8cb445d3d0a9f5215f488fa28d21eba6930d1e94e8e75"
     },
     {
       "source_file": "year=2020/month=07/green_tripdata_2020-07.csv",
@@ -93,7 +93,7 @@
       "assigned_rows": 72249,
       "source_sha256": "ba6baf0763b7d1f12b631c58ca0dfbdce084e3766b994ea9d9a992928a3d9d0a",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2020/month=07/trip_assignment_2020-07.csv",
-      "assignment_sha256": "3e6b5dfde32d7a143277bd88f6f93b9fcfcb53f9bc9f02e052540c65b0547e7f"
+      "assignment_sha256": "0997d5aa3d2d3936a9bd65d10f0f9efc87210f8791abac9c865165daf65373d9"
     },
     {
       "source_file": "year=2020/month=08/green_tripdata_2020-08.csv",
@@ -104,7 +104,7 @@
       "assigned_rows": 81057,
       "source_sha256": "d0d3fa376383b6b2d929f89101b13b940763682a42a4c912008990518740bef0",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2020/month=08/trip_assignment_2020-08.csv",
-      "assignment_sha256": "2e6e88239eeb119d34db2ec1201eb949b7f3491f9b1351dc0080f79d5609c9f9"
+      "assignment_sha256": "ab129c6cbbaf5ff06008ae9edae5d0dfc8baf8d9bca6393bb14aa4803174e837"
     },
     {
       "source_file": "year=2020/month=09/green_tripdata_2020-09.csv",
@@ -115,7 +115,7 @@
       "assigned_rows": 87978,
       "source_sha256": "c746515e8da47d6635cdd4ed479c646c4cfa67fbad00b5259e3baded211c3b5b",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2020/month=09/trip_assignment_2020-09.csv",
-      "assignment_sha256": "f41913a93f28dacd80d86b2df8df305b118db39ce0029e4ab2c5167fd4a22c4d"
+      "assignment_sha256": "d11fa0c935e9b2c9a0b263359205aa260a4f51b6bc3423c281ce9803b35dfc44"
     },
     {
       "source_file": "year=2020/month=10/green_tripdata_2020-10.csv",
@@ -126,7 +126,7 @@
       "assigned_rows": 95110,
       "source_sha256": "9b0557eb7cfb41a0f5337e2862861d8678fea8328068603ff553ca4246d87762",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2020/month=10/trip_assignment_2020-10.csv",
-      "assignment_sha256": "1ac8719aa8b315f5d584b0c08f73a0470295704a001f42503ab350eddc9753b9"
+      "assignment_sha256": "d1ce2d285f20342bbb4e6f0b61c55c3a291c3b7049da812eed77b2a9451625fc"
     },
     {
       "source_file": "year=2020/month=11/green_tripdata_2020-11.csv",
@@ -137,7 +137,7 @@
       "assigned_rows": 88602,
       "source_sha256": "4a501ca2f8fd67f3a269267abf3c9722bf2e6487cb8f6b756fb06d05a32dbefc",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2020/month=11/trip_assignment_2020-11.csv",
-      "assignment_sha256": "adeed7e3f1c8f437ea163e951df4c19fc93064a592be330065505f8421bb1b82"
+      "assignment_sha256": "e8276aa9e7e26f72f05f3f44e0e43918721b6a5b3ef07542acfd059d799fae05"
     },
     {
       "source_file": "year=2020/month=12/green_tripdata_2020-12.csv",
@@ -148,7 +148,7 @@
       "assigned_rows": 83126,
       "source_sha256": "998de4f4938a10642d61a48a0b8f4d191e5f36a2990d07177a2e7aadb2202d9d",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2020/month=12/trip_assignment_2020-12.csv",
-      "assignment_sha256": "1b4b7d71141d0f3a14a099563c0169c042c7b383cc8b2309e01c3725dacb26bb"
+      "assignment_sha256": "b11d11b67ab4138644cbc8592bc2d6191eaa5b2cef9664263bf53edb64358630"
     },
     {
       "source_file": "year=2021/month=01/green_tripdata_2021-01.csv",
@@ -159,7 +159,7 @@
       "assigned_rows": 76515,
       "source_sha256": "06a5ef09a6c3cf9fab195c369c7f67cd5cae600c264279e147f6d2a7abc76597",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2021/month=01/trip_assignment_2021-01.csv",
-      "assignment_sha256": "8d6fa3383c4cf1aeb9f2d669a8fcf4fe3800f6ca6092809ccef866e5b59e9f25"
+      "assignment_sha256": "b053952cef688db3042b59beea0b3802022f03f9f6d4f0a69cd7561452cfa623"
     },
     {
       "source_file": "year=2021/month=02/green_tripdata_2021-02.csv",
@@ -170,7 +170,7 @@
       "assigned_rows": 64570,
       "source_sha256": "3e90b65e74ac09d571c8e51a88ca372286e33d412ba5c3e80f85a7725e6f418b",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2021/month=02/trip_assignment_2021-02.csv",
-      "assignment_sha256": "2ea2a6d08b07480b3149617a557cd368722e2163dc46cc6a8fdea4e0f8b0e27a"
+      "assignment_sha256": "0c314a019be4405902a8987f0955d6bce581ed986cbac22cd11131e7e36d0267"
     },
     {
       "source_file": "year=2021/month=03/green_tripdata_2021-03.csv",
@@ -181,7 +181,7 @@
       "assigned_rows": 83827,
       "source_sha256": "3e4fb09a37debe23e7ac9094057255bf2c452653c50acb22eb0849c908111d0c",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2021/month=03/trip_assignment_2021-03.csv",
-      "assignment_sha256": "62199e52def6dbe9314ca271d50488f8b9c2c0bc5ac815a68a6149bfd13e2b5b"
+      "assignment_sha256": "ce6f396024e2aec463220d44d56bd3adcc9fd973350412f273fc0f7187d18ee9"
     },
     {
       "source_file": "year=2021/month=04/green_tripdata_2021-04.csv",
@@ -192,7 +192,7 @@
       "assigned_rows": 86928,
       "source_sha256": "58813368de70c25f0bffa0a795473190c12bae224534d33c464f64cdc7fb6b60",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2021/month=04/trip_assignment_2021-04.csv",
-      "assignment_sha256": "cba2716f6b7e4686182fefd28aa2479e29ffec0022e06293c1c9d9d64b52be79"
+      "assignment_sha256": "27da13a580d8af22f1b1ac4d96c2e927e2270d4c8e4acbbad829b0c093195bae"
     },
     {
       "source_file": "year=2021/month=05/green_tripdata_2021-05.csv",
@@ -203,7 +203,7 @@
       "assigned_rows": 88173,
       "source_sha256": "8f6533ef79ece6173b68a5864f885dab8903f706b8fb955fee2cae202fadff35",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2021/month=05/trip_assignment_2021-05.csv",
-      "assignment_sha256": "c6ae355bf80743df429362bd3488bb992523959afe4b453c93cac71926d56d63"
+      "assignment_sha256": "f26037ae9a5a59ad6f9963e38e4766182d3e49c970d700b3f6d3a7c90c1718cb"
     },
     {
       "source_file": "year=2021/month=06/green_tripdata_2021-06.csv",
@@ -214,7 +214,7 @@
       "assigned_rows": 86735,
       "source_sha256": "f576ae8b9f8246836fe5f7ba0ddad67e166979676b42a2b604fab3ea626eadd3",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2021/month=06/trip_assignment_2021-06.csv",
-      "assignment_sha256": "4ebc79d0d216b8f1f112ccc07bcbd2b749df0575ca1986b15e420a2847a4c642"
+      "assignment_sha256": "64508bc85fb9af321e30bbfd4c06b4f0c91ca16cdc804f5ef99ef4373dfd9e2f"
     },
     {
       "source_file": "year=2021/month=07/green_tripdata_2021-07.csv",
@@ -225,7 +225,7 @@
       "assigned_rows": 83673,
       "source_sha256": "e16a31ed3f787e7f5265809fdfb4bbe964732b336629a4478a18c4f3b2cf9187",
       "assignment_file": "data/raw/synthetic/trip_assignment/year=2021/month=07/trip_assignment_2021-07.csv",
-      "assignment_sha256": "689a3f05a7df68ea763fa8be037c7179d0ca14fc86e4ed0fdb9a0f321859654b"
+      "assignment_sha256": "9904fbb92b9860d0c3c187de76a7467899bec190eaa8e7fd68aa922ad2524f90"
     }
   ],
   "generated_files": [
@@ -236,18 +236,18 @@
     },
     {
       "path": "data/raw/synthetic/driver_hr/driver_changes.jsonl",
-      "bytes": 16569,
-      "sha256": "9374560b01ca1a135b1f71129975fb0c920199a60c34cc52c0e506f416a31aa7"
+      "bytes": 18470,
+      "sha256": "65fb199683332885b0d028925e66680beb9af2f09b9af21daa7c7ba7216fe1fb"
     },
     {
       "path": "data/raw/synthetic/fleet/vehicles.jsonl",
-      "bytes": 227920,
-      "sha256": "8d1d3d66d096c52a8c456c191f349b9bd0294550f3a677a7c61135e1d6682f4a"
+      "bytes": 227921,
+      "sha256": "fa1e917c03f3ff26daeb3a415b85425911aa094e35133a49d3008aa541eb19cf"
     },
     {
       "path": "data/raw/synthetic/dispatch/shifts.tsv",
-      "bytes": 17232396,
-      "sha256": "4a8b3401fc253d4e668642976a61d389961f64f82a450a88adf9887da832463c"
+      "bytes": 17295775,
+      "sha256": "4ed81388b37c89d0c9277758b7ceee73cffc98d743ba834622f3549cdf67a828"
     },
     {
       "path": "data/raw/synthetic/trip_assignment/assignment_exceptions.csv",

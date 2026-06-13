@@ -1,6 +1,11 @@
 # Synthetic Data Generation Report
 
 Generated from the local TLC Green Taxi CSV package using seed `20260613`.
+This is the validated source for Google Drive release `green-taxi-full-v1`.
+
+The CSV/JSONL/TSV outputs are canonical release artifacts. In the approved
+physical architecture, they seed MySQL HR, MongoDB Fleet and PostgreSQL
+Dispatch; TLC/lookup files remain batch file sources.
 
 ## Result
 
@@ -8,8 +13,8 @@ Generated from the local TLC Green Taxi CSV package using seed `20260613`.
 |---|---:|
 | Driver HR master | 860 |
 | Fleet vehicle master | 860 |
-| Driver change events | 69 |
-| Dispatch shifts | 157,362 |
+| Driver change events | 77 |
+| Dispatch shifts | 157,379 |
 | Trip assignments | 2,304,276 |
 | Invalid-duration exceptions | 56 |
 | Outside-source-period exceptions | 185 |
@@ -24,14 +29,18 @@ Assignments by vendor:
 
 ## Validation
 
-Validation passed for:
+Full validation passed for:
 
 - Driver and vehicle master references.
 - Shift references and declared trip counts.
 - Assignment-to-source trip keys.
 - Trip containment within shifts.
-- Driver temporal overlap.
-- Vehicle temporal overlap.
+- Driver trip temporal overlap.
+- Vehicle trip temporal overlap.
+- Driver shift temporal overlap.
+- Vehicle shift temporal overlap.
+- Shift occupied/idle time reconciliation.
+- Vehicle inspection chronology.
 - Vendor consistency.
 
 Machine-readable details:

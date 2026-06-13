@@ -20,7 +20,19 @@ lý độc lập:
 - Dispatch System quản lý ca làm và phân công chuyến.
 
 Dự án mô phỏng các hệ thống còn thiếu bằng dữ liệu synthetic có ràng buộc, sau
-đó tích hợp chúng với TLC trip records để tạo một nguồn phân tích thống nhất.
+đó seed dữ liệu vào các hệ thống nguồn có interface độc lập và tích hợp chúng
+với TLC trip records để tạo một nguồn phân tích thống nhất.
+
+Các nguồn vật lý trong scope:
+
+- TLC trips và lookup: file batch CSV/Parquet.
+- Driver HR: MySQL.
+- Fleet Management: MongoDB.
+- Dispatch và Trip Assignment: PostgreSQL nguồn độc lập.
+- Staging, NDS và DDS: PostgreSQL warehouse đích.
+
+Google Drive data release là gói phân phối/seed chuẩn của nhóm, không phải một
+hệ thống nghiệp vụ trong logical architecture.
 
 ## Người dùng cuối
 
@@ -51,6 +63,8 @@ Hai fact chính:
 ## Trong phạm vi
 
 - Tích hợp trip, driver, vehicle, shift, assignment, vendor và location.
+- Seed idempotent các source systems từ cùng một data release.
+- Extract từ file, MySQL, MongoDB và PostgreSQL nguồn qua adapter riêng.
 - Metadata, checksum, batch ID và row hash.
 - Upsert và SCD cho master data.
 - Late-arriving/inferred driver hoặc vehicle.
@@ -66,13 +80,17 @@ Hai fact chính:
 - Marketing, customer segmentation và promotion.
 - Xử lý khiếu nại khách hàng.
 - Dự báo nhu cầu thời gian thực.
+- Change Data Capture, streaming và đồng bộ gần thời gian thực.
+- MinIO/S3 trong scope triển khai chính.
+- High availability, cluster và vận hành production.
 
 ## Tiêu chí hoàn thành
 
-- Pipeline tái lập được từ raw sources đến DDS.
+- Pipeline tái lập được từ data release, qua source systems, đến DDS.
 - Có ít nhất bốn hệ thống nguồn có vai trò nghiệp vụ rõ ràng.
+- Source containers có thể xóa, dựng lại và seed ra cùng dữ liệu.
+- Warehouse PostgreSQL tách biệt với PostgreSQL nguồn Dispatch.
 - Synthetic data tuân thủ các ràng buộc được công bố.
 - Có data-quality logs, rejected/quarantined records và reconciliation tests.
 - Dashboard trả lời được các quyết định vận hành đã nêu.
 - Báo cáo phân biệt rõ dữ liệu TLC thật và dữ liệu synthetic.
-
