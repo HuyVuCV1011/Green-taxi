@@ -1,0 +1,131 @@
+Project NYC_Green_Taxi_NDS {
+  database_type: 'PostgreSQL'
+  Note: 'Mô hình chuẩn hóa quan hệ 3NF tầng NDS'
+}
+
+Table nds_vendor [headerColor: #3498db] {
+  vendor_sk int [pk, increment]
+  vendor_nk int [unique, not null]
+  vendor_name varchar(100) [not null]
+  source_system_code int [not null]
+  created_at timestamptz
+  updated_at timestamptz
+}
+
+Table nds_location [headerColor: #3498db] {
+  location_sk int [pk, increment]
+  location_nk int [unique, not null]
+  borough varchar(100) [not null]
+  zone varchar(100) [not null]
+  service_zone varchar(50)
+  source_system_code int [not null]
+  created_at timestamptz
+  updated_at timestamptz
+}
+
+Table nds_driver [headerColor: #3498db] {
+  driver_sk int [pk, increment]
+  driver_nk varchar(50) [unique, not null]
+  vendor_sk int [ref: > nds_vendor.vendor_sk, not null]
+  driver_code varchar(50) [not null]
+  display_name varchar(100) [not null]
+  hire_date date [not null]
+  employment_status varchar(50) [not null]
+  license_status varchar(50) [not null]
+  license_expiry_date date [not null]
+  experience_years int [not null]
+  home_borough varchar(100) [not null]
+  is_inferred boolean [not null, default: false]
+  source_system_code int [not null]
+  created_at timestamptz
+  updated_at timestamptz
+}
+
+Table nds_driver_history [headerColor: #e67e22] {
+  driver_history_id bigint [pk, increment]
+  driver_sk int [ref: > nds_driver.driver_sk, not null]
+  event_id varchar(50)
+  effective_at timestamp [not null]
+  delivered_at timestamp [not null]
+  attribute_name varchar(100) [not null]
+  old_value text
+  new_value text [not null]
+  created_at timestamptz
+}
+
+Table nds_vehicle [headerColor: #3498db] {
+  vehicle_sk int [pk, increment]
+  vehicle_nk varchar(50) [unique, not null]
+  vendor_sk int [ref: > nds_vendor.vendor_sk, not null]
+  plate_token varchar(100) [unique, not null]
+  model_year int [not null]
+  vehicle_type varchar(50) [not null]
+  service_start_date date [not null]
+  vehicle_status varchar(50) [not null]
+  last_inspection_date date [not null]
+  is_inferred boolean [not null, default: false]
+  source_system_code int [not null]
+  created_at timestamptz
+  updated_at timestamptz
+}
+
+Table nds_shift [headerColor: #2ecc71] {
+  shift_sk bigint [pk, increment]
+  shift_nk varchar(50) [unique, not null]
+  driver_sk int [ref: > nds_driver.driver_sk, not null]
+  vehicle_sk int [ref: > nds_vehicle.vehicle_sk, not null]
+  vendor_sk int [ref: > nds_vendor.vendor_sk, not null]
+  shift_start timestamp [not null]
+  shift_end timestamp [not null]
+  assigned_start_zone int [ref: > nds_location.location_sk, not null]
+  actual_end_zone int [ref: > nds_location.location_sk, not null]
+  trip_count_source int [not null]
+  occupied_minutes_source decimal [not null]
+  idle_minutes_source decimal [not null]
+  shift_status varchar(50) [not null]
+  source_system_code int [not null]
+  created_at timestamptz
+  updated_at timestamptz
+}
+
+Table nds_trip [headerColor: #2ecc71] {
+  trip_sk bigint [pk, increment]
+  trip_nk varchar(50) [unique, not null]
+  vendor_sk int [ref: > nds_vendor.vendor_sk, not null]
+  pickup_datetime timestamp [not null]
+  dropoff_datetime timestamp [not null]
+  passenger_count int
+  trip_distance decimal
+  pickup_location_sk int [ref: > nds_location.location_sk, not null]
+  dropoff_location_sk int [ref: > nds_location.location_sk, not null]
+  ratecode_id int
+  store_and_fwd_flag char(1)
+  payment_type int
+  fare_amount decimal [not null]
+  extra decimal [not null]
+  mta_tax decimal [not null]
+  tip_amount decimal [not null]
+  tolls_amount decimal [not null]
+  improvement_surcharge decimal [not null]
+  total_amount decimal [not null]
+  trip_type int
+  source_file varchar(255) [not null]
+  source_row_number int [not null]
+  is_anomaly boolean [not null, default: false]
+  source_system_code int [not null]
+  created_at timestamptz
+  updated_at timestamptz
+}
+
+Table nds_trip_assignment [headerColor: #2ecc71] {
+  assignment_sk bigint [pk, increment]
+  trip_sk bigint [ref: - nds_trip.trip_sk, unique, not null]
+  driver_sk int [ref: > nds_driver.driver_sk, not null]
+  vehicle_sk int [ref: > nds_vehicle.vehicle_sk, not null]
+  shift_sk bigint [ref: > nds_shift.shift_sk, not null]
+  assignment_timestamp timestamp [not null]
+  assignment_method varchar(50) [not null]
+  source_system_code int [not null]
+  created_at timestamptz
+  updated_at timestamptz
+}

@@ -1,0 +1,140 @@
+Project NYC_Green_Taxi_DDS {
+  database_type: 'PostgreSQL'
+  Note: 'Mô hình Star Schema phẳng tầng DDS'
+}
+
+Table dim_date [headerColor: #e67e22] {
+  date_key int [pk]
+  date date [not null]
+  day int [not null]
+  month int [not null]
+  month_name varchar(20) [not null]
+  quarter int [not null]
+  year int [not null]
+  day_of_week int [not null]
+  day_name varchar(20) [not null]
+  is_weekend boolean [not null]
+  is_holiday boolean [not null]
+  week_of_year int [not null]
+}
+
+Table dim_time [headerColor: #e67e22] {
+  time_key int [pk]
+  time_of_day time [not null]
+  hour int [not null]
+  minute int [not null]
+  time_bucket varchar(20) [not null]
+  is_peak_hour boolean [not null]
+}
+
+Table dim_driver [headerColor: #3498db] {
+  driver_key int [pk, increment]
+  driver_id varchar [not null]
+  driver_code varchar [not null]
+  display_name varchar [not null]
+  home_borough varchar [not null]
+  employment_status varchar [not null]
+  license_status varchar [not null]
+  license_expiry_date date [not null]
+  experience_years int [not null]
+  start_date timestamp [not null]
+  end_date timestamp
+  is_current boolean [not null, default: true]
+  batch_id uuid [not null]
+}
+
+Table dim_vehicle [headerColor: #3498db] {
+  vehicle_key int [pk, increment]
+  vehicle_id varchar [not null]
+  plate_token varchar [not null]
+  model_year int [not null]
+  vehicle_type varchar [not null]
+  vehicle_status varchar [not null]
+  last_inspection_date date [not null]
+  start_date timestamp [not null]
+  end_date timestamp
+  is_current boolean [not null, default: true]
+  batch_id uuid [not null]
+}
+
+Table dim_vendor [headerColor: #3498db] {
+  vendor_key int [pk, increment]
+  vendor_id int [not null]
+  vendor_name varchar [not null]
+  batch_id uuid [not null]
+}
+
+Table dim_location [headerColor: #3498db] {
+  location_key int [pk, increment]
+  location_id int [not null]
+  borough varchar [not null]
+  zone varchar [not null]
+  service_zone varchar
+}
+
+Table dim_shift [headerColor: #3498db] {
+  shift_key int [pk, increment]
+  shift_id varchar [not null]
+  shift_status varchar [not null]
+  shift_start timestamp [not null]
+  shift_end timestamp [not null]
+  duration_hours decimal [not null]
+  batch_id uuid [not null]
+}
+
+Table dim_junk_trip [headerColor: #9b59b6] {
+  junk_trip_key int [pk, increment]
+  payment_type_desc varchar [not null]
+  ratecode_desc varchar [not null]
+  trip_type_desc varchar [not null]
+  assignment_method varchar [not null]
+  is_anomaly boolean [not null]
+}
+
+Table fact_driver_trip [headerColor: #2ecc71] {
+  fact_trip_id bigint [pk, increment]
+  trip_id varchar [not null]
+  pickup_date_key int [ref: > dim_date.date_key, not null]
+  pickup_time_key int [ref: > dim_time.time_key, not null]
+  dropoff_date_key int [ref: > dim_date.date_key, not null]
+  dropoff_time_key int [ref: > dim_time.time_key, not null]
+  driver_key int [ref: > dim_driver.driver_key, not null]
+  vehicle_key int [ref: > dim_vehicle.vehicle_key, not null]
+  vendor_key int [ref: > dim_vendor.vendor_key, not null]
+  pickup_location_key int [ref: > dim_location.location_key, not null]
+  dropoff_location_key int [ref: > dim_location.location_key, not null]
+  shift_key int [ref: > dim_shift.shift_key, not null]
+  junk_trip_key int [ref: > dim_junk_trip.junk_trip_key, not null]
+  passenger_count int
+  trip_distance decimal
+  trip_duration_minutes decimal
+  fare_amount decimal [not null]
+  extra decimal [not null]
+  mta_tax decimal [not null]
+  tip_amount decimal [not null]
+  tolls_amount decimal [not null]
+  improvement_surcharge decimal [not null]
+  total_amount decimal [not null]
+  assignment_delay_minutes decimal
+  source_file varchar [not null]
+  source_row_number int [not null]
+  batch_id uuid [not null]
+}
+
+Table fact_driver_shift [headerColor: #2ecc71] {
+  fact_shift_id bigint [pk, increment]
+  shift_key int [ref: > dim_shift.shift_key, not null]
+  shift_start_date_key int [ref: > dim_date.date_key, not null]
+  shift_start_time_key int [ref: > dim_time.time_key, not null]
+  driver_key int [ref: > dim_driver.driver_key, not null]
+  vehicle_key int [ref: > dim_vehicle.vehicle_key, not null]
+  vendor_key int [ref: > dim_vendor.vendor_key, not null]
+  shift_duration_minutes decimal [not null]
+  trip_count int [not null]
+  occupied_minutes decimal [not null]
+  idle_minutes decimal [not null]
+  utilization_rate decimal [not null]
+  total_revenue decimal [not null]
+  total_tips decimal [not null]
+  batch_id uuid [not null]
+}
