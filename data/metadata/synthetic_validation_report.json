@@ -1,0 +1,14 @@
+{
+  "validated_at": "2026-06-13T23:56:22",
+  "driver_count": 860,
+  "vehicle_count": 860,
+  "shift_count": 157362,
+  "assignment_count": 2304276,
+  "issues": {},
+  "passed": true,
+  "notes": [
+    "Assignments were checked against the original TLC source rows.",
+    "Driver and vehicle temporal overlap were validated across all months.",
+    "Source-period and invalid-duration exceptions are stored separately."
+  ]
+}

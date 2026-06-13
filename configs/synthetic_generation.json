@@ -1,0 +1,17 @@
+{
+  "seed": 20260613,
+  "source_trip_root": "../01_Datasets/raw_trip_data/trip_data_green_csv",
+  "source_lookup_root": "../01_Datasets/raw_trip_data",
+  "output_root": "data/raw/synthetic",
+  "metadata_root": "data/metadata",
+  "max_shift_hours": 12,
+  "max_continuity_gap_minutes": 180,
+  "shift_buffer_minutes": 30,
+  "driver_pool_by_vendor": {
+    "0": 380,
+    "1": 90,
+    "2": 390
+  },
+  "change_event_rate": 0.08,
+  "late_arriving_event_rate": 0.20
+}

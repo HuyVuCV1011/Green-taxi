@@ -1,0 +1,59 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+secrets/
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Data: only sample and small lookup files belong in Git
+data/raw/**
+data/interim/**
+data/processed/**
+data/external/**
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+!data/metadata/
+!data/metadata/**
+
+# Databases and analytical artifacts
+*.db
+*.duckdb
+*.sqlite
+*.parquet
+*.delta
+*.pbix
+
+# Recordings
+*.m4a
+*.mp3
+*.mp4
+*.wav
+
+# Generated outputs and logs
+outputs/
+logs/
+*.log
+tmp/
+temp/
+
+# Office lock/temp files
+~$*
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
