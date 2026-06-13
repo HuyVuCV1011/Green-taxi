@@ -7,14 +7,14 @@ dataset được lưu dưới nhiều định dạng.
 
 ## Source inventory
 
-| Source system | Dữ liệu | Interface triển khai | Dạng trong data release | Loại | Vai trò |
-|---|---|---|---|---|---|
-| TLC LPEP Trip System | Green Taxi trips | File batch CSV/Parquet | CSV theo tháng | Thật | Sự kiện chuyến đi |
-| Driver HR System | Driver master và change events | MySQL | CSV + JSONL | Synthetic | Hồ sơ, trạng thái và thay đổi tài xế |
-| Fleet Management | Vehicle master | MongoDB documents | JSONL | Synthetic | Phương tiện và trạng thái khai thác |
-| Dispatch System | Driver shifts và trip assignments | PostgreSQL nguồn | TSV + CSV theo tháng | Synthetic | Ca làm việc và liên kết trip với nguồn lực |
-| TLC Taxi Zone | Zone lookup | File batch | CSV | Thật | Master địa lý |
-| Vendor lookup | Vendor lookup | File batch | CSV | Thật/chuẩn hóa | Nhà cung cấp LPEP |
+| Hệ thống nguồn (Source System) | Phân loại dữ liệu | Giao tiếp triển khai (Interface) | Tệp tin trong Data Release | Tính chất nguồn | Vai trò nghiệp vụ chính |
+|---|---|---|---|:---:|---|
+| **TLC LPEP Trip System** | Chuyến đi Green Taxi (Trips) | Tệp CSV/Parquet theo tháng | CSV tháng | Thật | Ghi nhận chi tiết thời gian, vị trí và cước phí của chuyến đi. |
+| **Driver HR System** | Hồ sơ tài xế & Lịch sử cập nhật | MySQL Database | CSV & JSONL | Giả lập | Quản lý thông tin tài xế, giấy phép lái taxi, trạng thái làm việc. |
+| **Fleet Management** | Danh mục phương tiện (Vehicles) | MongoDB Collection | JSONL | Giả lập | Theo dõi danh sách xe, năm sản xuất và tình trạng đăng kiểm/kiểm định. |
+| **Dispatch System** | Ca làm việc & Phân bổ chuyến đi | PostgreSQL Database (Source) | TSV & CSV tháng | Giả lập | Quản lý ca làm việc của tài xế và liên kết chuyến đi với tài xế/xe. |
+| **TLC Taxi Zone** | Tra cứu khu vực (Taxi Zone) | Tệp CSV | CSV | Thật | Danh mục master địa lý để giải mã ID khu vực đón/trả khách. |
+| **Vendor Lookup** | Tra cứu đối tác (Vendor) | Tệp CSV | CSV | Thật | Danh mục các nhà cung cấp công nghệ (ví dụ: VeriFone, CMT). |
 
 ### Data release và source systems
 

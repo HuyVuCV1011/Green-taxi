@@ -110,9 +110,11 @@ Operational source: PostgreSQL source table `trip_assignments`.
 | assignment_method | string | Yes | No default | CONTINUITY/AVAILABLE_POOL |
 
 `assignment_exceptions.csv` là release validation/audit artifact cho các trip
-không được assignment; nó không được seed như một bảng nghiệp vụ của Dispatch.
-Pipeline dùng artifact này trong reconciliation và có thể load vào audit staging
-riêng nếu cần.
+không được assignment; nó không phải transaction table nghiệp vụ của Dispatch.
+Trong local source simulation, artifact này được seed vào
+`public.assignment_exceptions` như một bảng reconciliation/audit để kiểm chứng
+release completeness. Adapter không được xử lý bảng này như một nguồn fact
+nghiệp vụ của DDS.
 
 ## HR Change Feed - `driver_changes.jsonl`
 

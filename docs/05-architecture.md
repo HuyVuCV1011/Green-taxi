@@ -17,41 +17,77 @@ mode.
 
 ## Logical architecture
 
-```text
-Google Drive canonical release
-        |
-        +--> seed Driver HR ----------> MySQL
-        +--> seed Fleet -------------> MongoDB
-        +--> seed Dispatch/Assignment -> PostgreSQL source
-        `--> provide TLC/lookup files -> File batch source
+```mermaid
+flowchart TD
+    subgraph ReleasePackage["1. Khởi tạo môi trường (Data Release)"]
+        GD[("Google Drive Release Package<br>(green-taxi-full-v1)")]
+    end
 
-MySQL HR ------------------------+
-MongoDB Fleet -------------------+
-PostgreSQL Dispatch/Assignment --+--> Source adapters --> PostgreSQL Staging
-TLC and lookup files ------------+                           |
-                                                             v
-                                                        DQ / Audit
-                                                        |        |
-                                                        v        v
-                                                       NDS   Quarantine
-                                                        |
-                                                        v
-                                                Driver Operations DDS
-                                                        |
-                                                        v
-                                              Dashboard / Anomaly analysis
+    subgraph SimulationSources["2. Hệ thống nghiệp vụ nguồn (Source Systems)"]
+        MySQL[("MySQL<br>(Driver HR Database)")]
+        Mongo[("MongoDB<br>(Fleet Collection)")]
+        PG_Src[("PostgreSQL Source<br>(Dispatch System)")]
+        TLC_Files[("File Batch Source<br>(TLC & Lookup Files)")]
+    end
+
+    subgraph WarehouseSystem["3. Kho dữ liệu tích hợp (PostgreSQL Warehouse)"]
+        STG[("Staging Schema<br>(Raw Mirror Tables)")]
+
+        subgraph IntegrityFlow["Kiểm soát chất lượng & Tích hợp"]
+            DQ{"DQ & Audit Gate"}
+            NDS[("NDS Schema<br>(Normalized Store)")]
+            Q_Schema[("Quarantine Schema<br>(Rejected Records)")]
+        end
+
+        DDS[("DDS Schema<br>(Driver Operations Star Schema)")]
+    end
+
+    subgraph AnalysisBI["4. Tầng trình diễn (BI Layer)"]
+        Dashboard[("Power BI Dashboard /<br>Anomaly Analysis")]
+    end
+
+    %% Luồng Seed dữ liệu (Dotted)
+    GD -.->|"Seed HR Data"| MySQL
+    GD -.->|"Seed Fleet Data"| Mongo
+    GD -.->|"Seed Dispatch Data"| PG_Src
+    GD -.->|"Unpack CSV Files"| TLC_Files
+
+    %% Luồng ETL
+    MySQL -->|"Extract via SQL Adapter"| STG
+    Mongo -->|"Extract via Mongo Adapter"| STG
+    PG_Src -->|"Extract via PG Adapter"| STG
+    TLC_Files -->|"Ingest CSV Batch"| STG
+
+    STG --> DQ
+    DQ -->|"Hợp lệ"| NDS
+    DQ -->|"Lỗi DQ"| Q_Schema
+    NDS -->|"SCD Type 1 & 2 Loading"| DDS
+    DDS -->|"Queries"| Dashboard
+
+    %% Styling
+    style GD fill:#f5f5f5,stroke:#333,stroke-dasharray: 5 5
+    style MySQL fill:#e1f5fe,stroke:#0288d1,stroke-width:1px
+    style Mongo fill:#e8f5e9,stroke:#388e3c,stroke-width:1px
+    style PG_Src fill:#efebe9,stroke:#5d4037,stroke-width:1px
+    style TLC_Files fill:#fff9c4,stroke:#fbc02d,stroke-width:1px
+    style STG fill:#e8eaf6,stroke:#3f51b5,stroke-width:1px
+    style DQ fill:#fffde7,stroke:#fbc02d,stroke-width:2px
+    style NDS fill:#e3f2fd,stroke:#1e88e5,stroke-width:1px
+    style Q_Schema fill:#ffebee,stroke:#e53935,stroke-width:1px
+    style DDS fill:#e8f5e9,stroke:#43a047,stroke-width:2px
+    style Dashboard fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
 ```
 
 ## Physical deployment
 
-Docker Compose dự kiến có bốn data services:
+Docker Compose có bốn data services:
 
-| Service logic | Công nghệ | Vai trò |
+| Compose service | Công nghệ | Vai trò |
 |---|---|---|
-| `source-hr-mysql` | MySQL | Driver master và HR changes |
-| `source-fleet-mongodb` | MongoDB | Vehicle documents |
-| `source-dispatch-postgres` | PostgreSQL | Shifts và trip assignments |
-| `warehouse-postgres` | PostgreSQL | Staging, DQ/Audit, NDS và DDS |
+| `mysql_hr` | MySQL | Driver master và HR changes |
+| `mongodb_fleet` | MongoDB | Vehicle documents |
+| `postgres_dispatch` | PostgreSQL | Shifts và trip assignments |
+| `postgres_warehouse` | PostgreSQL | Staging, DQ/Audit, NDS và DDS |
 
 TLC trip và lookup files được mount/read từ `data/raw/`; không cần MinIO trong
 scope chính. Mỗi service dùng database, credential và volume riêng. Warehouse

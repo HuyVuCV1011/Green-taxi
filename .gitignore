@@ -35,6 +35,8 @@ data/external/**
 *.parquet
 *.delta
 *.pbix
+docker-data/
+volumes/
 
 # Recordings
 *.m4a
