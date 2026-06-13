@@ -36,10 +36,12 @@ Seed/DDL scripts dùng một số thư viện database client:
 python -m pip install -r requirements.txt
 ```
 
-## Seed MySQL Driver HR
+## Source seed tools
 
-Sau khi tải release vào `data/raw/` và dựng service `mysql_hr`, áp dụng DDL rồi
-seed Driver HR:
+Sau khi tải release vào `data/raw/` và dựng Docker services, seed source
+systems bằng các entry point sau:
+
+### MySQL Driver HR
 
 ```powershell
 python scripts/seed_mysql_hr.py --release-id green-taxi-full-v1
@@ -52,17 +54,45 @@ duplicate. Chỉ dùng `--truncate` khi muốn reload có kiểm soát trên loc
 disposable. Script tự apply `sql/source_mysql_hr/01_driver_tables.sql`; dùng
 `--skip-ddl` chỉ khi muốn tự quản lý DDL bên ngoài script.
 
-Entry point đã triển khai cho warehouse baseline:
+### MongoDB Fleet
 
-- `apply_warehouse_ddl.py` tạo PostgreSQL warehouse schemas `staging`, `audit`,
-  `dq`, audit metadata và staging tables ban đầu.
-- `seed_mongodb_fleet.py` seed MongoDB Fleet từ `vehicles.jsonl`.
-- `seed_postgres_dispatch.py` seed PostgreSQL Dispatch/Assignment từ release.
+```powershell
+python scripts/seed_mongodb_fleet.py --release-id green-taxi-full-v1
+```
 
-Các entry point dự kiến tiếp theo:
+### PostgreSQL Dispatch
 
-- `validate_source_seed`
-- `load_staging`
+```powershell
+python scripts/seed_postgres_dispatch.py --release-id green-taxi-full-v1
+```
+
+## Warehouse DDL tool
+
+`apply_warehouse_ddl.py` tạo PostgreSQL warehouse schemas `staging`, `audit`,
+`dq`, audit metadata và staging tables ban đầu.
+
+```powershell
+python scripts/apply_warehouse_ddl.py --mode docker
+```
+
+## Load Warehouse Staging
+
+Công cụ này thực hiện trích xuất dữ liệu từ các hệ thống nguồn (MySQL HR, MongoDB Fleet, PostgreSQL Dispatch) và tệp tin thô (TLC Green Trips, Lookup CSVs) để nạp vào tầng Staging của PostgreSQL Warehouse.
+
+```powershell
+# Chạy loader nạp toàn bộ các nguồn dữ liệu vào Staging
+python scripts/load_staging.py --release-id green-taxi-full-v1 --source all
+```
+
+**Các tùy chọn chính:**
+- `--source`: Chọn nguồn dữ liệu cần nạp (`hr`, `fleet`, `dispatch`, `tlc`, `lookup`, `all`). Mặc định là `all`.
+- `--release-id`: Định danh phiên bản dữ liệu phát hành. Mặc định là `green-taxi-full-v1`.
+- `--limit-files`: Giới hạn số lượng tệp tin TLC CSV được nạp (hữu ích khi chạy thử hoặc debug).
+- `--limit-rows`: Giới hạn số lượng dòng được nạp trên mỗi tệp tin TLC CSV.
+- `--data-root`: Đường dẫn tương đối hoặc tuyệt đối tới thư mục dữ liệu. Mặc định lấy từ biến môi trường `DATA_ROOT` hoặc thư mục `data`.
+
+## Planned entry points
+
 - `run_dq`
 - `load_nds`
 - `load_dds`

@@ -59,7 +59,8 @@ data/
 ```
 
 Không copy đè `data/metadata/` hoặc `data/lookup/` từ release nếu không có yêu
-cầu từ data owner; các bản cần thiết cho repository đã được commit sẵn.
+cầu từ data owner; các bản cần thiết cho repository đã được commit sẵn. Staging
+loader hiện đọc lookup chuẩn từ `data/lookup/` đã version-control.
 
 Tên và checksum chuẩn của synthetic outputs nằm trong
 `metadata/synthetic_generation_manifest.json`. Không đổi tên hoặc sửa file raw

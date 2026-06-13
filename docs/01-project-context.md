@@ -19,18 +19,25 @@ Data Sources -> Staging -> ODS -> DQ/Audit -> NDS -> DDS -> BI/OLAP/Mining
 - Thiết kế nguồn đã được mở rộng thành các hệ thống mô phỏng không đồng nhất:
   MySQL cho Driver HR, MongoDB cho Fleet và PostgreSQL nguồn cho
   Dispatch/Assignment. TLC và lookup tiếp tục là nguồn file batch.
-- PostgreSQL warehouse, source containers, ETL, NDS, DDS và dashboard chưa được
-  triển khai.
+- Docker Compose đã dựng bốn service local: `mysql_hr`, `mongodb_fleet`,
+  `postgres_dispatch` và `postgres_warehouse`.
+- Seed scripts đã nạp được release vào MySQL HR, MongoDB Fleet và PostgreSQL
+  Dispatch theo cơ chế idempotent.
+- PostgreSQL warehouse đã có baseline schemas/tables cho `staging`, `audit` và
+  `dq`.
+- Source-to-staging loader đã được bổ sung để extract từ source interfaces vào
+  staging kèm audit metadata, row hash và row-count reconciliation.
+- NDS, DDS, DQ rules đầy đủ và dashboard nghiệp vụ chưa được triển khai.
 - Báo cáo, slide và sơ đồ cũ trong `archive/` là tài liệu trước feedback, không
   phải thiết kế hiện hành.
-- Dữ liệu local hiện có từ tháng 01/2020 đến tháng 07/2021, chưa đủ toàn bộ
-  phạm vi 2020-2021 được mô tả trong bản nháp.
+- Data release hiện hành bao phủ 01/2020-07/2021, đúng phạm vi đã chốt cho
+  Driver Operations case study.
 
 ## Việc cần làm tiếp theo
 
-Triển khai Milestone 2 theo tài liệu hiện hành:
+Tiếp tục sau Milestone 2 baseline:
 
-1. Dựng PostgreSQL warehouse và staging contracts.
-2. Dựng các source systems mô phỏng bằng Docker Compose.
-3. Seed source systems từ cùng Google Drive data release.
-4. Extract dữ liệu qua source adapters và load vào staging có audit/lineage.
+1. Review và harden source-to-staging loader trên fresh environment.
+2. Triển khai DQ rules, quarantine và audit issue workflow.
+3. Load dữ liệu đã qua DQ từ staging vào NDS.
+4. Xây Driver Operations DDS và dashboard phân tích.

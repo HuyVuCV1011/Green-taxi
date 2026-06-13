@@ -26,7 +26,10 @@ Chào mừng thành viên mới gia nhập đội ngũ phát triển dự án **
   - Seed dữ liệu vào MongoDB Fleet
   - Seed dữ liệu vào PostgreSQL Dispatch
   - Chạy script áp dụng DDL khởi tạo cấu trúc PostgreSQL Warehouse
-- [ ] **Bước 6: Xác minh cài đặt (Verification)**
+- [ ] **Bước 6: Nạp dữ liệu vào Warehouse Staging**
+  - Chạy smoke load từng nguồn hoặc full load bằng `scripts/load_staging.py`
+  - Kiểm tra reconciliation summary của staging loader
+- [ ] **Bước 7: Xác minh cài đặt (Verification)**
   - Chạy bộ kiểm thử nhanh với dữ liệu sample: `python -m unittest discover -s tests -v`
 
 ---
@@ -55,13 +58,16 @@ flowchart TD
     Docker["docker compose up -d"] -->|Dựng các dịch vụ local| Services["MySQL, MongoDB, PostgreSQL Source & Warehouse"]
 
     %% Seeding
-    TLC_Folder -.->|"Ingest trực tiếp"| DWH
     SYN_Folder -->|seed_mysql_hr.py| MySQL["MySQL HR DB"]
     SYN_Folder -->|seed_mongodb_fleet.py| MongoDB["MongoDB Fleet DB"]
     SYN_Folder -->|seed_postgres_dispatch.py| PG_Src["PostgreSQL Dispatch DB"]
 
     %% Warehouse DDL
     DWH_DDL["apply_warehouse_ddl.py"] -->|Áp dụng Baseline DDL| DWH[("PostgreSQL Warehouse")]
+    MySQL -->|load_staging.py| DWH
+    MongoDB -->|load_staging.py| DWH
+    PG_Src -->|load_staging.py| DWH
+    TLC_Folder -->|load_staging.py| DWH
 
     %% Style
     style GD fill:#f9f,stroke:#333,stroke-width:2px,color:#000
@@ -245,6 +251,36 @@ python scripts/apply_warehouse_ddl.py --mode docker
 
 ---
 
+### 6. Nạp dữ liệu vào Warehouse Staging (Warehouse Staging Load)
+Sau khi seed thành công các hệ thống nguồn và áp dụng DDL khởi tạo cấu trúc bảng trong Warehouse, bước tiếp theo là trích xuất dữ liệu từ các cơ sở dữ liệu nguồn và tệp tin thô để nạp vào các bảng Staging tương ứng:
+
+```powershell
+# Nên smoke test từng nguồn trước khi full load
+python scripts/load_staging.py --release-id green-taxi-full-v1 --source hr
+python scripts/load_staging.py --release-id green-taxi-full-v1 --source fleet
+python scripts/load_staging.py --release-id green-taxi-full-v1 --source dispatch
+python scripts/load_staging.py --release-id green-taxi-full-v1 --source lookup
+python scripts/load_staging.py --release-id green-taxi-full-v1 --source tlc --limit-files 1
+```
+
+Sau khi smoke path pass và reconciliation không lệch, có thể chạy full load:
+
+```powershell
+python scripts/load_staging.py --release-id green-taxi-full-v1 --source all
+```
+
+Để hiểu rõ hơn về kiến trúc, cơ chế sinh mã băm `row_hash`, idempotency và cách đối soát số dòng, xem thêm tại [Hướng dẫn Load Warehouse Staging](15-staging-load.md).
+
+### 7. Khởi chạy Giao diện điều khiển đối soát (Pipeline Control Panel) - Tùy chọn
+Sau khi hoàn tất nạp Staging, bạn có thể khởi chạy ứng dụng Streamlit để kiểm tra trực quan sức khỏe kết nối và đối soát số lượng dòng dữ liệu:
+
+```powershell
+streamlit run app/streamlit_app.py
+```
+Để biết thêm chi tiết, xem thêm tại [Pipeline Control Panel](16-pipeline-control-panel.md).
+
+---
+
 ## Các chế độ kiểm thử và làm việc
 
 ### 1. Chế độ dữ liệu mẫu (Sample Mode)
@@ -256,7 +292,9 @@ python scripts/apply_warehouse_ddl.py --mode docker
   ```
 
 ### 2. Chế độ dữ liệu đầy đủ (Full Mode)
-* **Mục tiêu:** Chạy trích xuất toàn bộ dữ liệu thực tế, đối soát chất lượng dữ liệu trên quy mô đầy đủ, nạp NDS/DDS và dựng báo cáo BI.
+* **Mục tiêu:** Chạy trích xuất toàn bộ dữ liệu thực tế, seed nguồn, nạp
+  staging và đối soát chất lượng dữ liệu trên quy mô đầy đủ. NDS/DDS và báo cáo
+  BI là các milestone tiếp theo.
 * **Cách hoạt động:** Yêu cầu các container Docker phải chạy, dữ liệu trong `data/raw/` đã được seed đầy đủ vào các nguồn MySQL, MongoDB, PostgreSQL Source.
 
 ---

@@ -12,6 +12,8 @@ Status: `COMPLETED`
 
 ## Milestone 2 - Staging
 
+Status: `IMPLEMENTED BASELINE / REVIEW PENDING`
+
 ### M2A - Warehouse staging baseline
 
 - PostgreSQL warehouse schemas and DDL.
@@ -30,6 +32,10 @@ Status: `COMPLETED`
 
 Deliverable: source systems được seed đồng nhất và records được extract vào
 staging với audit counts/lineage.
+
+Current baseline đã có Docker Compose, source seed scripts, warehouse DDL và
+source-to-staging loader. Trước khi khóa Milestone 2, cần review chéo loader,
+chạy smoke/full setup trên môi trường sạch và lưu lại kết quả reconciliation.
 
 ## Milestone 3 - DQ and NDS
 

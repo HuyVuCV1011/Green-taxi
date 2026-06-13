@@ -10,8 +10,9 @@ Thư mục này quản lý các sơ đồ kiến trúc, luồng dữ liệu và 
 ## Danh mục sơ đồ cần có (Diagram Catalog)
 
 1. **Sơ đồ triển khai vật lý (Physical Deployment Diagram):** Mô tả các container Docker (`mysql_hr`, `mongodb_fleet`, `postgres_dispatch`, `postgres_warehouse`), ánh xạ cổng và mạng nội bộ `green_taxi_net`.
-2. **Sơ đồ luồng dữ liệu logic (Logical Data Flow Diagram):** Mô tả các bước chuyển đổi dữ liệu từ gói seed Google Drive -> Nguồn mô phỏng -> Staging -> DQ -> NDS -> DDS -> Power BI.
-3. **Mô hình thực thể liên kết nguồn (Source ERD):** Mô tả mối quan hệ giữa các bảng nghiệp vụ giả lập và dữ liệu chuyến đi thực tế.
+2. **Sơ đồ luồng dữ liệu runtime (Runtime Data Flow Diagram):** Mô tả các bước chuyển đổi dữ liệu từ MySQL/MongoDB/PostgreSQL Dispatch/TLC files -> Staging -> DQ -> NDS -> DDS -> Power BI.
+3. **Sơ đồ setup/reproducibility:** Mô tả cách Google Drive release được tải, kiểm checksum, giải nén và seed vào các source systems local.
+4. **Mô hình thực thể liên kết nguồn (Source ERD):** Mô tả mối quan hệ giữa các bảng nghiệp vụ giả lập và dữ liệu chuyến đi thực tế.
 
 ---
 
@@ -19,13 +20,9 @@ Thư mục này quản lý các sơ đồ kiến trúc, luồng dữ liệu và 
 
 Dưới đây là mã Mermaid của các sơ đồ cốt lõi, bạn có thể sử dụng các extension hoặc github viewer để render trực tiếp:
 
-### 1. Kiến trúc luồng dữ liệu logic (Logical Data Flow)
+### 1. Kiến trúc luồng dữ liệu runtime (Runtime Data Flow)
 ```mermaid
 flowchart TD
-    subgraph Distribution["Phân phối dữ liệu (Tái lập môi trường local)"]
-        GD[("Google Drive Release Package<br>(green-taxi-full-v1)")]
-    end
-
     subgraph Sources["Môi trường nguồn mô phỏng (Source Systems)"]
         direction LR
         MySQL[("MySQL<br>(Driver HR Database)")]
@@ -50,12 +47,6 @@ flowchart TD
         PBI[("Power BI Dashboard /<br>Anomaly Analysis")]
     end
 
-    %% Luồng liên kết
-    GD -.->|"Seed HR Data"| MySQL
-    GD -.->|"Seed Fleet Data"| Mongo
-    GD -.->|"Seed Dispatch Data"| PG_Src
-    GD -.->|"Unpack Raw Files"| Files
-
     MySQL -->|"Extract"| STG
     Mongo -->|"Extract"| STG
     PG_Src -->|"Extract"| STG
@@ -68,53 +59,88 @@ flowchart TD
     DDS -->|"Analyze"| PBI
 ```
 
-### 2. Mô hình thực thể liên kết nguồn (Source ERD Schema)
+### 2. Luồng setup/reproducibility
+
+```mermaid
+flowchart LR
+    GD[("Google Drive Release<br>green-taxi-full-v1.zip")]
+    RAW["data/raw/"]
+    MySQL[("mysql_hr")]
+    Mongo[("mongodb_fleet")]
+    Dispatch[("postgres_dispatch")]
+    Warehouse[("postgres_warehouse")]
+
+    GD -->|"Download, checksum, extract"| RAW
+    RAW -->|"seed_mysql_hr.py"| MySQL
+    RAW -->|"seed_mongodb_fleet.py"| Mongo
+    RAW -->|"seed_postgres_dispatch.py"| Dispatch
+    RAW -->|"TLC/lookup files"| Warehouse
+    MySQL -->|"load_staging.py"| Warehouse
+    Mongo -->|"load_staging.py"| Warehouse
+    Dispatch -->|"load_staging.py"| Warehouse
+```
+
+### 3. Mô hình thực thể liên kết nguồn (Source ERD Schema)
 Mô tả quan hệ nghiệp vụ thô trước khi nạp vào staging và kho dữ liệu:
 
 ```mermaid
 erDiagram
     DRIVERS {
-        int driver_id PK "Natural Key (MySQL HR)"
-        string name
-        string license_no
-        string status
+        string driver_id PK "DRV######"
+        int vendor_id
+        string driver_code
+        string employment_status
+        string license_status
+        date license_expiry_date
     }
     DRIVER_CHANGES {
-        int event_id PK "MySQL HR"
-        int driver_id FK
-        string change_type
-        timestamp event_timestamp
+        string event_id PK "DRVCHG######"
+        string driver_id FK
+        string event_type
+        timestamp effective_at
+        timestamp delivered_at
+        json changes
     }
     VEHICLES {
-        string vehicle_id PK "Natural Key (MongoDB Fleet)"
-        string model
-        string type
+        string vehicle_id PK "VEH######"
+        int vendor_id
+        string plate_token UK
+        int model_year
+        string vehicle_type
+        date service_start_date
         date last_inspection_date
     }
     SHIFTS {
-        string shift_id PK "Natural Key (PostgreSQL Dispatch)"
-        int driver_id FK "Join to MySQL HR"
+        string shift_id PK "SHF##########"
+        string driver_id FK "Join to MySQL HR"
         string vehicle_id FK "Join to MongoDB Fleet"
-        timestamp shift_start_at
-        timestamp shift_end_at
+        int vendor_id
+        timestamp shift_start
+        timestamp shift_end
+        int trip_count
     }
     TRIP_ASSIGNMENTS {
-        string assignment_id PK "PostgreSQL Dispatch"
+        string trip_key PK "SHA-256 truncated key"
+        string source_file
+        int source_row_number
         string shift_id FK
-        int trip_id FK "Join to TLC Trip"
+        string driver_id FK
+        string vehicle_id FK
+        timestamp assignment_timestamp
         string assignment_method
     }
     GREEN_TRIPS {
-        int trip_id PK "TLC LPEP Trip CSV File"
+        string source_file PK "TLC CSV file"
+        int source_row_number PK "CSV physical row"
         int vendor_id
         timestamp lpep_pickup_datetime
         timestamp lpep_dropoff_datetime
-        double fare_amount
+        decimal total_amount
     }
 
     DRIVERS ||--o{ DRIVER_CHANGES : "tracks historical changes"
     DRIVERS ||--o{ SHIFTS : "performs"
     VEHICLES ||--o{ SHIFTS : "allocated in"
     SHIFTS ||--o{ TRIP_ASSIGNMENTS : "contains"
-    GREEN_TRIPS ||--o| TRIP_ASSIGNMENTS : "linked via"
+    GREEN_TRIPS ||--o| TRIP_ASSIGNMENTS : "linked by source file and row"
 ```

@@ -4,9 +4,10 @@ Status: `IMPLEMENTED BASELINE`
 
 ## Mục tiêu
 
-Baseline này tạo các schema và bảng metadata cần thiết để bắt đầu nạp Staging
-trong PostgreSQL warehouse. Phạm vi chỉ gồm `staging`, `audit` và placeholder
-`dq`; chưa triển khai NDS, DDS hoặc loader full TLC.
+Baseline này tạo các schema và bảng metadata cần thiết để nạp Staging trong
+PostgreSQL warehouse. Phạm vi tài liệu này chỉ gồm DDL cho `staging`, `audit`
+và placeholder `dq`; staging loader được mô tả riêng trong
+`docs/15-staging-load.md`. NDS và DDS chưa thuộc phạm vi file này.
 
 ## Điều kiện
 
@@ -112,6 +113,6 @@ Chỉ reset warehouse volume khi không cần giữ dữ liệu staging/audit lo
 ## Ngoài phạm vi
 
 - Không seed MySQL HR, MongoDB Fleet hoặc PostgreSQL Dispatch.
-- Không load full TLC vào warehouse.
+- Không mô tả chi tiết source-to-staging loader; xem `docs/15-staging-load.md`.
 - Không triển khai NDS/DDS.
 - Không chạy synthetic generator.

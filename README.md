@@ -10,7 +10,7 @@
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?style=flat-square&logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Power BI](https://img.shields.io/badge/Power_BI-Analysis-F2C811?style=flat-square&logo=power-bi&logoColor=black)](https://powerbi.microsoft.com/)
-[![Milestone](https://img.shields.io/badge/Status-Milestone_1_Complete-2EA44F?style=flat-square)](https://github.com/HuyVuCV1011/Green-taxi)
+[![Milestone](https://img.shields.io/badge/Status-Staging_Load_Implemented-2EA44F?style=flat-square)](https://github.com/HuyVuCV1011/Green-taxi)
 
 [Tổng quan](#tổng-quan) • [Điểm nổi bật](#điểm-nổi-bật) • [Kiến trúc dữ liệu (Data Flow)](#kiến-trúc-dữ-liệu-data-flow) • [Bắt đầu nhanh (Quick Start)](#bắt-đầu-nhanh-quick-start) • [Ma trận dịch vụ Docker (Service Matrix)](#ma-trận-dịch-vụ-docker-service-matrix) • [Bản đồ tài liệu](#bản-đồ-tài-liệu) • [Lộ trình dự án (Project Roadmap)](#lộ-trình-dự-án-project-roadmap) • [Quy tắc dữ liệu (Data & Security Policy)](#quy-tắc-dữ-liệu-data--security-policy)
 
@@ -44,7 +44,7 @@ Dự án tập trung vào việc giải quyết 5 nhóm câu hỏi vận hành c
 
 - **Mô phỏng nguồn dữ liệu đa dạng:** Khởi tạo các hệ thống nguồn mô phỏng đa dạng (MySQL, MongoDB, PostgreSQL) từ một gói dữ liệu release chuẩn nhằm tái lập môi trường thực tế của doanh nghiệp.
 - **Hợp đồng dữ liệu (Data Contracts):** Thiết lập quy định chặt chẽ về schema, kiểu dữ liệu, các business key cho từng nguồn dữ liệu thô.
-- **Quản lý chất lượng dữ liệu (DQ):** Tự động phát hiện lỗi schema, tính toàn vẹn tham chiếu, tính hợp lệ của thời gian và đẩy các bản ghi lỗi vào bảng cách ly (Quarantine).
+- **Quản lý chất lượng dữ liệu (DQ):** Thiết kế lớp kiểm tra schema, tính toàn vẹn tham chiếu, tính hợp lệ thời gian và quy trình quarantine cho các milestone tiếp theo.
 - **Khả năng kiểm toán (Auditability):** Sử dụng cơ chế Manifest, mã băm SHA-256 cho các gói dữ liệu và hệ thống metadata lưu vết xử lý đến từng dòng (Row-level traceability).
 - **Mô hình hóa dữ liệu kho:** Thiết kế kho dữ liệu chuẩn hóa NDS (Normalized Data Store) tích hợp và kho dữ liệu DDS (Dimensional Data Store) dạng Star Schema tối ưu hóa cho truy vấn phân tích.
 
@@ -52,21 +52,20 @@ Dự án tập trung vào việc giải quyết 5 nhóm câu hỏi vận hành c
 
 ## Kiến trúc dữ liệu (Data Flow)
 
-Sơ đồ dưới đây trình bày cách dữ liệu di chuyển từ gói phát hành phát triển (Google Drive Release) để dựng các hệ thống nguồn local, sau đó đi qua các tầng của kho dữ liệu PostgreSQL (DWH) để phục vụ báo cáo BI:
+Sơ đồ dưới đây là **luồng nghiệp vụ/runtime** của pipeline. Ở góc nhìn này,
+dữ liệu đến từ các source systems đã được seed hoặc mount sẵn: MySQL HR,
+MongoDB Fleet, PostgreSQL Dispatch và TLC/lookup file batch. Google Drive
+không xuất hiện trong sơ đồ runtime vì nó chỉ là gói phân phối để tái lập môi
+trường local.
 
 ```mermaid
 flowchart TD
-    %% Định nghĩa các lớp phân tách (subgraph)
-    subgraph Distribution["Phân phối dữ liệu (Tái lập môi trường local)"]
-        GD[("Google Drive Release Package<br>(green-taxi-full-v1)")]
-    end
-
-    subgraph Sources["Môi trường nguồn mô phỏng (Source Systems)"]
+    subgraph Sources["Business Source Systems"]
         direction LR
         MySQL[("MySQL<br>(Driver HR Database)")]
         Mongo[("MongoDB<br>(Fleet Collection)")]
         PG_Src[("PostgreSQL Source<br>(Dispatch/Assignment)")]
-        Files[("Local Directory<br>(TLC Trips & Lookup Files)")]
+        Files[("File Batch Source<br>(TLC Trips & Lookup Files)")]
     end
 
     subgraph DWH["PostgreSQL Warehouse (Kho dữ liệu tích hợp)"]
@@ -85,16 +84,10 @@ flowchart TD
         PBI[("Power BI Dashboard /<br>Anomaly Analysis")]
     end
 
-    %% Luồng liên kết
-    GD -.->|"1. Seed HR Data"| MySQL
-    GD -.->|"2. Seed Fleet Data"| Mongo
-    GD -.->|"3. Seed Dispatch Data"| PG_Src
-    GD -.->|"4. Unpack Raw Files"| Files
-
-    MySQL -->|"5. Extract via Python"| STG
-    Mongo -->|"5. Extract via Python"| STG
-    PG_Src -->|"5. Extract via Python"| STG
-    Files -->|"5. Ingest"| STG
+    MySQL -->|"Extract via Python adapter"| STG
+    Mongo -->|"Extract via Python adapter"| STG
+    PG_Src -->|"Extract via Python adapter"| STG
+    Files -->|"Ingest CSV batch"| STG
 
     STG --> DQ
     DQ -->|"Lỗi (Schema, PK, FK, Range)"| Q_Table
@@ -102,8 +95,6 @@ flowchart TD
     NDS -->|"SCD Type 1/2 Integration"| DDS
     DDS -->|"Query/Analyze"| PBI
 
-    %% Định nghĩa style
-    style GD fill:#f9f,stroke:#333,stroke-width:2px,color:#000
     style DQ fill:#ff9,stroke:#333,stroke-width:2px,color:#000
     style Q_Table fill:#f99,stroke:#333,stroke-width:2px,color:#000
     style STG fill:#bbf,stroke:#333,stroke-width:1px,color:#000
@@ -114,6 +105,27 @@ flowchart TD
 
 > [!IMPORTANT]
 > **Google Drive Release** đóng vai trò là gói phân phối dữ liệu chuẩn để đồng bộ hóa môi trường phát triển local giữa các thành viên của dự án. Nó không được coi là một hệ thống nguồn nghiệp vụ (business source system) trong mô hình vận hành của pipeline thực tế.
+
+Luồng setup local được mô tả riêng để người mới tái lập môi trường:
+
+```mermaid
+flowchart LR
+    GD[("Google Drive Release<br>green-taxi-full-v1.zip")]
+    RAW["data/raw/"]
+    MySQL[("mysql_hr")]
+    Mongo[("mongodb_fleet")]
+    Dispatch[("postgres_dispatch")]
+    Warehouse[("postgres_warehouse")]
+
+    GD -->|"Download, checksum, extract"| RAW
+    RAW -->|"seed_mysql_hr.py"| MySQL
+    RAW -->|"seed_mongodb_fleet.py"| Mongo
+    RAW -->|"seed_postgres_dispatch.py"| Dispatch
+    RAW -->|"TLC/lookup files"| Warehouse
+    MySQL -->|"load_staging.py"| Warehouse
+    Mongo -->|"load_staging.py"| Warehouse
+    Dispatch -->|"load_staging.py"| Warehouse
+```
 
 ---
 
@@ -176,6 +188,18 @@ python scripts/seed_postgres_dispatch.py --release-id green-taxi-full-v1
 ```powershell
 # Khởi tạo các schema staging, audit, dq và các bảng mirror tương ứng trong Warehouse
 python scripts/apply_warehouse_ddl.py --mode docker
+```
+
+#### Bước 6: Trích xuất và nạp dữ liệu từ các nguồn vào Staging Warehouse
+```powershell
+# Trích xuất và nạp toàn bộ dữ liệu từ các nguồn vào Staging
+python scripts/load_staging.py --release-id green-taxi-full-v1 --source all
+```
+
+#### Bước 7: Khởi chạy Giao diện điều khiển (Pipeline Control Panel) - Optional
+```powershell
+# Khởi chạy giao diện Streamlit để theo dõi và đối soát dữ liệu
+streamlit run app/streamlit_app.py
 ```
 
 ---
@@ -241,22 +265,24 @@ Dự án tuân thủ nguyên tắc thiết kế **docs-first** và **data-contra
 * **[Data contracts](docs/08-data-contracts.md):** Các cam kết về schema và kiểu dữ liệu đầu vào.
 * **[Source-to-target plan](docs/10-source-to-target-plan.md):** Thiết kế ánh xạ và chuyển đổi dữ liệu từ nguồn vào NDS và DDS.
 * **[Warehouse DDL Baseline](docs/14-warehouse-ddl.md):** Chi tiết cấu trúc bảng và schema trong kho dữ liệu PostgreSQL.
+* **[Staging Load](docs/15-staging-load.md):** Cơ chế source adapters, row hash, audit metadata và source-to-staging reconciliation.
+* **[Pipeline Control Panel](docs/16-pipeline-control-panel.md):** Giao diện điều khiển Streamlit giám sát sức khoẻ kết nối database và đối soát dữ liệu sau seed.
 * **[Documentation index](docs/README.md):** Danh mục tài liệu đầy đủ và gợi ý lộ trình đọc.
 
 ---
 
 ## Lộ trình dự án (Project Roadmap)
 
-### Những phần đã hoàn thành (Milestone 1)
+### Những phần đã hoàn thành (Milestone 1 & 2 - Staging Load)
 - [x] Xác định phạm vi nghiệp vụ và chốt kiến trúc dữ liệu không sử dụng ODS.
 - [x] Thiết kế Data Contracts và đóng gói thư viện sinh dữ liệu mô phỏng (`scripts/generate_synthetic_sources.py`).
 - [x] Tạo Manifest, validation report và tích hợp dữ liệu mẫu (sample data) vào Git phục vụ test nhanh.
 - [x] Thiết lập Docker Compose cho các dịch vụ cơ sở dữ liệu nguồn và kho dữ liệu đích.
 - [x] Tạo DDL baseline cho PostgreSQL staging và schema cho hệ thống audit/dq.
 - [x] Viết tập lệnh seed dữ liệu idempotent cho MySQL HR, MongoDB Fleet và PostgreSQL Dispatch.
+- [x] Xây dựng adapters trích xuất dữ liệu từ các nguồn (MySQL, MongoDB, PostgreSQL) và tệp thô vào staging.
 
-### Lộ trình tiếp theo (Milestone 2 & 3)
-- [ ] Xây dựng adapters trích xuất dữ liệu từ các nguồn (MySQL, MongoDB, PostgreSQL) vào staging.
+### Lộ trình tiếp theo (Milestone 3+)
 - [ ] Triển khai các quy tắc kiểm tra chất lượng dữ liệu (DQ Rules), hệ thống cách ly (Quarantine) và kiểm toán.
 - [ ] Thực hiện ETL chuẩn hóa và tích hợp dữ liệu từ Staging vào NDS (Normalized Data Store).
 - [ ] Xây dựng mô hình hình sao DDS (Dimensional Data Store - Driver Operations) để tối ưu hóa truy vấn.

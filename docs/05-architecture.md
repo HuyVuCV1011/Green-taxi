@@ -17,20 +17,19 @@ mode.
 
 ## Logical architecture
 
+Sơ đồ runtime bên dưới mô tả pipeline ở góc nhìn nghiệp vụ/vận hành. Google
+Drive không phải source system nghiệp vụ nên không nằm trên luồng chính này.
+
 ```mermaid
 flowchart TD
-    subgraph ReleasePackage["1. Khởi tạo môi trường (Data Release)"]
-        GD[("Google Drive Release Package<br>(green-taxi-full-v1)")]
-    end
-
-    subgraph SimulationSources["2. Hệ thống nghiệp vụ nguồn (Source Systems)"]
+    subgraph SimulationSources["1. Hệ thống nghiệp vụ nguồn (Source Systems)"]
         MySQL[("MySQL<br>(Driver HR Database)")]
         Mongo[("MongoDB<br>(Fleet Collection)")]
         PG_Src[("PostgreSQL Source<br>(Dispatch System)")]
         TLC_Files[("File Batch Source<br>(TLC & Lookup Files)")]
     end
 
-    subgraph WarehouseSystem["3. Kho dữ liệu tích hợp (PostgreSQL Warehouse)"]
+    subgraph WarehouseSystem["2. Kho dữ liệu tích hợp (PostgreSQL Warehouse)"]
         STG[("Staging Schema<br>(Raw Mirror Tables)")]
 
         subgraph IntegrityFlow["Kiểm soát chất lượng & Tích hợp"]
@@ -42,17 +41,10 @@ flowchart TD
         DDS[("DDS Schema<br>(Driver Operations Star Schema)")]
     end
 
-    subgraph AnalysisBI["4. Tầng trình diễn (BI Layer)"]
+    subgraph AnalysisBI["3. Tầng trình diễn (BI Layer)"]
         Dashboard[("Power BI Dashboard /<br>Anomaly Analysis")]
     end
 
-    %% Luồng Seed dữ liệu (Dotted)
-    GD -.->|"Seed HR Data"| MySQL
-    GD -.->|"Seed Fleet Data"| Mongo
-    GD -.->|"Seed Dispatch Data"| PG_Src
-    GD -.->|"Unpack CSV Files"| TLC_Files
-
-    %% Luồng ETL
     MySQL -->|"Extract via SQL Adapter"| STG
     Mongo -->|"Extract via Mongo Adapter"| STG
     PG_Src -->|"Extract via PG Adapter"| STG
@@ -65,7 +57,6 @@ flowchart TD
     DDS -->|"Queries"| Dashboard
 
     %% Styling
-    style GD fill:#f5f5f5,stroke:#333,stroke-dasharray: 5 5
     style MySQL fill:#e1f5fe,stroke:#0288d1,stroke-width:1px
     style Mongo fill:#e8f5e9,stroke:#388e3c,stroke-width:1px
     style PG_Src fill:#efebe9,stroke:#5d4037,stroke-width:1px
@@ -76,6 +67,29 @@ flowchart TD
     style Q_Schema fill:#ffebee,stroke:#e53935,stroke-width:1px
     style DDS fill:#e8f5e9,stroke:#43a047,stroke-width:2px
     style Dashboard fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+```
+
+## Local setup/reproducibility flow
+
+Google Drive chỉ xuất hiện trong flow tái lập môi trường local:
+
+```mermaid
+flowchart LR
+    GD[("Google Drive Release<br>green-taxi-full-v1.zip")]
+    RAW["data/raw/"]
+    MySQL[("mysql_hr")]
+    Mongo[("mongodb_fleet")]
+    Dispatch[("postgres_dispatch")]
+    Warehouse[("postgres_warehouse")]
+
+    GD -->|"Download, checksum, extract"| RAW
+    RAW -->|"seed_mysql_hr.py"| MySQL
+    RAW -->|"seed_mongodb_fleet.py"| Mongo
+    RAW -->|"seed_postgres_dispatch.py"| Dispatch
+    RAW -->|"TLC/lookup files"| Warehouse
+    MySQL -->|"load_staging.py"| Warehouse
+    Mongo -->|"load_staging.py"| Warehouse
+    Dispatch -->|"load_staging.py"| Warehouse
 ```
 
 ## Physical deployment

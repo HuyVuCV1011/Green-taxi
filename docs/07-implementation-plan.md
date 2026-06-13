@@ -25,6 +25,8 @@ Exit criteria:
 
 ## Phase 2A - Warehouse staging baseline
 
+Status: `IMPLEMENTED BASELINE`
+
 - Dựng PostgreSQL warehouse bằng Docker Compose.
 - Tạo schema/table staging riêng cho từng source entity.
 - Tạo `metadata_etl_batch` và `metadata_source_extract`.
@@ -35,9 +37,12 @@ Exit criteria:
 - Viết idempotent reload và row-count reconciliation tests.
 
 Mục đích của file baseline là khóa staging contract và cho phép CI/sample chạy
-nhẹ. Đây không phải physical source architecture cuối cùng cho HR/Fleet/Dispatch.
+nhẹ. Warehouse DDL hiện nằm trong `sql/warehouse/` và được apply bằng
+`scripts/apply_warehouse_ddl.py`.
 
 ## Phase 2B - Simulated operational sources
+
+Status: `IMPLEMENTED BASELINE / REVIEW AND HARDENING`
 
 - Bổ sung MySQL source cho Driver HR.
 - Bổ sung MongoDB source cho Fleet.
@@ -56,6 +61,11 @@ Exit criteria:
 - Sample mode không bắt buộc chạy toàn bộ source containers.
 - Full mode extract từ source interfaces, không đọc HR/Fleet/Dispatch seed files
   trực tiếp vào warehouse.
+
+Repo hiện đã có Docker Compose, source seed scripts và source-to-staging loader
+baseline. Công việc còn lại của Phase 2B là review trên fresh environment, bổ
+sung integration tests có kiểm soát chi phí và chuẩn hóa lỗi/retry trước khi đi
+vào DQ/NDS.
 
 ## Phase 3 - DQ and NDS
 
