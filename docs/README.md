@@ -1,26 +1,26 @@
-# 📖 Documentation Index & Reading Map
+# Documentation Index & Reading Map
 
 Chào mừng bạn đến với thư mục tài liệu kỹ thuật của dự án **NYC Green Taxi Driver Operations BI**. Để thuận tiện cho việc tìm hiểu và tiếp cận hệ thống, tài liệu được tổ chức theo các nhóm chủ đề và được đề xuất lộ trình đọc riêng cho từng đối tượng.
 
 ---
 
-## 🗺️ Lộ trình đọc tài liệu (Reading Paths)
+## Lộ trình đọc tài liệu (Reading Paths)
 
 Tùy thuộc vào vai trò của bạn khi tiếp cận repository này, hãy tham khảo thứ tự đọc được gợi ý dưới đây:
 
-### 🚪 Dành cho Thành viên mới (New Team Member)
+### Dành cho Thành viên mới (New Team Member)
 1. **[README.md](../README.md):** Tổng quan nhanh về dự án, cách khởi động local và trạng thái hiện tại.
 2. **[docs/13-team-onboarding-and-data-setup.md](13-team-onboarding-and-data-setup.md):** Cẩm năng thiết lập môi trường phát triển local, tải, xác thực checksum và nạp dữ liệu nguồn.
 3. **[docs/03-scope.md](03-scope.md):** Nắm vững các câu hỏi nghiệp vụ và phạm vi phân tích của đồ án.
 
-### 🛠️ Dành cho Kỹ sư dữ liệu (Data Engineer / Developer)
+### Dành cho Kỹ sư dữ liệu (Data Engineer / Developer)
 1. **[docs/05-architecture.md](05-architecture.md):** Hiểu kiến trúc dữ liệu 4 tầng (Staging -> DQ/Audit -> NDS -> DDS).
 2. **[docs/04-data-sources.md](04-data-sources.md):** Danh mục chi tiết các nguồn dữ liệu thật và dữ liệu mô phỏng.
 3. **[docs/08-data-contracts.md](08-data-contracts.md):** Các cam kết về schema và kiểu dữ liệu đầu vào.
 4. **[docs/10-source-to-target-plan.md](10-source-to-target-plan.md):** Logic ánh xạ, chuyển đổi dữ liệu và SCD Type 1/2.
 5. **[docs/14-warehouse-ddl.md](14-warehouse-ddl.md):** Cấu trúc chi tiết các bảng trong PostgreSQL Warehouse.
 
-### 🎓 Dành cho Giảng viên & Người đánh giá (Reviewer)
+### Dành cho Giảng viên & Người đánh giá (Reviewer)
 1. **[docs/01-project-context.md](01-project-context.md):** Bối cảnh và định hướng phân tích của đồ án.
 2. **[docs/03-scope.md](03-scope.md):** Phạm vi nghiệp vụ và 5 nhóm câu hỏi quyết định.
 3. **[docs/09-analytics-requirements.md](09-analytics-requirements.md):** Chi tiết các chỉ số đo lường (KPI) và công thức tính.
@@ -29,7 +29,7 @@ Tùy thuộc vào vai trò của bạn khi tiếp cận repository này, hãy th
 
 ---
 
-## 🗂️ Danh mục tài liệu đầy đủ (Documentation Map)
+## Danh mục tài liệu đầy đủ (Documentation Map)
 
 | Tên tài liệu | Phân loại | Nội dung chính |
 |---|---|---|

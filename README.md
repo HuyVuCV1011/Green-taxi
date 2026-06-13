@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚕 NYC Green Taxi Driver Operations BI
+# NYC Green Taxi Driver Operations BI
 
 **Kho dữ liệu phân tích hiệu quả vận hành tài xế và đội xe từ NYC Green Taxi Trip Records**
 
@@ -12,7 +12,7 @@
 [![Power BI](https://img.shields.io/badge/Power_BI-Analysis-F2C811?style=flat-square&logo=power-bi&logoColor=black)](https://powerbi.microsoft.com/)
 [![Milestone](https://img.shields.io/badge/Status-Milestone_1_Complete-2EA44F?style=flat-square)](https://github.com/HuyVuCV1011/Green-taxi)
 
-[Tổng quan](#-tổng-quan) • [Điểm nổi bật](#-điểm-nổi-bật) • [Kiến trúc dữ liệu](#-kiến-trúc-dữ-liệu-data-flow) • [Bắt đầu nhanh](#-bắt-đầu-nhanh-quick-start) • [Bản đồ tài liệu](#-bản-đồ-tài-liệu) • [Lộ trình dự án](#-lộ-trình-dữ-liệu) • [Quy tắc dữ liệu](#-quy-tắc-dữ-liệu)
+[Tổng quan](#tổng-quan) • [Điểm nổi bật](#điểm-nổi-bật) • [Kiến trúc dữ liệu (Data Flow)](#kiến-trúc-dữ-liệu-data-flow) • [Bắt đầu nhanh (Quick Start)](#bắt-đầu-nhanh-quick-start) • [Ma trận dịch vụ Docker (Service Matrix)](#ma-trận-dịch-vụ-docker-service-matrix) • [Bản đồ tài liệu](#bản-đồ-tài-liệu) • [Lộ trình dự án (Project Roadmap)](#lộ-trình-dự-án-project-roadmap) • [Quy tắc dữ liệu (Data & Security Policy)](#quy-tắc-dữ-liệu-data--security-policy)
 
 ---
 </div>
@@ -22,7 +22,7 @@
 
 ---
 
-## 📌 Tổng quan
+## Tổng quan
 
 Dự án tập trung vào việc giải quyết 5 nhóm câu hỏi vận hành chính của doanh nghiệp taxi thông qua các chỉ số đo lường (KPI):
 1. **Hiệu suất tài xế**: Doanh thu, số chuyến đi và năng suất làm việc.
@@ -40,7 +40,7 @@ Dự án tập trung vào việc giải quyết 5 nhóm câu hỏi vận hành c
 
 ---
 
-## 🌟 Điểm nổi bật
+## Điểm nổi bật
 
 - **Mô phỏng nguồn dữ liệu đa dạng:** Khởi tạo các hệ thống nguồn mô phỏng đa dạng (MySQL, MongoDB, PostgreSQL) từ một gói dữ liệu release chuẩn nhằm tái lập môi trường thực tế của doanh nghiệp.
 - **Hợp đồng dữ liệu (Data Contracts):** Thiết lập quy định chặt chẽ về schema, kiểu dữ liệu, các business key cho từng nguồn dữ liệu thô.
@@ -50,7 +50,7 @@ Dự án tập trung vào việc giải quyết 5 nhóm câu hỏi vận hành c
 
 ---
 
-## 🏗️ Kiến trúc dữ liệu (Data Flow)
+## Kiến trúc dữ liệu (Data Flow)
 
 Sơ đồ dưới đây trình bày cách dữ liệu di chuyển từ gói phát hành phát triển (Google Drive Release) để dựng các hệ thống nguồn local, sau đó đi qua các tầng của kho dữ liệu PostgreSQL (DWH) để phục vụ báo cáo BI:
 
@@ -117,11 +117,11 @@ flowchart TD
 
 ---
 
-## 🚀 Bắt đầu nhanh (Quick Start)
+## Bắt đầu nhanh (Quick Start)
 
 Làm theo hướng dẫn dưới đây để thiết lập nhanh môi trường phát triển local và chuẩn bị dữ liệu.
 
-### 📋 Điều kiện cần (Prerequisites)
+### Điều kiện cần (Prerequisites)
 * Hệ điều hành Windows/Linux/macOS
 * **Git**
 * **Python 3.11** trở lên
@@ -129,7 +129,7 @@ Làm theo hướng dẫn dưới đây để thiết lập nhanh môi trường 
 
 ---
 
-### 🛠️ Các bước thiết lập
+### Các bước thiết lập
 
 #### Bước 1: Clone Repository & Cài đặt thư viện Python
 ```powershell
@@ -162,8 +162,7 @@ Tải gói dữ liệu release `green-taxi-full-v1.zip` từ Google Drive (theo 
 
 Chạy các tập lệnh seed dữ liệu thô từ thư mục giải nén vào các cơ sở dữ liệu nguồn cục bộ tương ứng:
 ```powershell
-# Seed dữ liệu Driver HR vào MySQL.
-# Script tự apply sql/source_mysql_hr/01_driver_tables.sql nếu bảng chưa có.
+# Seed dữ liệu Driver HR vào MySQL
 python scripts/seed_mysql_hr.py --release-id green-taxi-full-v1
 
 # Seed dữ liệu Fleet vào MongoDB
@@ -181,7 +180,7 @@ python scripts/apply_warehouse_ddl.py --mode docker
 
 ---
 
-### 🧪 Chạy thử nghiệm với dữ liệu mẫu (Sample Mode)
+### Chạy thử nghiệm với dữ liệu mẫu (Sample Mode)
 Nếu bạn chỉ muốn kiểm thử nhanh logic ETL hoặc xác minh mã nguồn chạy đúng mà không cần tải gói dữ liệu đầy đủ hay thiết lập Docker, hãy chạy bộ kiểm thử sử dụng dữ liệu mẫu có sẵn trong repository:
 ```powershell
 python -m unittest discover -s tests -v
@@ -189,7 +188,7 @@ python -m unittest discover -s tests -v
 
 ---
 
-## 🎛️ Ma trận dịch vụ Docker (Service Matrix)
+## Ma trận dịch vụ Docker (Service Matrix)
 
 Các dịch vụ cơ sở dữ liệu được cấu hình sẵn trong `docker-compose.yml` để mô phỏng một môi trường phân tán thực tế:
 
@@ -202,7 +201,7 @@ Các dịch vụ cơ sở dữ liệu được cấu hình sẵn trong `docker-c
 
 ---
 
-## 📂 Cấu trúc dự án
+## Cấu trúc dự án
 
 <details>
 <summary><b>Xem cây thư mục chính (Nhấn để mở rộng)</b></summary>
@@ -229,8 +228,53 @@ Green-taxi/
 ```
 </details>
 
-  [`docs/decisions/`](docs/decisions/).
-- Kết quả EDA quan trọng phải có thể tái tạo bằng code.
+---
+
+## Bản đồ tài liệu
+
+Dự án tuân thủ nguyên tắc thiết kế **docs-first** và **data-contract-first**. Dưới đây là các tài liệu thiết kế cốt lõi:
+
+* **[Team onboarding](docs/13-team-onboarding-and-data-setup.md):** Hướng dẫn cấu hình môi trường phát triển local, cách tải và kiểm tra dữ liệu đầy đủ.
+* **[Project scope](docs/03-scope.md):** Định nghĩa phạm vi bài toán nghiệp vụ, nhóm người dùng mục tiêu và các câu hỏi vận hành cần giải quyết.
+* **[System architecture](docs/05-architecture.md):** Bản thiết kế chi tiết kiến trúc các tầng dữ liệu từ nguồn đến DDS.
+* **[Data sources](docs/04-data-sources.md):** Danh sách chi tiết các hệ thống nguồn và đặc tính dữ liệu.
+* **[Data contracts](docs/08-data-contracts.md):** Các cam kết về schema và kiểu dữ liệu đầu vào.
+* **[Source-to-target plan](docs/10-source-to-target-plan.md):** Thiết kế ánh xạ và chuyển đổi dữ liệu từ nguồn vào NDS và DDS.
+* **[Warehouse DDL Baseline](docs/14-warehouse-ddl.md):** Chi tiết cấu trúc bảng và schema trong kho dữ liệu PostgreSQL.
+* **[Documentation index](docs/README.md):** Danh mục tài liệu đầy đủ và gợi ý lộ trình đọc.
+
+---
+
+## Lộ trình dự án (Project Roadmap)
+
+### Những phần đã hoàn thành (Milestone 1)
+- [x] Xác định phạm vi nghiệp vụ và chốt kiến trúc dữ liệu không sử dụng ODS.
+- [x] Thiết kế Data Contracts và đóng gói thư viện sinh dữ liệu mô phỏng (`scripts/generate_synthetic_sources.py`).
+- [x] Tạo Manifest, validation report và tích hợp dữ liệu mẫu (sample data) vào Git phục vụ test nhanh.
+- [x] Thiết lập Docker Compose cho các dịch vụ cơ sở dữ liệu nguồn và kho dữ liệu đích.
+- [x] Tạo DDL baseline cho PostgreSQL staging và schema cho hệ thống audit/dq.
+- [x] Viết tập lệnh seed dữ liệu idempotent cho MySQL HR, MongoDB Fleet và PostgreSQL Dispatch.
+
+### Lộ trình tiếp theo (Milestone 2 & 3)
+- [ ] Xây dựng adapters trích xuất dữ liệu từ các nguồn (MySQL, MongoDB, PostgreSQL) vào staging.
+- [ ] Triển khai các quy tắc kiểm tra chất lượng dữ liệu (DQ Rules), hệ thống cách ly (Quarantine) và kiểm toán.
+- [ ] Thực hiện ETL chuẩn hóa và tích hợp dữ liệu từ Staging vào NDS (Normalized Data Store).
+- [ ] Xây dựng mô hình hình sao DDS (Dimensional Data Store - Driver Operations) để tối ưu hóa truy vấn.
+- [ ] Thiết kế và xây dựng Dashboard phân tích hiệu suất và phát hiện các điểm bất thường vận hành (Anomaly Analysis).
+- [ ] Hoàn thiện báo cáo học thuật, slide báo cáo và tài liệu hướng dẫn tái lập kết quả.
+
+---
+
+## Quy tắc dữ liệu (Data & Security Policy)
+
+1. **Tính bất biến của dữ liệu thô (Raw Data Immutability):** Dữ liệu thô sau khi được tải từ Google Drive là bất biến. Thành viên không được phép tự sửa đổi tệp tin nguồn để vượt qua lỗi của pipeline.
+2. **Không commit dữ liệu lớn và bí mật:** Nghiêm cấm commit dữ liệu thô, dữ liệu trung gian có dung lượng lớn, database volume, tệp cấu hình `.env` hoặc các khoá bảo mật lên Git. Mọi tệp tin này đã được cấu hình loại trừ qua `.gitignore`.
+3. **Tính nhất quán thời gian:** Tất cả mốc thời gian nghiệp vụ được quy ước theo múi giờ New York (`America/New_York`). Mốc thời gian kiểm toán hệ thống (Audit) được ghi nhận theo chuẩn giờ quốc tế UTC.
+4. **Idempotent Processes:** Mọi tiến trình từ Seeding đến ETL trong kho dữ liệu phải bảo đảm tính idempotent (chạy lại cùng một lô dữ liệu nhiều lần không tạo ra bản ghi trùng lặp hoặc làm thay đổi kết quả).
+5. **Ghi nhật ký quyết định (ADR):** Mọi thay đổi kiến trúc quan trọng phải được đề xuất và ghi nhận lại dưới dạng Architecture Decision Record tại [`docs/decisions/`](docs/decisions/).
+6. **Kết quả phân tích có tính tái lập:** Các kết quả EDA và báo cáo kỹ thuật quan trọng phải đảm bảo có thể tái lập thông qua mã nguồn được cung cấp.
+
+---
 
 ## Đóng góp
 

@@ -1,4 +1,4 @@
-# 📊 Diagrams & Visualizations
+# Diagrams & Visualizations
 
 Thư mục này quản lý các sơ đồ kiến trúc, luồng dữ liệu và mô hình thực thể liên kết (ERD) của dự án.
 
@@ -7,7 +7,7 @@ Thư mục này quản lý các sơ đồ kiến trúc, luồng dữ liệu và 
 
 ---
 
-## 🗺️ Danh mục sơ đồ cần có (Diagram Catalog)
+## Danh mục sơ đồ cần có (Diagram Catalog)
 
 1. **Sơ đồ triển khai vật lý (Physical Deployment Diagram):** Mô tả các container Docker (`mysql_hr`, `mongodb_fleet`, `postgres_dispatch`, `postgres_warehouse`), ánh xạ cổng và mạng nội bộ `green_taxi_net`.
 2. **Sơ đồ luồng dữ liệu logic (Logical Data Flow Diagram):** Mô tả các bước chuyển đổi dữ liệu từ gói seed Google Drive -> Nguồn mô phỏng -> Staging -> DQ -> NDS -> DDS -> Power BI.
@@ -15,7 +15,7 @@ Thư mục này quản lý các sơ đồ kiến trúc, luồng dữ liệu và 
 
 ---
 
-## 🧬 Các Mermaid Snippets mẫu
+## Các Mermaid Snippets mẫu
 
 Dưới đây là mã Mermaid của các sơ đồ cốt lõi, bạn có thể sử dụng các extension hoặc github viewer để render trực tiếp:
 

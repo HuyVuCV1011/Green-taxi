@@ -1,10 +1,10 @@
-# 🚪 Team Onboarding and Data Setup Guide
+# Team Onboarding and Data Setup Guide
 
 Chào mừng thành viên mới gia nhập đội ngũ phát triển dự án **NYC Green Taxi Driver Operations BI**! Hướng dẫn này sẽ giúp bạn thiết lập môi trường phát triển local nhanh chóng và chuẩn bị dữ liệu đồng bộ với cả nhóm.
 
 ---
 
-## 📋 Checklist thiết lập nhanh cho thành viên mới
+## Checklist thiết lập nhanh cho thành viên mới
 
 Để bắt đầu làm việc, vui lòng hoàn tất các bước chuẩn bị sau theo thứ tự:
 
@@ -31,7 +31,7 @@ Chào mừng thành viên mới gia nhập đội ngũ phát triển dự án **
 
 ---
 
-## 🔄 Sơ đồ quy trình thiết lập dữ liệu (Data Setup Flow)
+## Sơ đồ quy trình thiết lập dữ liệu (Data Setup Flow)
 
 Luồng hoạt động dưới đây mô tả các bước thiết lập từ lúc lấy gói phân phối (Release Package) từ Google Drive để nạp vào các hệ thống dữ liệu local:
 
@@ -71,7 +71,7 @@ flowchart TD
 
 ---
 
-## ⚠️ Cảnh báo bảo mật và quy định dữ liệu cực kỳ quan trọng
+## Cảnh báo bảo mật và quy định dữ liệu cực kỳ quan trọng
 
 > [!WARNING]
 > **TUYỆT ĐỐI KHÔNG COMMIT DỮ LIỆU THÔ VÀ BÍ MẬT LÊN GITHUB:**
@@ -85,7 +85,7 @@ flowchart TD
 
 ---
 
-## 🛠️ Hướng dẫn chi tiết các bước thiết lập
+## Hướng dẫn chi tiết các bước thiết lập
 
 ### 1. Dựng Docker Services local
 Tệp tin `docker-compose.yml` tại thư mục gốc của repository sẽ khởi chạy 4 container cơ sở dữ liệu trên Docker network `green_taxi_net`.
@@ -245,7 +245,7 @@ python scripts/apply_warehouse_ddl.py --mode docker
 
 ---
 
-## 🧪 Các chế độ kiểm thử và làm việc
+## Các chế độ kiểm thử và làm việc
 
 ### 1. Chế độ dữ liệu mẫu (Sample Mode)
 * **Mục tiêu:** Phục vụ chạy Unit Tests nhanh, thiết lập luồng CI (Continuous Integration) hoặc khi cần phát triển nhanh logic ETL mà không cần tải full data hay dựng Docker.
@@ -261,7 +261,7 @@ python scripts/apply_warehouse_ddl.py --mode docker
 
 ---
 
-## 👥 Phân định trách nhiệm và sở hữu (Ownership Matrix)
+## Phân định trách nhiệm và sở hữu (Ownership Matrix)
 
 | Mảng công việc | Thành viên sở hữu | Phạm vi chịu trách nhiệm |
 |---|---|---|
