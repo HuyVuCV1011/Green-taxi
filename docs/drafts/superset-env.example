@@ -1,0 +1,42 @@
+# Example environment variables for Apache Superset local deployment
+# Copy this file to docs/drafts/.env.superset (ignored by git) and populate actual secrets before starting.
+
+# 1. Superset Core Security Configuration
+# Generate a secure random key using: openssl rand -base64 42
+SUPERSET_SECRET_KEY=TBD_SUPERSET_SECRET_KEY_PLACEHOLDER
+
+# 2. Superset Local Service Port
+SUPERSET_PORT=8088
+
+# 3. Superset Local Metadata Database (PostgreSQL) Configuration
+# Connection URI for Superset's own metadata storage (must point to the metadata DB container)
+# Format: postgresql://[user]:[password]@[hostname]:[port]/[database]
+SUPERSET_METADATA_DB_USER=superset_metadata_app
+SUPERSET_METADATA_DB_PASSWORD=change_me_superset_metadata_pwd
+SUPERSET_METADATA_DB_HOST=superset_metadata_db
+SUPERSET_METADATA_DB_PORT=5432
+SUPERSET_METADATA_DB_NAME=superset_metadata
+
+SQLALCHEMY_DATABASE_URI=postgresql://${SUPERSET_METADATA_DB_USER}:${SUPERSET_METADATA_DB_PASSWORD}@${SUPERSET_METADATA_DB_HOST}:${SUPERSET_METADATA_DB_PORT}/${SUPERSET_METADATA_DB_NAME}
+
+# 4. Warehouse Read-Only Connection (For Superset DataSource configuration)
+# Note: Hostname is 'postgres_warehouse' (internal Docker network DNS name) and port is '5432'
+SUPERSET_WAREHOUSE_USER=superset_ro
+SUPERSET_WAREHOUSE_PASSWORD=TBD_SUPERSET_RO_PASSWORD
+SUPERSET_WAREHOUSE_HOST=postgres_warehouse
+SUPERSET_WAREHOUSE_PORT=5432
+SUPERSET_WAREHOUSE_DB=green_taxi_warehouse
+
+# Connection URI to be configured inside Superset Web UI:
+# postgresql://superset_ro:TBD_SUPERSET_RO_PASSWORD@postgres_warehouse:5432/green_taxi_warehouse
+
+# 5. Admin Bootstrap Credentials
+ADMIN_USERNAME=admin
+ADMIN_FIRSTNAME=Admin
+ADMIN_LASTNAME=User
+ADMIN_EMAIL=admin@greentaxi.local
+ADMIN_PASSWORD=change_me_superset_admin_pwd
+
+# 6. Operational flags
+SUPERSET_ENV=development
+SUPERSET_LOAD_EXAMPLES=false

@@ -1,0 +1,87 @@
+# Proposal: Docker Compose definition for Apache Superset local deployment
+# Dự án: NYC Green Taxi Driver Operations BI
+# LƯU Ý: Đây là bản phác thảo thiết kế độc lập, KHÔNG chạy hoặc sáp nhập trực tiếp vào docker-compose.yml chính.
+
+version: "3.8"
+
+services:
+  # 1. Superset Metadata Database (Lưu cấu trúc dashboard, charts, connections)
+  superset_metadata_db:
+    image: postgres:16-alpine
+    container_name: green_taxi_superset_metadata_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${SUPERSET_METADATA_DB_NAME:-superset_metadata}
+      POSTGRES_USER: ${SUPERSET_METADATA_DB_USER:-superset_metadata_app}
+      POSTGRES_PASSWORD: ${SUPERSET_METADATA_DB_PASSWORD:-change_me_superset_metadata_pwd}
+    volumes:
+      - superset_metadata_data:/var/lib/postgresql/data
+    networks:
+      - green_taxi_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Superset App (Webserver & API)
+  superset_app:
+    image: apache/superset:4.0.1
+    container_name: green_taxi_superset_app
+    restart: unless-stopped
+    ports:
+      - "${SUPERSET_PORT:-8088}:8088"
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-TBD_SUPERSET_SECRET_KEY_PLACEHOLDER}
+      SQLALCHEMY_DATABASE_URI: postgresql://${SUPERSET_METADATA_DB_USER:-superset_metadata_app}:${SUPERSET_METADATA_DB_PASSWORD:-change_me_superset_metadata_pwd}@superset_metadata_db:5432/${SUPERSET_METADATA_DB_NAME:-superset_metadata}
+    depends_on:
+      superset_metadata_db:
+        condition: service_healthy
+    networks:
+      - green_taxi_net
+    # LƯU Ý:
+    # - Kết nối tới warehouse database trong cùng network sử dụng:
+    #   Hostname: postgres_warehouse
+    #   Port: 5432
+    #   Database: green_taxi_warehouse
+    #   User: superset_ro
+
+  # 3. Superset Bootstrap/Init (Chạy một lần để thực hiện migration và khởi tạo admin)
+  superset_init:
+    image: apache/superset:4.0.1
+    container_name: green_taxi_superset_init
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        echo "Running database migrations..."
+        superset db upgrade
+        echo "Creating admin user..."
+        superset fab create-admin \
+          --username "${ADMIN_USERNAME:-admin}" \
+          --firstname "${ADMIN_FIRSTNAME:-Admin}" \
+          --lastname "${ADMIN_LASTNAME:-User}" \
+          --email "${ADMIN_EMAIL:-admin@greentaxi.local}" \
+          --password "${ADMIN_PASSWORD:-change_me_superset_admin_pwd}"
+        echo "Initializing Superset..."
+        superset init
+        echo "Bootstrap completed successfully."
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-TBD_SUPERSET_SECRET_KEY_PLACEHOLDER}
+      SQLALCHEMY_DATABASE_URI: postgresql://${SUPERSET_METADATA_DB_USER:-superset_metadata_app}:${SUPERSET_METADATA_DB_PASSWORD:-change_me_superset_metadata_pwd}@superset_metadata_db:5432/${SUPERSET_METADATA_DB_NAME:-superset_metadata}
+    depends_on:
+      superset_metadata_db:
+        condition: service_healthy
+    networks:
+      - green_taxi_net
+
+networks:
+  # Sử dụng Docker Network hiện hành của dự án để kết nối chéo với postgres_warehouse
+  green_taxi_net:
+    external: true
+    name: green_taxi_net
+
+volumes:
+  # Lưu trữ bền vững metadata của Superset độc lập với các volume nghiệp vụ
+  superset_metadata_data:
+    name: green_taxi_superset_metadata_data
