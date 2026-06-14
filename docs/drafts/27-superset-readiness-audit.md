@@ -3,6 +3,12 @@
 
 Tài liệu này đánh giá khả năng bổ sung Apache Superset vào môi trường local của dự án nhằm phục vụ khai thác phân tích dữ liệu trên tầng DDS (Dimensional Data Store).
 
+Status: `REVIEWED PROPOSAL; NOT DEPLOYED`
+
+Proposal này chưa phải cấu hình production hoặc local demo đã kiểm thử. Chỉ
+được promote sau khi compose, health, metadata DB, read-only connection và
+dataset query smoke test đều pass.
+
 ---
 
 ## 1. Hiện trạng Repository (Existing State)
@@ -40,7 +46,9 @@ Khi Superset được triển khai dưới dạng container trong cùng mạng `
 Để phục vụ thử nghiệm local (Minimum Local Demo), dự án đề xuất cấu hình tinh giản tối đa nhằm tiết kiệm tài nguyên máy tính cá nhân.
 
 ### Các thành phần của Demo Môi trường Local
-1.  **superset_app**: Container chạy image chính thức `apache/superset:4.0.1`. Đảm nhận vai trò webserver phục vụ giao diện người dùng và API truy vấn.
+1.  **superset_app**: Candidate image `apache/superset:6.1.0`, pin exact tag.
+    Release và OCI manifest của tag đã được xác minh ngày 14/06/2026. Không dùng
+    `latest`. Runtime của proposal này chưa được khởi động.
 2.  **superset_metadata_db**: Một container cơ sở dữ liệu riêng chạy `postgres:16-alpine`. Container này hoàn toàn tách biệt với database DWH của dự án nhằm lưu trữ thông tin quản trị của Superset (thông tin đăng nhập, danh sách charts, dashboard metadata, các connection string).
 3.  **superset_init**: Container phụ chạy chế độ một lần (one-shot bootstrap) để khởi tạo cấu trúc bảng quản trị (`superset db upgrade`), tạo tài khoản Admin và cấu hình phân quyền ban đầu (`superset init`), sau đó tự động tắt để giải phóng RAM.
 
@@ -60,11 +68,15 @@ Nhằm tuân thủ nguyên tắc an toàn thông tin và bảo vệ tính toàn 
 
 ### Đặc tả phân quyền cho Role `superset_ro`
 - **Quyền kết nối**: Chỉ được phép thực hiện lệnh `CONNECT` tới database `green_taxi_warehouse`.
-- **Quyền lược đồ (Schema usage)**: Chỉ được phép thực hiện `USAGE` trên schema `dds`.
-- **Quyền đọc dữ liệu**: Chỉ có quyền `SELECT` trên các bảng hiện tại và các bảng/views được tạo mới trong tương lai thuộc schema `dds` (sử dụng `ALTER DEFAULT PRIVILEGES`).
+- **Quyền lược đồ**: `USAGE` trên `dds` và `analytics`. Business dashboard ưu
+  tiên các certified views trong `analytics`.
+- **Quyền đọc dữ liệu**: `SELECT` trên DDS tables và approved analytics views.
+  `ALTER DEFAULT PRIVILEGES` phải chạy `FOR ROLE green_taxi_warehouse_app`
+  (object owner), nếu không sẽ không áp dụng cho object do owner đó tạo sau này.
 - **Giới hạn tuyệt đối**:
   - Không được cấp quyền `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `CREATE` trên bất kỳ bảng hay schema nào.
-  - Không cấp quyền truy cập vào schema `staging` và `nds` nhằm tránh lộ lọt dữ liệu thô hoặc thực hiện các phép join sai grain của tầng chuẩn hóa.
+  - Không cấp quyền trực tiếp vào `staging`, `nds`, `audit` hoặc `dq`. View
+    approved có thể đọc các schema đó nhưng role chỉ thấy output của view.
   - Tuyệt đối không cấp quyền Superuser.
 
 *Chi tiết câu lệnh SQL đề xuất cấu hình được lưu tại [superset-readonly-role.sql](superset-readonly-role.sql).*
@@ -82,6 +94,9 @@ Nhằm tuân thủ nguyên tắc an toàn thông tin và bảo vệ tính toàn 
   - `SUPERSET_METADATA_DB_PASSWORD`: Mật khẩu kết nối metadata DB nội bộ.
   - `SUPERSET_WAREHOUSE_PASSWORD`: Mật khẩu của tài khoản đọc dữ liệu DWH `superset_ro`.
 
+Compose proposal không có password fallback sử dụng được. Mọi secret bắt buộc
+được truyền từ file env local bị ignore; thiếu biến phải làm compose fail.
+
 ---
 
 ## 5. Tài nguyên và Vận hành (Resource Estimate)
@@ -93,12 +108,13 @@ Nhằm tuân thủ nguyên tắc an toàn thông tin và bảo vệ tính toàn 
   - *Tổng RAM đề xuất cho Docker host*: Tối thiểu `2.0 GB` khả dụng.
 - **CPU**: Cần tối thiểu `1 Core CPU` cho việc khởi động và xử lý truy vấn thông thường.
 - **Disk Space (Ổ đĩa)**:
-  - Docker Image `apache/superset:4.0.1` giải nén chiếm khoảng `1.5 GB`.
+  - Kích thước image cần đo lại khi pull candidate `apache/superset:6.1.0`;
+    proposal không cam kết con số image cũ.
   - Docker Image `postgres:16-alpine` giải nén chiếm khoảng `300 MB`.
   - *Tổng dung lượng ổ đĩa*: Khoảng `2.0 GB`.
 
 ### Quy trình Vận hành và Sao lưu
-- **Thời gian khởi động (Startup Time)**: Dự kiến mất khoảng `30 - 45 giây` để dịch vụ hoàn thành khởi tạo lần đầu và lắng nghe trên port `8088`.
+- **Thời gian khởi động**: Chưa đo; không dùng ước tính làm acceptance criterion.
 - **Persistent Metadata**: Toàn bộ cấu hình biểu đồ được ghi vào volume độc lập. Việc xóa container Superset không làm mất thiết kế dashboard.
 - **Rủi ro nâng cấp/di cư (Upgrade Risk)**: Rủi ro trung bình-thấp. Cần thực hiện `pg_dump` volume dữ liệu metadata DB trước khi nâng cấp phiên bản image của Superset nhằm đảm bảo khả năng rollback khi gặp lỗi không tương thích schema.
 
@@ -107,16 +123,28 @@ Nhằm tuân thủ nguyên tắc an toàn thông tin và bảo vệ tính toàn 
 ## 6. Ranh giới Phân tích dữ liệu (Analytics Boundary)
 
 Superset khi tích hợp vào dự án phải tuân thủ nghiêm ngặt ranh giới kiến trúc đã đồng thuận:
-- **Chỉ truy cập DDS**: Superset chỉ được phép truy vấn dữ liệu từ schema `dds` (hoặc các analytics views được phê duyệt sau này). Tuyệt đối không kết nối trực tiếp đến schema `staging` hoặc `nds` trên các dashboard nghiệp vụ.
+- **Chỉ truy cập presentation boundary**: Superset dùng `dds` hoặc approved
+  `analytics` views. Không query trực tiếp `staging`/`nds` cho dashboard.
 - **Hạt dữ liệu (Grain)**:
   - `fact_driver_trip`: Grain ở mức một chuyến đi (trip level).
   - `fact_driver_shift`: Grain ở mức một ca làm việc hoàn tất (shift level).
 - **Cấm DimShift**: Không tạo bảng chiều `dim_shift` theo đúng DDL thực tế của kho. Thuộc tính `shift_id` hoạt động độc lập dưới dạng degenerate dimension trực tiếp trên các fact.
-- **Trạng thái Metric**: Chưa thực hiện định nghĩa cố định các certified metrics trên giao diện Superset trong workstream này do các chỉ số đối soát ở Prompt 2 và 3A chưa được hoàn thiện.
+- **Trạng thái Metric**: Contract đã khóa tại `docs/23-metric-catalog.md`, nhưng
+  chưa import/certify trên một Superset instance vì dashboard workstream chưa có.
 
 ---
 
 ## 7. Các điểm nghẽn và Rủi ro (Blockers)
 
-- **Tài nguyên phần cứng máy local**: Việc chạy đồng thời 4 container nguồn/DWH hiện tại cùng với 2 container Superset và ứng dụng Streamlit có thể khiến RAM của hệ thống local vượt quá `8 GB`. Cần khuyến nghị RAM tối thiểu của máy chạy thử nghiệm là `16 GB`.
+- **Tài nguyên phần cứng máy local**: 16 GB RAM là khuyến nghị để chạy đồng thời
+  source, warehouse, Streamlit và Superset; không phải blocker cứng.
 - **Trạng thái Dữ liệu DDS**: Cần đảm bảo pipeline chạy thành công và DWH được đánh dấu trạng thái `DDS Ready for BI` (qua Streamlit Control Panel hoặc metadata batch) trước khi thực hiện kết nối dữ liệu từ Superset để tránh lỗi truy vấn bảng trống.
+
+## Driver và metadata
+
+- Tài liệu Superset chính thức cho PostgreSQL ghi `psycopg2` được bundled trong
+  Docker images. Vẫn phải xác nhận bằng connection smoke test trên exact image.
+- Metadata DB dùng volume riêng. Trước upgrade phải backup metadata database và
+  kiểm tra migration/rollback notes của exact version.
+- Redis/Celery không cần cho local synchronous demo. Chúng chỉ cần khi bật
+  async query, alerts/reports hoặc kiến trúc production-like.

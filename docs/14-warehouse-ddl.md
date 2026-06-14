@@ -229,7 +229,8 @@ regenerate từ DBML và không được dùng làm contract khi hai file chưa 
 
 ## 3. Đặc tả DDL Tầng DDS (Dimensional Data Store - Star Schema)
 
-Tầng DDS được mô hình hóa theo dạng chòm sao/ngôi sao phẳng (Star Schema), sử dụng các DDS Surrogate Key riêng để tối ưu hóa Power BI và SCD.
+Tầng DDS được mô hình hóa theo dạng chòm sao/ngôi sao phẳng, sử dụng DDS
+surrogate key riêng để hỗ trợ SCD và các BI client như Apache Superset.
 
 ```sql
 -- 3.1 Bảng chiều Date (Tĩnh - SCD Type 0)

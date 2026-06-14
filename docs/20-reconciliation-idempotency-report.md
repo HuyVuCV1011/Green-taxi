@@ -82,14 +82,19 @@ Bang doi chieu tong so cua cac thuoc tinh do luong quan trong giua NDS va DDS (k
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Trip Count** | 2,304,276 | 2,304,276 | 0 | 0 | PASS |
 | **Completed Shift Count** | 157,379 | 157,379 | 0 | 0 | PASS |
-| **Total Revenue** | 48,535,880.27 | 48,535,880.27 | 0.00 | 0.00 | PASS |
+| **Total Revenue** | 48,535,884.47 | 48,535,884.47 | 0.00 | 0.00 | PASS |
 | **Fare Amount** | 40,921,445.88 | 40,921,445.88 | 0.00 | 0.00 | PASS |
 | **Tip Amount** | 2,767,166.37 | 2,767,166.37 | 0.00 | 0.00 | PASS |
-| **Trip Distance (miles)** | 87,426,351.17 | 87,426,351.17 | 0.00 | 0.00 | PASS |
+| **Trip Distance (miles)** | 87,426,352.17 | 87,426,352.17 | 0.00 | 0.00 | PASS |
 | **Trip Duration (minutes)** | 48,423,718.63 | 48,423,718.63 | 0.00 | 0.00 | PASS |
 
 *Ghi chu:* Cach tinh Trip Duration trong NDS duoc lam tron 2 chu so thap phan cho moi ban ghi truoc khi tinh tong, hoan toan tuong thich voi truong `trip_duration_minutes` cua DDS:
 `ROUND((EXTRACT(EPOCH FROM (dropoff_datetime - pickup_datetime)) / 60)::numeric, 2)`.
+
+Ba tong measure tren duoc cross-check lai tren database full-data sach
+`green_taxi_warehouse_clean_validation_v2`. Cac gia tri cu cua revenue va
+distance da vo tinh bao gom DQ fixture am (`-4.20` revenue, `-1.00` mile) du
+ghi chu ban dau noi da loai fixture; duration sach van la `48,423,718.63`.
 
 ## 6. Kiem tra Hat du lieu va Trung lap (Grain & Duplicate Checks)
 

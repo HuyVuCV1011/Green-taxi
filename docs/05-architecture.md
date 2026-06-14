@@ -45,7 +45,7 @@ flowchart TD
     end
 
     subgraph AnalysisBI["3. Tầng trình diễn (BI Layer)"]
-        Dashboard[("Power BI Dashboard /<br>Anomaly Analysis")]
+        Dashboard[("Apache Superset /<br>Approved BI Client")]
     end
 
     MySQL -->|"Extract via SQL Adapter"| STG
@@ -211,7 +211,8 @@ Tầng NDS (Normalized Data Store) tổ chức dữ liệu tích hợp dưới d
 
 ## Tầng Dữ liệu Chiều (DDS Schema)
 
-Tầng DDS thiết kế theo mô hình hình sao (Star Schema) tối ưu hóa tối đa cho Power BI:
+Tầng DDS thiết kế theo mô hình hình sao, độc lập công cụ BI và phù hợp với
+Apache Superset:
 
 ### Dimensions (Bảng chiều):
 *   `dim_date` / `dim_time`: Hỗ trợ phân tích thời gian chi tiết.

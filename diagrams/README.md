@@ -10,7 +10,7 @@ Thư mục này quản lý các sơ đồ kiến trúc, luồng dữ liệu và 
 ## Danh mục sơ đồ cần có (Diagram Catalog)
 
 1. **Sơ đồ triển khai vật lý (Physical Deployment Diagram):** Mô tả các container Docker (`mysql_hr`, `mongodb_fleet`, `postgres_dispatch`, `postgres_warehouse`), ánh xạ cổng và mạng nội bộ `green_taxi_net`.
-2. **Sơ đồ luồng dữ liệu runtime (Runtime Data Flow Diagram):** Mô tả các bước chuyển đổi dữ liệu từ MySQL/MongoDB/PostgreSQL Dispatch/TLC files -> Staging -> DQ -> NDS -> DDS -> Power BI.
+2. **Sơ đồ luồng dữ liệu runtime (Runtime Data Flow Diagram):** Mô tả các bước chuyển đổi dữ liệu từ MySQL/MongoDB/PostgreSQL Dispatch/TLC files -> Staging -> DQ -> NDS -> DDS -> analytics/Superset.
 3. **Sơ đồ setup/reproducibility:** Mô tả cách Google Drive release được tải, kiểm checksum, giải nén và seed vào các source systems local.
 4. **Mô hình thực thể liên kết nguồn (Source ERD):** Mô tả mối quan hệ giữa các bảng nghiệp vụ giả lập và dữ liệu chuyến đi thực tế.
 
@@ -44,7 +44,7 @@ flowchart TD
     end
 
     subgraph Presentation["Tầng trình diễn & Phân tích (BI Layer)"]
-        PBI[("Power BI Dashboard /<br>Anomaly Analysis")]
+        BI[("Apache Superset /<br>Approved BI Client")]
     end
 
     MySQL -->|"Extract"| STG
@@ -56,7 +56,7 @@ flowchart TD
     DQ -->|"Lỗi (Schema, PK, FK, Range)"| Q_Table
     DQ -->|"Hợp lệ"| NDS
     NDS -->|"SCD Type 1/2"| DDS
-    DDS -->|"Analyze"| PBI
+    DDS -->|"Certified datasets"| BI
 ```
 
 ### 2. Luồng setup/reproducibility

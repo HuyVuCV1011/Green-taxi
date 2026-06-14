@@ -68,7 +68,7 @@ Status: `PLANNED`
 
 - KPI definitions.
 - Dashboard wireframe.
-- Power BI/Superset implementation.
+- Superset datasets/dashboard implementation theo analytics contract.
 - Driver/shift peer comparison.
 - Business anomaly rules.
 

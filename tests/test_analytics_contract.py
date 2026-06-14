@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SQL_PATH = ROOT / "sql" / "analytics" / "01_certified_datasets.sql"
 SEMANTIC_PATH = ROOT / "docs" / "22-analytics-semantic-contract.md"
 METRIC_PATH = ROOT / "docs" / "23-metric-catalog.md"
+DICTIONARY_PATH = ROOT / "docs" / "21-data-dictionary.md"
+TRACEABILITY_PATH = ROOT / "docs" / "24-analytics-requirements-traceability.md"
 
 
 class AnalyticsContractTests(unittest.TestCase):
@@ -17,6 +19,8 @@ class AnalyticsContractTests(unittest.TestCase):
         cls.sql = SQL_PATH.read_text(encoding="utf-8")
         cls.semantic = SEMANTIC_PATH.read_text(encoding="utf-8")
         cls.metrics = METRIC_PATH.read_text(encoding="utf-8")
+        cls.dictionary = DICTIONARY_PATH.read_text(encoding="utf-8")
+        cls.traceability = TRACEABILITY_PATH.read_text(encoding="utf-8")
 
     def test_expected_views_are_declared(self) -> None:
         for view_name in (
@@ -84,6 +88,29 @@ class AnalyticsContractTests(unittest.TestCase):
         self.assertIn("`shift_end`", self.semantic)
         self.assertIn("`analytics.dq_summary`", self.semantic)
         self.assertNotIn("USERELATIONSHIP", self.semantic)
+
+    def test_final_dictionary_matches_current_dds_contract(self) -> None:
+        self.assertIn("**9 bảng, 107 cột**", self.dictionary)
+        for table_name in (
+            "dim_date",
+            "dim_time",
+            "dim_driver",
+            "dim_vehicle",
+            "dim_vendor",
+            "dim_location",
+            "dim_junk_trip",
+            "fact_driver_trip",
+            "fact_driver_shift",
+        ):
+            self.assertIn(f"`dds.{table_name}`", self.dictionary)
+        self.assertFalse(
+            (ROOT / "docs" / "drafts" / "21-data-dictionary.draft.md").exists()
+        )
+
+    def test_traceability_is_reconciled_and_tool_independent(self) -> None:
+        self.assertNotIn("PENDING_RECONCILIATION", self.traceability)
+        self.assertNotIn("Power BI", self.traceability)
+        self.assertIn("analytics.shift_trip_aggregate", self.traceability)
 
 
 if __name__ == "__main__":

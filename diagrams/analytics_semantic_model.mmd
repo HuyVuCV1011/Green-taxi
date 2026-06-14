@@ -1,0 +1,42 @@
+flowchart LR
+    TP["analytics.trip_pickup<br/>grain: one trip<br/>default: pickup"]
+    TD["analytics.trip_dropoff<br/>grain: one trip<br/>default: dropoff"]
+    SH["analytics.shift<br/>grain: one completed shift<br/>default: shift start"]
+    STA["analytics.shift_trip_aggregate<br/>grain: one shift_id"]
+    DQ["analytics.dq_summary<br/>grain: DQ grouping<br/>UTC"]
+
+    DD["dds.dim_date"]
+    DT["dds.dim_time"]
+    DR["dds.dim_driver<br/>SCD2 fact-time version"]
+    DV["dds.dim_vehicle<br/>SCD2 fact-time version"]
+    VEN["dds.dim_vendor"]
+    LOC["dds.dim_location<br/>role aliases"]
+    JUNK["dds.dim_junk_trip"]
+
+    DD --> TP
+    DT --> TP
+    DR --> TP
+    DV --> TP
+    VEN --> TP
+    LOC --> TP
+    JUNK --> TP
+
+    DD --> TD
+    DT --> TD
+    DR --> TD
+    DV --> TD
+    VEN --> TD
+    LOC --> TD
+    JUNK --> TD
+
+    DD --> SH
+    DT --> SH
+    DR --> SH
+    DV --> SH
+    VEN --> SH
+    LOC --> SH
+
+    TP -->|"GROUP BY shift_id"| STA
+    STA -. "optional 1:1 reconciliation only" .-> SH
+
+    DQ -. "separate analytics boundary; no fact join" .-> TP

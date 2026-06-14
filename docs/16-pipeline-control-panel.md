@@ -6,7 +6,7 @@
 
 ## Tổng quan
 
-Streamlit Control Panel ([app/streamlit_app.py](../app/streamlit_app.py)) là giao diện vận hành kỹ thuật (Control Panel) cho pipeline, phục vụ đối tượng Data Engineer và Vận hành hệ thống, không phải dashboard BI. Các công cụ BI khác (như Power BI) chạy độc lập và không được nhúng vào Streamlit.
+Streamlit Control Panel ([app/streamlit_app.py](../app/streamlit_app.py)) là giao diện vận hành kỹ thuật cho pipeline, không phải dashboard BI. Apache Superset hoặc BI client được phê duyệt chạy độc lập và không được nhúng vào Streamlit.
 
 > [!NOTE]
 > Giao diện áp dụng Green Taxi Light Theme (cấu hình tại `.streamlit/config.toml`). Ứng dụng chỉ sử dụng các thành phần (widgets) nguyên bản của Streamlit và CSS cục bộ (Scoped CSS) được bọc trong các HTML card tự định dạng, nhằm triệt tiêu hoàn toàn rủi ro xung đột dependency từ các custom component UI bên thứ ba.
@@ -93,4 +93,4 @@ File lock `data/.pipeline.lock` được tạo theo cơ chế độc quyền (ex
 *   **Thiết kế Mobile:** Streamlit không cung cấp breakpoint server-side; do đó layout sử dụng cơ chế tự động co giãn (responsive) và expander thay vì cố gắng bắt độ rộng viewport của thiết bị.
 *   **Tầm ảnh hưởng của Lock:** Cơ chế file lock cục bộ chỉ phù hợp khi chạy thử nghiệm trên máy local hoặc thư mục chia sẻ (shared filesystem); không thay thế cho các giải pháp khóa phân tán (distributed lock) trên production.
 *   **Cadence Vận hành:** Control Panel chạy pipeline ở chế độ đồng bộ (blocking main thread) trong process Streamlit.
-*   **Phạm vi BI:** Control Panel chỉ là công cụ giám sát hạ tầng và kỹ thuật; dashboard nghiệp vụ Power BI và semantic model là các thành phần chuyển giao độc lập.
+*   **Phạm vi BI:** Control Panel chỉ giám sát hạ tầng và kỹ thuật; dashboard nghiệp vụ Superset và analytics contract là thành phần độc lập.

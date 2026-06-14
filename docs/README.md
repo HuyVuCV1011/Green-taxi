@@ -23,6 +23,10 @@ Tùy thuộc vào vai trò của bạn khi tiếp cận repository này, hãy th
 6. **[docs/15-staging-load.md](15-staging-load.md):** Hướng dẫn cơ chế nạp Staging, sinh row hash và đối soát.
 7. **[docs/17-data-quality-and-etl-spec.md](17-data-quality-and-etl-spec.md):** Đặc tả quy tắc kiểm soát chất lượng dữ liệu, cách cách ly và xử lý dữ liệu đến trễ.
 8. **[docs/18-nds-dds-implementation-notes.md](18-nds-dds-implementation-notes.md):** Ghi chú triển khai, tối ưu và reconciliation NDS/DDS.
+9. **[docs/21-data-dictionary.md](21-data-dictionary.md):** Data dictionary 9 bảng, 107 cột DDS.
+10. **[docs/22-analytics-semantic-contract.md](22-analytics-semantic-contract.md):** Grain, role, SCD2 và analytics boundary.
+11. **[docs/23-metric-catalog.md](23-metric-catalog.md):** Certified metric definitions.
+12. **[docs/24-analytics-requirements-traceability.md](24-analytics-requirements-traceability.md):** Requirement-to-dataset traceability.
 
 ### Dành cho Giảng viên & Người đánh giá (Reviewer)
 1. **[docs/01-project-context.md](01-project-context.md):** Bối cảnh và định hướng phân tích của đồ án.
@@ -30,7 +34,9 @@ Tùy thuộc vào vai trò của bạn khi tiếp cận repository này, hãy th
 3. **[docs/05-architecture.md](05-architecture.md):** Kiến trúc runtime, setup flow và ranh giới source systems.
 4. **[docs/09-analytics-requirements.md](09-analytics-requirements.md):** Chi tiết các chỉ số đo lường (KPI) và công thức tính.
 5. **[docs/07-implementation-plan.md](07-implementation-plan.md):** Kế hoạch triển khai mã nguồn, tiến độ các Milestone.
-6. **[docs/02-teacher-feedback.md](02-teacher-feedback.md):** Tiếp thu ý kiến đóng góp của giáo viên hướng dẫn và các hành động khắc phục.
+6. **[docs/20-reconciliation-idempotency-report.md](20-reconciliation-idempotency-report.md):** Full-data reconciliation và rerun evidence.
+7. **[docs/22-analytics-semantic-contract.md](22-analytics-semantic-contract.md):** Analytics contract chính thức.
+8. **[docs/02-teacher-feedback.md](02-teacher-feedback.md):** Tiếp thu ý kiến đóng góp của giáo viên hướng dẫn và các hành động khắc phục.
 
 ---
 
@@ -38,27 +44,31 @@ Tùy thuộc vào vai trò của bạn khi tiếp cận repository này, hãy th
 
 | Tên tài liệu | Phân loại | Nội dung chính |
 |---|---|---|
-| 📂 **Thiết lập ban đầu** | | |
-| 📄 [00-team-onboarding-and-data-setup.md](00-team-onboarding-and-data-setup.md) | Hướng dẫn | Cách cấu hình môi trường local, seed nguồn và chạy unittest |
-| 📂 **Tổng quan & Bối cảnh** | | |
-| 📄 [01-project-context.md](01-project-context.md) | Bối cảnh | Lý do lựa chọn đề tài và mục tiêu tổng quát của đồ án |
-| 📄 [02-teacher-feedback.md](02-teacher-feedback.md) | Phản hồi | Nhật ký tiếp thu ý kiến của giáo viên và phương án điều chỉnh |
-| 📄 [03-scope.md](03-scope.md) | Nghiệp vụ | Chi tiết 5 nhóm câu hỏi quyết định và ranh giới hệ thống |
-| 📄 [09-analytics-requirements.md](09-analytics-requirements.md) | KPI | Định nghĩa chi tiết các độ đo, thứ chiều phân tích |
-| 📂 **Kiến trúc & Đặc tả Dữ liệu** | | |
-| 📄 [04-data-sources.md](04-data-sources.md) | Nguồn dữ liệu | Inventory chi tiết các hệ thống nguồn thật và giả lập |
-| 📄 [05-architecture.md](05-architecture.md) | Kiến trúc | Thiết kế kiến trúc logic, vật lý, bootstrap và múi giờ |
-| 📄 [08-data-contracts.md](08-data-contracts.md) | Hợp đồng dữ liệu | Quy định ràng buộc cấu trúc đầu vào cho từng nguồn |
-| 📄 [10-source-to-target-plan.md](10-source-to-target-plan.md) | ETL Mapping | Ánh xạ chi tiết từ nguồn vào NDS và DDS |
-| 📄 [14-warehouse-ddl.md](14-warehouse-ddl.md) | Physical model | DDL executable và contract vật lý Staging/DQ/NDS/DDS |
-| 📄 [15-staging-load.md](15-staging-load.md) | Ingestion | Hướng dẫn cơ chế nạp Staging, sinh row hash và đối soát |
-| 📄 [17-data-quality-and-etl-spec.md](17-data-quality-and-etl-spec.md) | ETL & DQ Spec | Quy tắc kiểm soát chất lượng dữ liệu, cách cách ly và xử lý dữ liệu đến trễ |
-| 📄 [18-nds-dds-implementation-notes.md](18-nds-dds-implementation-notes.md) | Implementation | Ghi chú loader, index, phân trang, idempotency và full-load reconciliation |
-| 📂 **Quản lý & Hướng dẫn Vận hành** | | |
-| 📄 [07-implementation-plan.md](07-implementation-plan.md) | Kế hoạch | Kế hoạch triển khai chi tiết mã nguồn và definition of done |
-| 📄 [11-work-breakdown.md](11-work-breakdown.md) | Milestone | Phân chia công việc theo Work Breakdown Structure |
-| 📄 [12-synthetic-generation-report.md](12-synthetic-generation-report.md) | Dữ liệu mô phỏng | Báo cáo chi tiết thuật toán sinh dữ liệu và validation |
-| 📄 [16-pipeline-control-panel.md](16-pipeline-control-panel.md) | Hướng dẫn | Tài liệu hướng dẫn sử dụng và đặc tả của Streamlit Control Panel |
-| 📂 **Thư mục mở rộng** | | |
-| 📁 [decisions/](decisions/) | Kiến trúc (ADR) | Lưu trữ các quyết định thiết kế hệ thống quan trọng (Architecture Decision Records) |
-| 📁 [meetings/](meetings/) | Biên bản | Nhật ký các buổi họp nhóm |
+| **Thiết lập ban đầu** | | |
+| [00-team-onboarding-and-data-setup.md](00-team-onboarding-and-data-setup.md) | Hướng dẫn | Cách cấu hình môi trường local, seed nguồn và chạy unittest |
+| **Tổng quan & Bối cảnh** | | |
+| [01-project-context.md](01-project-context.md) | Bối cảnh | Lý do lựa chọn đề tài và mục tiêu tổng quát của đồ án |
+| [02-teacher-feedback.md](02-teacher-feedback.md) | Phản hồi | Nhật ký tiếp thu ý kiến của giáo viên và phương án điều chỉnh |
+| [03-scope.md](03-scope.md) | Nghiệp vụ | Chi tiết 5 nhóm câu hỏi quyết định và ranh giới hệ thống |
+| [09-analytics-requirements.md](09-analytics-requirements.md) | KPI | Định nghĩa chi tiết các độ đo, thứ chiều phân tích |
+| **Kiến trúc & Đặc tả Dữ liệu** | | |
+| [04-data-sources.md](04-data-sources.md) | Nguồn dữ liệu | Inventory chi tiết các hệ thống nguồn thật và giả lập |
+| [05-architecture.md](05-architecture.md) | Kiến trúc | Thiết kế kiến trúc logic, vật lý, bootstrap và múi giờ |
+| [08-data-contracts.md](08-data-contracts.md) | Hợp đồng dữ liệu | Quy định ràng buộc cấu trúc đầu vào cho từng nguồn |
+| [10-source-to-target-plan.md](10-source-to-target-plan.md) | ETL Mapping | Ánh xạ chi tiết từ nguồn vào NDS và DDS |
+| [14-warehouse-ddl.md](14-warehouse-ddl.md) | Physical model | DDL executable và contract vật lý Staging/DQ/NDS/DDS |
+| [15-staging-load.md](15-staging-load.md) | Ingestion | Hướng dẫn cơ chế nạp Staging, sinh row hash và đối soát |
+| [17-data-quality-and-etl-spec.md](17-data-quality-and-etl-spec.md) | ETL & DQ Spec | Quy tắc kiểm soát chất lượng dữ liệu, cách cách ly và xử lý dữ liệu đến trễ |
+| [18-nds-dds-implementation-notes.md](18-nds-dds-implementation-notes.md) | Implementation | Ghi chú loader, index, phân trang, idempotency và full-load reconciliation |
+| [21-data-dictionary.md](21-data-dictionary.md) | Data dictionary | 9 bảng, 107 cột DDS |
+| [22-analytics-semantic-contract.md](22-analytics-semantic-contract.md) | Analytics contract | Grain, relationships, date/location roles và DQ boundary |
+| [23-metric-catalog.md](23-metric-catalog.md) | Metric catalog | Certified metric SQL và aggregation semantics |
+| [24-analytics-requirements-traceability.md](24-analytics-requirements-traceability.md) | Traceability | Business requirements sang datasets/metrics |
+| **Quản lý & Hướng dẫn Vận hành** | | |
+| [07-implementation-plan.md](07-implementation-plan.md) | Kế hoạch | Kế hoạch triển khai chi tiết mã nguồn và definition of done |
+| [11-work-breakdown.md](11-work-breakdown.md) | Milestone | Phân chia công việc theo Work Breakdown Structure |
+| [12-synthetic-generation-report.md](12-synthetic-generation-report.md) | Dữ liệu mô phỏng | Báo cáo chi tiết thuật toán sinh dữ liệu và validation |
+| [16-pipeline-control-panel.md](16-pipeline-control-panel.md) | Hướng dẫn | Tài liệu hướng dẫn sử dụng và đặc tả của Streamlit Control Panel |
+| **Thư mục mở rộng** | | |
+| [decisions/](decisions/) | Kiến trúc (ADR) | Lưu trữ các quyết định thiết kế hệ thống quan trọng (Architecture Decision Records) |
+| [meetings/](meetings/) | Biên bản | Nhật ký các buổi họp nhóm |

@@ -9,7 +9,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?style=flat-square&logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Power BI](https://img.shields.io/badge/Power_BI-Analysis-F2C811?style=flat-square&logo=power-bi&logoColor=black)](https://powerbi.microsoft.com/)
+[![Superset Ready](https://img.shields.io/badge/Apache_Superset-Ready-20A7C9?style=flat-square)](https://superset.apache.org/)
 [![Milestone](https://img.shields.io/badge/Status-DQ_NDS_DDS_Implemented-2EA44F?style=flat-square)](https://github.com/HuyVuCV1011/Green-taxi)
 
 [Tổng quan](#tổng quan) • [Điểm nổi bật](#điểm-nổi-bật) • [Kiến trúc dữ liệu (Data Flow)](#kiến-trúc-dữ-liệu-data-flow) • [Bắt đầu nhanh (Quick Start)](#bắt-đầu-nhanh-quick-start) • [Ma trận dịch vụ Docker (Service Matrix)](#ma-trận-dịch-vụ-docker-service-matrix) • [Bản đồ tài liệu](#bản-đồ-tài-liệu) • [Lộ trình dự án (Project Roadmap)](#lộ-trình-dự-án-project-roadmap) • [Quy tắc dữ liệu (Data & Security Policy)](#quy-tắc-dữ-liệu-data--security-policy)
@@ -78,7 +78,7 @@ flowchart TD
     end
 
     subgraph Presentation["Tầng trình diễn & Phân tích (BI Layer)"]
-        PBI[("Power BI Dashboard /<br>Anomaly Analysis")]
+        BI[("Apache Superset /<br>Approved BI Client")]
     end
 
     MySQL -->|"Extract via Python adapter"| STG
@@ -90,14 +90,14 @@ flowchart TD
     DQ -->|"Lỗi (Schema, PK, FK, Range)"| Q_Table
     DQ -->|"Hợp lệ"| NDS
     NDS -->|"SCD Type 1/2 Integration"| DDS
-    DDS -->|"Query/Analyze"| PBI
+    DDS -->|"Certified datasets"| BI
 
     style DQ fill:#fef08a,stroke:#eab308,stroke-width:2px,color:#000
     style Q_Table fill:#fee2e2,stroke:#f87171,stroke-width:2px,color:#000
     style STG fill:#e0f2fe,stroke:#0284c7,stroke-width:1px,color:#000
     style NDS fill:#e0f2fe,stroke:#0284c7,stroke-width:1px,color:#000
     style DDS fill:#dcfce7,stroke:#22c55e,stroke-width:2px,color:#000
-    style PBI fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#000
+    style BI fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#000
 ```
 
 > [!IMPORTANT]
@@ -211,7 +211,7 @@ python scripts/run_pipeline.py --release-id green-taxi-full-v1
 streamlit run app/streamlit_app.py
 ```
 > [!NOTE]
-> Control Panel dùng Green Taxi light theme và có 4 tab nghiệp vụ: **Tổng quan Hệ thống**, **Vận hành Pipeline**, **Chất lượng & Đối soát** và **Khám phá Nguồn**. Auto-Demo nằm trong expander Presentation Mode của tab vận hành để tránh bấm nhầm. Power BI là công cụ BI độc lập, không được nhúng trong Streamlit.
+> Control Panel dùng Green Taxi light theme và có 4 tab nghiệp vụ: **Tổng quan Hệ thống**, **Vận hành Pipeline**, **Chất lượng & Đối soát** và **Khám phá Nguồn**. Đây là giao diện vận hành, tách biệt với dashboard nghiệp vụ trên Superset hoặc BI client được phê duyệt.
 
 ---
 
@@ -279,6 +279,10 @@ Dự án tuân thủ nguyên tắc thiết kế **docs-first** và **data-contra
 *   **[Source-to-target plan](docs/10-source-to-target-plan.md):** Thiết kế ánh xạ và chuyển đổi dữ liệu từ nguồn vào NDS và DDS.
 *   **[Warehouse Physical Model Specification](docs/14-warehouse-ddl.md):** DDL executable và mô hình vật lý Staging/DQ/NDS/DDS.
 *   **[NDS/DDS implementation notes](docs/18-nds-dds-implementation-notes.md):** Ghi chú triển khai, tối ưu, idempotency và reconciliation.
+*   **[DDS data dictionary](docs/21-data-dictionary.md):** Catalog 9 bảng và 107 cột DDS.
+*   **[Analytics semantic contract](docs/22-analytics-semantic-contract.md):** Grain, roles, joins và analytics boundary.
+*   **[Certified metric catalog](docs/23-metric-catalog.md):** Công thức metric chuẩn cho Superset/SQL.
+*   **[Analytics requirements traceability](docs/24-analytics-requirements-traceability.md):** Ánh xạ requirement sang dataset và metric.
 *   **[Staging Load](docs/15-staging-load.md):** Cơ chế source adapters, row hash, audit metadata và source-to-staging reconciliation.
 *   **[Pipeline Control Panel](docs/16-pipeline-control-panel.md):** Giao diện Streamlit 4 tab để giám sát health, vận hành pipeline, xem DQ/reconciliation và khám phá nguồn.
 *   **[Documentation index](docs/README.md):** Danh mục tài liệu đầy đủ và gợi ý lộ trình đọc.
@@ -298,10 +302,12 @@ Dự án tuân thủ nguyên tắc thiết kế **docs-first** và **data-contra
 - [x] Triển khai DQ Gate 1, quarantine, NDS 3NF và lineage theo batch/release.
 - [x] Triển khai DDS, SCD2, degenerate `shift_id` và fact upsert idempotent.
 - [x] Triển khai `PipelineRunner`, CLI orchestration và Streamlit Control Panel.
+- [x] Chạy full release với 19 TLC files và xác nhận reconciliation/idempotency.
+- [x] Khóa analytics semantic contract, certified metrics và analytics SQL views.
 
 ### Lộ trình tiếp theo (Milestone 4+)
-- [ ] Chạy full pipeline smoke test trên môi trường sạch và lưu reconciliation/idempotency report.
-- [ ] Thiết kế và xây dựng Dashboard phân tích hiệu suất và phát hiện các điểm bất thường vận hành (Anomaly Analysis).
+- [ ] Triển khai và smoke-test Superset local demo từ proposal đã review.
+- [ ] Xây Superset datasets/dashboard và anomaly analysis theo certified contract.
 - [ ] Hoàn thiện báo cáo học thuật, slide báo cáo và tài liệu hướng dẫn tái lập kết quả.
 
 ---

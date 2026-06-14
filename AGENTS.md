@@ -101,7 +101,7 @@ archive/       Nội dung cũ chỉ dùng tham khảo
   logic không rõ ownership.
 - `sql/ddl/`, `sql/transformations/`, `sql/tests/` và `sql/analytics/` phải giữ
   trách nhiệm tách biệt.
-- Không nhúng logic nghiệp vụ quan trọng chỉ trong notebook hoặc Power BI nếu có
+- Không nhúng logic nghiệp vụ quan trọng chỉ trong notebook hoặc BI tool nếu có
   thể biểu diễn và kiểm thử ở SQL/Python.
 
 ## Quy tắc dữ liệu
@@ -138,8 +138,8 @@ archive/       Nội dung cũ chỉ dùng tham khảo
   null handling và nguồn dữ liệu.
 - Tránh tính cùng một KPI theo nhiều công thức khác nhau giữa SQL, Python và
   dashboard.
-- Power BI model nên ưu tiên star schema, quan hệ một chiều rõ ràng và measure
-  tường minh thay vì implicit aggregation.
+- Semantic model ưu tiên star schema, quan hệ một chiều rõ ràng và certified
+  metric tường minh thay vì implicit aggregation.
 - Với anomaly analysis, tách business anomaly khỏi data-quality anomaly và ghi
   rõ ngưỡng hoặc phương pháp phát hiện.
 
