@@ -1,0 +1,8 @@
+# Ordered demo pipeline. The runner reads only this step list.
+steps:
+  - source_health
+  - load_staging
+  - load_nds
+  - load_dds
+  - reconciliation
+  - mark_dds_ready

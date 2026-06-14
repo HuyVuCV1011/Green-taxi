@@ -1,0 +1,33 @@
+# Lightweight entity registry for orchestration documentation only.
+# ETL SQL and load order remain owned by the existing loader classes.
+entities:
+  - name: drivers
+    source_system: HR_MYSQL
+    staging_table: staging.stg_hr_drivers
+    nds_table: nds.nds_driver
+    dds_table: dds.dim_driver
+  - name: vehicles
+    source_system: FLEET_MONGODB
+    staging_table: staging.stg_fleet_vehicles
+    nds_table: nds.nds_vehicle
+    dds_table: dds.dim_vehicle
+  - name: shifts
+    source_system: DISPATCH_POSTGRES
+    staging_table: staging.stg_dispatch_shifts
+    nds_table: nds.nds_shift
+    dds_table: dds.fact_driver_shift
+  - name: trips
+    source_system: TLC_FILE
+    staging_table: staging.stg_tlc_green_trips
+    nds_table: nds.nds_trip
+    dds_table: dds.fact_driver_trip
+  - name: trip_assignments
+    source_system: DISPATCH_POSTGRES
+    staging_table: staging.stg_dispatch_trip_assignments
+    nds_table: nds.nds_trip_assignment
+    dds_table: dds.fact_driver_trip
+  - name: lookups
+    source_system: LOOKUP_FILE
+    staging_table: staging.stg_lookup_vendor, staging.stg_lookup_taxi_zone
+    nds_table: nds.nds_vendor, nds.nds_location
+    dds_table: dds.dim_vendor, dds.dim_location
