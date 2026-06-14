@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚖 NYC Green Taxi Driver Operations BI
+# NYC Green Taxi Driver Operations BI
 
 **Kho dữ liệu phân tích hiệu quả vận hành tài xế và đội xe từ NYC Green Taxi Trip Records**
 
@@ -22,7 +22,7 @@
 
 ---
 
-## 📌 Tổng quan
+## Tổng quan
 
 Dự án tập trung vào việc giải quyết 5 nhóm câu hỏi vận hành chính của doanh nghiệp taxi thông qua các chỉ số đo lường (KPI):
 1. **Hiệu suất tài xế**: Doanh thu, số chuyến đi và năng suất làm việc.
@@ -31,7 +31,7 @@ Dự án tập trung vào việc giải quyết 5 nhóm câu hỏi vận hành c
 4. **Hiệu quả theo khu vực/thời gian**: Điểm pickup/dropoff phổ biến và thời gian cao điểm.
 5. **Chất lượng dữ liệu**: Quản lý bản ghi lỗi, quarantine và đối soát dữ liệu (reconciliation).
 
-### 📊 Tóm tắt thông số dự án
+### Tóm tắt thông số dự án
 *   **Dữ liệu chuyến đi (Thật):** NYC TLC Green Taxi trip records.
 *   **Dữ liệu vận hành (Giả lập):** Driver HR, Fleet, Dispatch Shift, Trip Assignment.
 *   **Phạm vi phân tích:** Từ tháng 01/2020 đến tháng 07/2021 (19 tháng).
@@ -40,7 +40,7 @@ Dự án tập trung vào việc giải quyết 5 nhóm câu hỏi vận hành c
 
 ---
 
-## 🌟 Điểm nổi bật
+## Điểm nổi bật
 
 *   **Mô phỏng nguồn dữ liệu đa dạng:** Khởi tạo các hệ thống nguồn mô phỏng đa dạng (MySQL, MongoDB, PostgreSQL) từ một gói dữ liệu release chuẩn nhằm tái lập môi trường thực tế của doanh nghiệp.
 *   **Hợp đồng dữ liệu (Data Contracts):** Thiết lập quy định chặt chẽ về schema, kiểu dữ liệu, các business key cho từng nguồn dữ liệu thô.
@@ -50,7 +50,7 @@ Dự án tập trung vào việc giải quyết 5 nhóm câu hỏi vận hành c
 
 ---
 
-## 📐 Kiến trúc dữ liệu (Data Flow)
+## Kiến trúc dữ liệu (Data Flow)
 
 Sơ đồ dưới đây là **luồng nghiệp vụ/runtime** của pipeline. Ở góc nhìn này, dữ liệu đến từ các source systems đã được seed hoặc mount sẵn: MySQL HR, MongoDB Fleet, PostgreSQL Dispatch và TLC/lookup file batch. Google Drive không xuất hiện trong sơ đồ runtime vì nó chỉ là gói phân phối để tái lập môi trường local.
 
@@ -127,11 +127,11 @@ flowchart LR
 
 ---
 
-## ⚡ Bắt đầu nhanh (Quick Start)
+## Bắt đầu nhanh (Quick Start)
 
 Làm theo hướng dẫn dưới đây để thiết lập nhanh môi trường phát triển local và chuẩn bị dữ liệu.
 
-### 📋 Điều kiện cần (Prerequisites)
+### Điều kiện cần (Prerequisites)
 *   Hệ điều hành Windows/Linux/macOS
 *   **Git**
 *   **Python 3.11** trở lên
@@ -139,7 +139,7 @@ Làm theo hướng dẫn dưới đây để thiết lập nhanh môi trường 
 
 ---
 
-### 🚀 Các bước thiết lập
+### Các bước thiết lập
 
 #### Bước 1: Clone Repository & Cài đặt thư viện Python
 ```powershell
@@ -215,7 +215,7 @@ streamlit run app/streamlit_app.py
 
 ---
 
-### 🧪 Chạy thử nghiệm với dữ liệu mẫu (Sample Mode)
+### Chạy thử nghiệm với dữ liệu mẫu (Sample Mode)
 Nếu bạn chỉ muốn kiểm thử nhanh logic ETL hoặc xác minh mã nguồn chạy đúng mà không cần tải gói dữ liệu đầy đủ hay thiết lập Docker, hãy chạy bộ kiểm thử sử dụng dữ liệu mẫu có sẵn trong repository:
 ```powershell
 python -m unittest discover -s tests -v
@@ -223,7 +223,7 @@ python -m unittest discover -s tests -v
 
 ---
 
-## 🎛️ Ma trận dịch vụ Docker (Service Matrix)
+## Ma trận dịch vụ Docker (Service Matrix)
 
 Các dịch vụ cơ sở dữ liệu được cấu hình sẵn trong `docker-compose.yml` để mô phỏng một môi trường phân tán thực tế:
 
@@ -236,10 +236,10 @@ Các dịch vụ cơ sở dữ liệu được cấu hình sẵn trong `docker-c
 
 ---
 
-## 📂 Cấu trúc dự án
+## Cấu trúc dự án
 
 <details>
-<summary><b>📂 Xem cây thư mục chính (Nhấn để mở rộng)</b></summary>
+<summary><b>Xem cây thư mục chính</b></summary>
 
 ```text
 Green-taxi/
@@ -267,27 +267,27 @@ Green-taxi/
 
 ---
 
-## 🗺️ Bản đồ tài liệu
+## Bản đồ tài liệu
 
 Dự án tuân thủ nguyên tắc thiết kế **docs-first** và **data-contract-first**. Dưới đây là các tài liệu thiết kế cốt lõi:
 
-*   📖 **[Team onboarding](docs/00-team-onboarding-and-data-setup.md):** Hướng dẫn cấu hình môi trường phát triển local, cách tải và kiểm tra dữ liệu đầy đủ.
-*   🎯 **[Project scope](docs/03-scope.md):** Định nghĩa phạm vi bài toán nghiệp vụ, nhóm người dùng mục tiêu và các câu hỏi vận hành cần giải quyết.
-*   📐 **[System architecture](docs/05-architecture.md):** Bản thiết kế chi tiết kiến trúc các tầng dữ liệu từ nguồn đến DDS.
-*   🔌 **[Data sources](docs/04-data-sources.md):** Danh sách chi tiết các hệ thống nguồn và đặc tính dữ liệu.
-*   📜 **[Data contracts](docs/08-data-contracts.md):** Các cam kết về schema và kiểu dữ liệu đầu vào.
-*   🗺️ **[Source-to-target plan](docs/10-source-to-target-plan.md):** Thiết kế ánh xạ và chuyển đổi dữ liệu từ nguồn vào NDS và DDS.
-*   🏢 **[Warehouse Physical Model Specification](docs/14-warehouse-ddl.md):** DDL executable và mô hình vật lý Staging/DQ/NDS/DDS.
-*   📝 **[NDS/DDS implementation notes](docs/18-nds-dds-implementation-notes.md):** Ghi chú triển khai, tối ưu, idempotency và reconciliation.
-*   📥 **[Staging Load](docs/15-staging-load.md):** Cơ chế source adapters, row hash, audit metadata và source-to-staging reconciliation.
-*   🎛️ **[Pipeline Control Panel](docs/16-pipeline-control-panel.md):** Giao diện Streamlit 4 tab để giám sát health, vận hành pipeline, xem DQ/reconciliation và khám phá nguồn.
-*   📂 **[Documentation index](docs/README.md):** Danh mục tài liệu đầy đủ và gợi ý lộ trình đọc.
+*   **[Team onboarding](docs/00-team-onboarding-and-data-setup.md):** Hướng dẫn cấu hình môi trường phát triển local, cách tải và kiểm tra dữ liệu đầy đủ.
+*   **[Project scope](docs/03-scope.md):** Định nghĩa phạm vi bài toán nghiệp vụ, nhóm người dùng mục tiêu và các câu hỏi vận hành cần giải quyết.
+*   **[System architecture](docs/05-architecture.md):** Bản thiết kế chi tiết kiến trúc các tầng dữ liệu từ nguồn đến DDS.
+*   **[Data sources](docs/04-data-sources.md):** Danh sách chi tiết các hệ thống nguồn và đặc tính dữ liệu.
+*   **[Data contracts](docs/08-data-contracts.md):** Các cam kết về schema và kiểu dữ liệu đầu vào.
+*   **[Source-to-target plan](docs/10-source-to-target-plan.md):** Thiết kế ánh xạ và chuyển đổi dữ liệu từ nguồn vào NDS và DDS.
+*   **[Warehouse Physical Model Specification](docs/14-warehouse-ddl.md):** DDL executable và mô hình vật lý Staging/DQ/NDS/DDS.
+*   **[NDS/DDS implementation notes](docs/18-nds-dds-implementation-notes.md):** Ghi chú triển khai, tối ưu, idempotency và reconciliation.
+*   **[Staging Load](docs/15-staging-load.md):** Cơ chế source adapters, row hash, audit metadata và source-to-staging reconciliation.
+*   **[Pipeline Control Panel](docs/16-pipeline-control-panel.md):** Giao diện Streamlit 4 tab để giám sát health, vận hành pipeline, xem DQ/reconciliation và khám phá nguồn.
+*   **[Documentation index](docs/README.md):** Danh mục tài liệu đầy đủ và gợi ý lộ trình đọc.
 
 ---
 
-## 📅 Lộ trình dự án (Project Roadmap)
+## Lộ trình dự án (Project Roadmap)
 
-### ✅ Những phần đã hoàn thành (Milestone 1-3)
+### Những phần đã hoàn thành (Milestone 1-3)
 - [x] Xác định phạm vi nghiệp vụ và chốt kiến trúc dữ liệu không sử dụng ODS.
 - [x] Thiết kế Data Contracts và đóng gói thư viện sinh dữ liệu mô phỏng (`scripts/generate_synthetic_sources.py`).
 - [x] Tạo Manifest, validation report và tích hợp dữ liệu mẫu (sample data) vào Git phục vụ test nhanh.
@@ -299,14 +299,14 @@ Dự án tuân thủ nguyên tắc thiết kế **docs-first** và **data-contra
 - [x] Triển khai DDS, SCD2, degenerate `shift_id` và fact upsert idempotent.
 - [x] Triển khai `PipelineRunner`, CLI orchestration và Streamlit Control Panel.
 
-### ⏳ Lộ trình tiếp theo (Milestone 4+)
+### Lộ trình tiếp theo (Milestone 4+)
 - [ ] Chạy full pipeline smoke test trên môi trường sạch và lưu reconciliation/idempotency report.
 - [ ] Thiết kế và xây dựng Dashboard phân tích hiệu suất và phát hiện các điểm bất thường vận hành (Anomaly Analysis).
 - [ ] Hoàn thiện báo cáo học thuật, slide báo cáo và tài liệu hướng dẫn tái lập kết quả.
 
 ---
 
-## 🛡️ Quy tắc dữ liệu (Data & Security Policy)
+## Quy tắc dữ liệu (Data & Security Policy)
 
 1.  **Tính bất biến của dữ liệu thô (Raw Data Immutability):** Dữ liệu thô sau khi được tải từ Google Drive là bất biến. Thành viên không được phép tự sửa đổi tệp tin nguồn để vượt qua lỗi của pipeline.
 2.  **Không commit dữ liệu lớn và bí mật:** Nghiêm cấm commit dữ liệu thô, dữ liệu trung gian có dung lượng lớn, database volume, tệp cấu hình `.env` hoặc các khoá bảo mật lên Git. Mọi tệp tin này đã được cấu hình loại trừ qua `.gitignore`.
@@ -317,7 +317,7 @@ Dự án tuân thủ nguyên tắc thiết kế **docs-first** và **data-contra
 
 ---
 
-## 🤝 Đóng góp
+## Đóng góp
 
 1.  Tạo branch theo phạm vi công việc, ví dụ `feature/staging-loader`.
 2.  Giữ raw data và secret ngoài Git.

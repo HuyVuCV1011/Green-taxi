@@ -1,10 +1,10 @@
-# 🚀 Hướng dẫn Onboarding & Thiết lập Dữ liệu (Team Onboarding and Data Setup Guide)
+# Hướng dẫn Onboarding & Thiết lập Dữ liệu (Team Onboarding and Data Setup Guide)
 
 Chào mừng thành viên mới gia nhập đội ngũ phát triển dự án **NYC Green Taxi Driver Operations BI**! Hướng dẫn này sẽ giúp bạn thiết lập môi trường phát triển local nhanh chóng và chuẩn bị dữ liệu đồng bộ với cả nhóm.
 
 ---
 
-## 📋 Checklist Thiết lập Nhanh cho Thành viên mới
+## Checklist Thiết lập Nhanh cho Thành viên mới
 
 Để bắt đầu làm việc, vui lòng hoàn tất các bước chuẩn bị sau theo đúng thứ tự:
 
@@ -34,7 +34,7 @@ Chào mừng thành viên mới gia nhập đội ngũ phát triển dự án **
 
 ---
 
-## 📐 Sơ đồ Quy trình Thiết lập Dữ liệu (Data Setup Flow)
+## Sơ đồ Quy trình Thiết lập Dữ liệu (Data Setup Flow)
 
 Luồng hoạt động dưới đây mô tả các bước thiết lập từ lúc lấy gói phân phối (Release Package) từ Google Drive để nạp vào các hệ thống dữ liệu local:
 
@@ -78,21 +78,21 @@ flowchart TD
 
 ---
 
-## 🛡️ Cảnh báo Bảo mật & Quy định Dữ liệu
+## Cảnh báo Bảo mật & Quy định Dữ liệu
 
 > [!WARNING]
-> **TUYỆT ĐỐI KHÔNG COMMIT DỮ LIỆU THÔ VÀ BÍ MẬT LÊN GITHUB:**
+> **Không commit dữ liệu thô hoặc thông tin bí mật lên GitHub**
 > * Không commit các tệp tin dữ liệu trong `data/raw/`, `data/interim/`, hoặc `data/processed/`. Các thư mục này đã được đưa vào `.gitignore` để loại bỏ an toàn.
 > * Không commit tệp cấu hình chứa mật khẩu `.env` hoặc các thông tin xác thực local.
 
 > [!IMPORTANT]
-> **THÀNH VIÊN KHÔNG TỰ Ý CHẠY BỘ SINH DỮ LIỆU (GENERATOR):**
+> **Không tự ý chạy bộ sinh dữ liệu**
 > * Tập lệnh `generate_synthetic_sources.py` trong thư mục `scripts/` chỉ dành cho **Data Owner** khi cần phát hành một bản release mới.
 > * Các thành viên bắt buộc phải tải gói dữ liệu phân phối chuẩn từ Google Drive để bảo đảm tính đồng bộ về mã băm checksum, tính toàn vẹn tham chiếu và số lượng dòng đối soát (reconciliation) giữa các môi trường phát triển local.
 
 ---
 
-## ⚡ Hướng dẫn Chi tiết các Bước Thiết lập
+## Hướng dẫn Chi tiết các Bước Thiết lập
 
 ### 1. Dựng Docker Services local
 Tệp tin `docker-compose.yml` tại thư mục gốc của repository sẽ khởi chạy 4 container cơ sở dữ liệu trên Docker network `green_taxi_net`.
@@ -225,7 +225,7 @@ python scripts/seed_mongodb_fleet.py --release-id green-taxi-full-v1
 python scripts/seed_postgres_dispatch.py --release-id green-taxi-full-v1
 ```
 
-##### 📊 Số lượng bản ghi kiểm chứng sau khi seed thành công:
+##### Số lượng bản ghi kiểm chứng sau khi seed thành công:
 | Bảng cơ sở dữ liệu nguồn | Số dòng dữ liệu dự kiến |
 | :--- | :---: |
 | `public.shifts` | 157,379 |
@@ -287,7 +287,7 @@ python scripts/run_pipeline.py --release-id green-taxi-full-v1 --dry-run
 
 ---
 
-## 🔌 Các chế độ kiểm thử và làm việc
+## Các chế độ kiểm thử và làm việc
 
 ### 1. Chế độ dữ liệu mẫu (Sample Mode)
 *   **Mục tiêu:** Phục vụ chạy Unit Tests nhanh, thiết lập luồng CI (Continuous Integration) hoặc khi cần phát triển nhanh logic ETL mà không cần tải full data hay dựng Docker.
@@ -303,7 +303,7 @@ python scripts/run_pipeline.py --release-id green-taxi-full-v1 --dry-run
 
 ---
 
-## 🏢 Phân định trách nhiệm và sở hữu (Ownership Matrix)
+## Phân định trách nhiệm và sở hữu (Ownership Matrix)
 
 | Mảng công việc | Thành viên sở hữu | Phạm vi chịu trách nhiệm |
 | :--- | :--- | :--- |

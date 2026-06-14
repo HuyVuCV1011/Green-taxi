@@ -1,10 +1,10 @@
-# 📜 Hợp đồng Dữ liệu Nguồn (Synthetic Source Data Contracts)
+# Hợp đồng Dữ liệu Nguồn (Synthetic Source Data Contracts)
 
 Hợp đồng dữ liệu định nghĩa các cam kết kỹ thuật chặt chẽ về cấu trúc, kiểu dữ liệu, các business key và các ràng buộc thời gian đối với toàn bộ dữ liệu thô đầu vào.
 
 ---
 
-## 🎛️ Các Tầng Hợp đồng (Contract Layers)
+## Các Tầng Hợp đồng (Contract Layers)
 
 Mỗi nguồn dữ liệu mô phỏng (synthetic source) được biểu diễn qua hai tầng:
 
@@ -16,7 +16,7 @@ Mỗi nguồn dữ liệu mô phỏng (synthetic source) được biểu diễn 
 
 ---
 
-## 📌 Quy ước Chung (General Conventions)
+## Quy ước Chung (General Conventions)
 
 *   **Ràng buộc bắt buộc:** Cột ghi `Required = Yes` tương đương với thuộc tính `NOT NULL` trong cơ sở dữ liệu quan hệ (PostgreSQL/MySQL) và trường bắt buộc trong MongoDB Document Validation.
 *   **Chuẩn hóa chuỗi:** Tất cả các chuỗi ID bắt buộc phải được trim khoảng trắng, không được để trống và phải giữ nguyên định dạng ký tự hoa/thường từ release.
@@ -26,7 +26,7 @@ Mỗi nguồn dữ liệu mô phỏng (synthetic source) được biểu diễn 
 
 ---
 
-## ⏰ Quy ước Thời gian (Temporal Conventions)
+## Quy ước Thời gian (Temporal Conventions)
 
 Toàn bộ timestamps nghiệp vụ trong TLC và synthetic release không chứa thông tin offset múi giờ. Chúng được quy ước hiểu theo giờ địa phương New York (`America/New_York`), tuân thủ quy tắc đổi giờ mùa hè/mùa đông (EST/EDT).
 
@@ -40,7 +40,7 @@ Toàn bộ timestamps nghiệp vụ trong TLC và synthetic release không chứ
 
 ---
 
-## 📋 Chi tiết Hợp đồng các Nguồn Dữ liệu
+## Chi tiết Hợp đồng các Nguồn Dữ liệu
 
 ### 1. Driver HR - Tệp `drivers.csv`
 *   **Operational Source:** MySQL table `drivers` thuộc database `green_taxi_hr`.
@@ -133,7 +133,7 @@ Toàn bộ timestamps nghiệp vụ trong TLC và synthetic release không chứ
 
 ---
 
-## 🔒 Các Ràng buộc Hệ thống (System Invariants)
+## Các Ràng buộc Hệ thống (System Invariants)
 
 ### Ràng buộc về Seed:
 *   Bảng tra cứu `dim_vendor` chứa đầy đủ 3 thành viên: `0` (Legacy Pool), `1` (CMT), và `2` (VeriFone).
@@ -159,7 +159,7 @@ Mọi bản ghi được nạp vào Staging bắt buộc phải có đầy đủ
 
 ---
 
-## ⏰ Các Quy tắc logic Thời gian (Temporal Rules)
+## Các Quy tắc logic Thời gian (Temporal Rules)
 
 Hệ thống Warehouse bắt buộc phải kiểm tra và đảm bảo các quy tắc logic thời gian sau không bị vi phạm (DQ Gate 2):
 
