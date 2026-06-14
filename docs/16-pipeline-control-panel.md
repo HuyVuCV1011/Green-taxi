@@ -1,92 +1,96 @@
-# Data Pipeline Control Panel
+# 🎛️ Bảng Điều khiển Pipeline (Data Pipeline Control Panel)
 
-Status: `IMPLEMENTED; FULL WRITE PIPELINE VALIDATION PENDING`
+> Trạng thái: `IMPLEMENTED; FULL WRITE PIPELINE VALIDATION PENDING`
 
-Streamlit Control Panel (`app/streamlit_app.py`) là giao diện vận hành kỹ thuật
-cho pipeline, không phải dashboard BI. Power BI hoặc BI tool thay thế chạy độc
-lập và không được nhúng vào Streamlit.
+---
 
-Theme sáng Green Taxi được cấu hình tại `.streamlit/config.toml`. Ứng dụng chỉ
-dùng widget Streamlit chuẩn và CSS có phạm vi trên các HTML card do dự án tự
-render; không phụ thuộc custom component UI bên thứ ba.
+## 📌 Tổng quan
 
-## Chạy ứng dụng
+Streamlit Control Panel ([app/streamlit_app.py](file:///d:/Master/%E1%BB%A8ng%20d%E1%BB%A5ng%20tr%C3%AD%20tu%E1%BB%87%20kinh%20doanh%20n%C3%A2ng%20cao/green-taxi-bi-project/app/streamlit_app.py)) là giao diện vận hành kỹ thuật (Control Panel) cho pipeline, phục vụ đối tượng Data Engineer và Vận hành hệ thống, không phải dashboard BI. Các công cụ BI khác (như Power BI) chạy độc lập và không được nhúng vào Streamlit.
 
+> [!NOTE]
+> Giao diện áp dụng Green Taxi Light Theme (cấu hình tại `.streamlit/config.toml`). Ứng dụng chỉ sử dụng các thành phần (widgets) nguyên bản của Streamlit và CSS cục bộ (Scoped CSS) được bọc trong các HTML card tự định dạng, nhằm triệt tiêu hoàn toàn rủi ro xung đột dependency từ các custom component UI bên thứ ba.
+
+---
+
+## ⚡ Khởi chạy Ứng dụng (Running the App)
+
+### Khởi chạy giao diện Streamlit:
 ```powershell
+# Cài đặt các thư viện liên quan
 python -m pip install -r requirements.txt
+
+# Khởi chạy ứng dụng
 streamlit run app/streamlit_app.py
 ```
 
-CLI dùng cùng `PipelineRunner`:
-
+### Sử dụng CLI điều khiển (cùng sử dụng chung `PipelineRunner`):
 ```powershell
+# Chạy mô phỏng (Dry run)
 python scripts/run_pipeline.py --release-id green-taxi-full-v1 --dry-run
+
+# Chạy thực tế ghi dữ liệu
 python scripts/run_pipeline.py --release-id green-taxi-full-v1
 ```
 
-## Bốn tab tiêu chuẩn
+---
 
-1. **Tổng quan Hệ thống:** Hiển thị Database Health (dạng status cards), Schema Metrics (tổng dòng vật lý của Staging/NDS/DDS), sơ đồ luồng dữ liệu Mermaid, và chi tiết số dòng từng bảng (expander tự xếp chồng).
-2. **Vận hành Pipeline:** Chứa bộ điều khiển chạy pipeline (từng step hoặc toàn bộ), kết quả lượt chạy hiện tại, lịch sử các Batch chạy gần đây, và chế độ Demo Thuyết trình (Auto-Demo) nằm gọn trong expander.
-3. **Chất lượng & Đối soát:** Tổng hợp kết quả đối soát dữ liệu (Reconciliation), tóm tắt lỗi DQ theo luật, và các bản ghi bị cách ly (Quarantine) dạng JSON trong expander.
-4. **Khám phá Nguồn:** Cho phép DE truy vấn nhanh dữ liệu thô từ các database nguồn (MySQL, MongoDB, Postgres Dispatch).
+## 📂 Bốn Tab Chức năng Tiêu chuẩn
 
-Các tổng Staging/NDS/DDS là **số dòng vật lý theo schema**, không phải số thực
-thể nghiệp vụ duy nhất. Khi connection hoặc table không khả dụng, UI hiển thị
-`Unavailable`/`N/A` thay vì giả thành `0`. Batch history trong tab Vận hành đọc
-từ `audit.metadata_etl_batch`, tách biệt với kết quả gần nhất lưu trong
-`st.session_state`.
+Ứng dụng được tổ chức lại thành 4 tab tiêu chuẩn để tối ưu hóa khả năng tương tác và hiển thị:
 
-Streamlit không chứa SQL, không gọi subprocess và không sao chép ETL logic.
-Database query nằm trong `MonitoringRepository`; orchestration gọi loader hiện
-có qua `PipelineRunner`.
+1.  **🏥 Tổng quan Hệ thống:** Hiển thị trạng thái kết nối cơ sở dữ liệu (Database Health dưới dạng các status cards màu nhạt trực quan), các chỉ số kích thước dữ liệu (Schema Metrics hiển thị tổng dòng vật lý của Staging/NDS/DDS), sơ đồ luồng dữ liệu Mermaid, và chi tiết số dòng từng bảng sử dụng expander tự động xếp chồng.
+2.  **⚙️ Vận hành Pipeline:** Chứa bộ điều khiển chạy pipeline (lựa chọn từng step hoặc toàn bộ), kết quả lượt chạy hiện tại (Session Result), lịch sử các Batch chạy gần đây (Batch Audit History), và chế độ Demo Thuyết trình (Auto-Demo) nằm gọn trong expander giúp ngăn ngừa bấm nhầm.
+3.  **🛡️ Chất lượng & Đối soát:** Tổng hợp kết quả đối soát dữ liệu (Reconciliation chéo đầu vào - đầu ra), tóm tắt lỗi DQ theo luật, và danh sách các bản ghi lỗi bị cách ly (Quarantine) dưới dạng JSON trong expander.
+4.  **🔌 Khám phá Nguồn:** Cho phép DE truy vấn nhanh dữ liệu mẫu thô trực tiếp từ các database nguồn (MySQL, MongoDB, PostgreSQL Dispatch).
 
-## DDS Ready
+> [!IMPORTANT]
+> **Quy tắc Quản lý Dữ liệu trên UI:**
+> *   Các chỉ số đếm dòng tại Staging/NDS/DDS biểu thị **số lượng dòng vật lý ghi nhận thực tế trên schema**, không đại diện cho số thực thể nghiệp vụ duy nhất.
+> *   Khi kết nối hoặc bảng không khả dụng, UI bắt buộc hiển thị **`Unavailable`** hoặc **`N/A`**, tuyệt đối không tự động hiển thị mặc định là số `0` gây hiểu nhầm.
+> *   Lịch sử batch (Batch history) trong tab Vận hành được đọc trực tiếp từ bảng `audit.metadata_etl_batch`, hoạt động hoàn toàn độc lập với kết quả chạy tạm thời của phiên làm việc lưu trong `st.session_state`.
+> *   Streamlit không chứa bất kỳ câu lệnh SQL nghiệp vụ nào, không gọi subprocess và không sao chép logic ETL. Mọi tương tác dữ liệu phải thông qua `MonitoringRepository` và `PipelineRunner`.
 
-`DDS Ready for BI` chỉ hiển thị khi đồng thời thỏa:
+---
 
-- không phải dry-run;
-- run có status `SUCCEEDED`;
-- có step `mark_dds_ready`;
-- step đó có status `SUCCEEDED`.
+## 🟢 DDS Ready for BI
 
-`SKIPPED`, `DRY_RUN`, `FAILED` hoặc thiếu step đều không được coi là ready.
-Dry-run có run-level status `DRY_RUN` và hiển thị thông báo riêng rằng không có
-dữ liệu được nạp.
+Chỉ số ready cho BI (`DDS Ready for BI`) chỉ hiển thị khi đồng thời thỏa mãn các điều kiện sau:
 
-## Lock và stale recovery
+- [x] Không phải là lượt chạy mô phỏng (`dry_run = False`);
+- [x] Phiên chạy có kết quả trạng thái là `SUCCEEDED`;
+- [x] Có thực thi step `mark_dds_ready`;
+- [x] Step `mark_dds_ready` hoàn thành với trạng thái `SUCCEEDED`.
 
-`data/.pipeline.lock` được tạo bằng exclusive creation và chứa PID, hostname,
-created timestamp, owner token. Owner token ngăn session khác release lock.
-Lock cùng host có PID còn hoạt động không bị xóa. Lock host khác chỉ stale sau
-TTL mặc định 6 giờ. Metadata corrupt còn mới được giữ lại; corrupt lock quá TTL
-có thể phục hồi.
+> [!WARNING]
+> Các trạng thái `SKIPPED`, `DRY_RUN`, `FAILED` hoặc thiếu step đánh dấu đều không được coi là ready. Các lượt chạy dry-run sẽ trả về trạng thái chạy `DRY_RUN` và hiển thị thông báo rõ ràng rằng không có dữ liệu nào được ghi đè vào kho.
 
-Stale recovery dùng file guard độc quyền để hai process không cùng xóa lock.
-Sau khi process bình thường kết thúc, `finally` release lock. Process kill hoặc
-mất điện không chạy được `finally`; lần acquire sau sẽ kiểm tra và phục hồi
-stale lock.
+---
 
-Hai file lock nằm trong `.gitignore`.
+## 🔒 Cơ chế Khóa và stale lock recovery
 
-## Health cache và lỗi UI
+File lock `data/.pipeline.lock` được tạo theo cơ chế độc quyền (exclusive creation) và chứa siêu dữ liệu: PID, hostname, thời điểm tạo (timestamp) và owner token.
+*   **Owner Token:** Giúp ngăn chặn các session khác vô tình giải phóng lock của session hiện tại.
+*   **Active Lock:** Lock được tạo cùng host và có PID đang hoạt động sẽ không bị xóa.
+*   **Stale Lock:** Lock thuộc host khác chỉ được coi là stale sau thời gian TTL mặc định (6 giờ).
+*   **Stale Recovery:** Quá trình khôi phục khóa stale sử dụng file guard độc quyền để tránh xung đột giữa hai process tranh chấp.
+*   **Xử lý lỗi đột ngột:**
+    *   *Lỗi runtime bình thường:* Lock được tự động giải phóng qua khối lệnh `finally` khi kết thúc luồng.
+    *   *Lỗi nghiêm trọng (Process kill / Mất điện):* Khối lệnh `finally` không thể thực thi; lock sẽ tồn tại tạm thời và được tự động dọn dẹp (Stale recovery) ở lượt acquire tiếp theo thông qua kiểm tra timestamp và trạng thái PID.
 
-Health check được bọc bằng `st.cache_data(ttl=30)`. Nút refresh chỉ clear cache
-health này; connection/client object không được cache. Khi Docker tắt, app hiển
-thị trạng thái disconnected thay vì crash.
+---
 
-Mọi exception và payload có khả năng chứa secret phải đi qua API sanitize dùng
-chung trong `src.monitoring.repository`. Password, token, API key/secret và
-credential trong database URI được che trước khi render. Query lỗi được hiển
-thị là không khả dụng, không bị diễn giải thành bảng rỗng hợp lệ.
+## ⚡ Cache Kết nối và Xử lý Ngoại lệ
 
-## Giới hạn hiện tại
+*   **Health Cache:** Trạng thái kết nối (Health check) được cache thông qua `@st.cache_data(ttl=30)`. Nút bấm "🔄 Làm mới trạng thái" thực hiện xóa cache này để kiểm tra lại trực tiếp; bản thân connection object không được cache. Khi Docker bị tắt, app sẽ hiển thị trạng thái disconnected thay vì bị crash ứng dụng.
+*   **Bảo mật thông tin (Sanitization):** Mọi exception và payload lỗi có nguy cơ rò rỉ thông tin nhạy cảm bắt buộc phải đi qua API che thông tin (`sanitize_message` / `sanitize_for_display`) trong `src.monitoring.repository`. Tất cả mật khẩu, token, API keys và URI database được che bằng ký tự `***` trước khi render lên màn hình.
 
-- Mermaid tải module từ CDN; khi offline có thể không render.
-- Streamlit không có breakpoint server-side ổn định; layout dùng expander và
-  khả năng tự xếp chồng của widget thay vì phát hiện viewport.
-- File lock phù hợp demo local/shared filesystem, không thay thế distributed lock.
-- Control Panel chạy pipeline đồng bộ trong Streamlit process.
-- Chưa khẳng định full write pipeline đã pass trên môi trường sạch chỉ dựa vào
-  unit tests hoặc UI smoke test.
-- Dashboard nghiệp vụ, semantic model và Power BI report vẫn là deliverable riêng.
+---
+
+## ⚠️ Giới hạn Kiến trúc Hiện tại
+
+*   **Mermaid CDN:** Sơ đồ Mermaid tải thư viện dựng hình từ CDN trực tuyến; nếu chạy offline có thể không hiển thị được sơ đồ trực quan.
+*   **Thiết kế Mobile:** Streamlit không cung cấp breakpoint server-side; do đó layout sử dụng cơ chế tự động co giãn (responsive) và expander thay vì cố gắng bắt độ rộng viewport của thiết bị.
+*   **Tầm ảnh hưởng của Lock:** Cơ chế file lock cục bộ chỉ phù hợp khi chạy thử nghiệm trên máy local hoặc thư mục chia sẻ (shared filesystem); không thay thế cho các giải pháp khóa phân tán (distributed lock) trên production.
+*   **Cadence Vận hành:** Control Panel chạy pipeline ở chế độ đồng bộ (blocking main thread) trong process Streamlit.
+*   **Phạm vi BI:** Control Panel chỉ là công cụ giám sát hạ tầng và kỹ thuật; dashboard nghiệp vụ Power BI và semantic model là các thành phần chuyển giao độc lập.
