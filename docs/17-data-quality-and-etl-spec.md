@@ -145,8 +145,8 @@ Quy trình nạp dữ liệu phải tuân thủ nghiêm ngặt nguyên tắc **N
      `batch_id` mới nhưng dùng cùng source identity; reconciliation xác nhận kết
      quả nghiệp vụ không đổi.
 
-2. **Work tables trước khi publish**:
-   - Dữ liệu NDS/DDS của batch được chuẩn bị trong temporary/work tables.
+2. **Work tables trước khi publish (thiết kế mục tiêu, chưa triển khai đầy đủ)**:
+   - Dữ liệu NDS/DDS dự kiến được chuẩn bị trong temporary/work tables.
    - Chỉ sau khi DQ và reconciliation pass mới merge vào bảng đích trong một
      transaction ngắn.
    - Batch lỗi trước publish chỉ cần xóa work rows của chính batch đó, không
@@ -167,7 +167,7 @@ Quy trình nạp dữ liệu phải tuân thủ nghiêm ngặt nguyên tắc **N
    - Việc đóng dòng cũ và chèn dòng mới diễn ra trong cùng transaction. Không
      dùng `DELETE batch_id` rồi đoán dòng nào cần mở lại.
 
-5. **Transaction boundary có kiểm soát**:
+5. **Transaction boundary có kiểm soát (một phần đã triển khai)**:
    - Mỗi entity hoặc partition tháng được publish trong một transaction riêng
      để tránh transaction quá lớn với hàng triệu trips.
    - Chỉ cập nhật `audit.metadata_etl_batch` thành `SUCCEEDED` sau khi tất cả

@@ -39,6 +39,8 @@ chạy smoke/full setup trên môi trường sạch và lưu lại kết quả r
 
 ## Milestone 3 - DQ and NDS
 
+Status: `IMPLEMENTED; INTEGRATION REPORT PENDING`
+
 - Type/schema validation.
 - Driver/vehicle upsert.
 - SCD event processing.
@@ -50,6 +52,8 @@ Deliverable: integrated relational model and DQ report.
 
 ## Milestone 4 - DDS
 
+Status: `IMPLEMENTED; INTEGRATION REPORT PENDING`
+
 - Date/time dimensions.
 - Driver/vehicle/location/vendor dimensions.
 - Fact driver trip.
@@ -59,6 +63,8 @@ Deliverable: integrated relational model and DQ report.
 Deliverable: reconciled Driver Operations star schema.
 
 ## Milestone 5 - Analytics
+
+Status: `PLANNED`
 
 - KPI definitions.
 - Dashboard wireframe.

@@ -114,3 +114,20 @@ python scripts/validate_warehouse_pipeline.py --release-id dq-validation-v1 --dq
 Validator kiểm tra lineage Source/Staging/NDS/DDS, count và measure, duplicate
 business key, current SCD2 row, shift duration, quarantine, WARN/ERROR và rerun
 không sinh thêm fact hoặc SCD version.
+
+## PipelineRunner CLI
+
+```powershell
+# Kiểm tra thứ tự và contract step, không ghi dữ liệu
+python scripts/run_pipeline.py --release-id green-taxi-full-v1 --dry-run
+
+# Chạy toàn bộ pipeline
+python scripts/run_pipeline.py --release-id green-taxi-full-v1
+
+# Chạy một step
+python scripts/run_pipeline.py --release-id green-taxi-full-v1 --step reconciliation
+```
+
+Không chạy full write pipeline trên dữ liệu local dùng chung nếu chưa xác nhận
+backup/reload policy. `DDS Ready` chỉ hợp lệ với run thực `SUCCEEDED` có step
+`mark_dds_ready` cũng `SUCCEEDED`.

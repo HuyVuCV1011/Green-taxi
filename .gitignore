@@ -32,6 +32,8 @@ data/external/**
 !data/processed/.gitkeep
 !data/metadata/
 !data/metadata/**
+data/.pipeline.lock
+data/.pipeline.lock.recovery
 
 # Databases and analytical artifacts
 *.db

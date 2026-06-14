@@ -282,6 +282,12 @@ streamlit run app/streamlit_app.py
 ```
 Để biết thêm chi tiết, xem thêm tại [Pipeline Control Panel](16-pipeline-control-panel.md).
 
+Có thể kiểm tra orchestration trước bằng dry-run không ghi dữ liệu:
+
+```powershell
+python scripts/run_pipeline.py --release-id green-taxi-full-v1 --dry-run
+```
+
 ---
 
 ## Các chế độ kiểm thử và làm việc
@@ -296,8 +302,9 @@ streamlit run app/streamlit_app.py
 
 ### 2. Chế độ dữ liệu đầy đủ (Full Mode)
 * **Mục tiêu:** Chạy trích xuất toàn bộ dữ liệu thực tế, seed nguồn, nạp
-  staging và đối soát chất lượng dữ liệu trên quy mô đầy đủ. NDS/DDS và báo cáo
-  BI là các milestone tiếp theo.
+  Staging/NDS/DDS và đối soát chất lượng dữ liệu trên quy mô đầy đủ. Loader
+  NDS/DDS đã được triển khai; full smoke test trên môi trường sạch và báo cáo BI
+  vẫn là công việc cần hoàn tất.
 * **Cách hoạt động:** Yêu cầu các container Docker phải chạy, dữ liệu trong `data/raw/` đã được seed đầy đủ vào các nguồn MySQL, MongoDB, PostgreSQL Source.
 
 ---

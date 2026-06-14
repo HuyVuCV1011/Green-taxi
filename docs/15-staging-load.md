@@ -98,3 +98,10 @@ Quy trình ETL ghi nhận đầy đủ siêu dữ liệu kiểm toán vào schem
 Sau khi hoàn thành việc trích xuất và nạp cho mỗi thực thể, bộ nạp thực hiện so sánh số lượng dòng đọc được từ nguồn và số lượng dòng thực tế đã ghi nhận trong bảng Staging:
 - Nếu số lượng dòng lệch nhau (`rows_extracted != rows_loaded`), trạng thái của thực thể nguồn đó được đánh dấu là `FAILED` và batch ETL sẽ dừng/báo lỗi.
 - CLI hiển thị bảng tổng hợp chi tiết kết quả đối soát sau khi chạy.
+
+## Trạng thái triển khai
+
+Staging loader, source adapters và audit row count đã được triển khai. Có thể
+chạy riêng bằng `scripts/load_staging.py` hoặc qua `PipelineRunner`. Tài liệu
+này không khẳng định full release đã pass trên mọi môi trường; cần lưu riêng
+smoke-test và reconciliation report từ một môi trường sạch trước khi nộp đồ án.

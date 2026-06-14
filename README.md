@@ -204,9 +204,17 @@ python scripts/load_dds.py --release-id green-taxi-full-v1
 
 #### Bước 7: Khởi chạy Giao diện điều khiển (Pipeline Control Panel) - Optional
 ```powershell
+# Chạy orchestration từ CLI
+python scripts/run_pipeline.py --release-id green-taxi-full-v1 --dry-run
+python scripts/run_pipeline.py --release-id green-taxi-full-v1
+
 # Khởi chạy giao diện Streamlit để theo dõi và đối soát dữ liệu
 streamlit run app/streamlit_app.py
 ```
+
+Control Panel có 7 tab kỹ thuật: tổng quan, Source Explorer, điều khiển step,
+tiến độ chạy, trạng thái warehouse, DQ/quarantine và Auto-Demo. Power BI là
+công cụ BI độc lập, không được nhúng trong Streamlit.
 
 ---
 
@@ -290,8 +298,10 @@ Dự án tuân thủ nguyên tắc thiết kế **docs-first** và **data-contra
 - [x] Xây dựng adapters trích xuất dữ liệu từ các nguồn (MySQL, MongoDB, PostgreSQL) và tệp thô vào staging.
 - [x] Triển khai DQ Gate 1, quarantine, NDS 3NF và lineage theo batch/release.
 - [x] Triển khai DDS, SCD2, degenerate `shift_id` và fact upsert idempotent.
+- [x] Triển khai `PipelineRunner`, CLI orchestration và Streamlit Control Panel.
 
 ### Lộ trình tiếp theo (Milestone 4+)
+- [ ] Chạy full pipeline smoke test trên môi trường sạch và lưu reconciliation/idempotency report.
 - [ ] Thiết kế và xây dựng Dashboard phân tích hiệu suất và phát hiện các điểm bất thường vận hành (Anomaly Analysis).
 - [ ] Hoàn thiện báo cáo học thuật, slide báo cáo và tài liệu hướng dẫn tái lập kết quả.
 

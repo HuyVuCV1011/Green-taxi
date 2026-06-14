@@ -10,5 +10,8 @@
 Chạy sample test:
 
 ```powershell
-python -m unittest discover -s tests
+python -m unittest tests.test_monitoring_repository -v
+python -m unittest tests.test_streamlit_control_panel -v
+python -m unittest tests.test_pipeline_runner -v
+python -m unittest discover -s tests -v
 ```

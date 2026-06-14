@@ -238,3 +238,17 @@ batch hằng ngày, nhưng streaming/CDC không thuộc yêu cầu hiện tại.
 - Batch đã hoàn tất với cùng source identity: skip hoặc reload có kiểm soát.
 - Batch thất bại: rollback vùng load của batch và cho phép chạy lại.
 - NDS/DDS chỉ đọc staging batch đã đạt DQ gate.
+
+## Orchestration and operations UI
+
+`PipelineRunner` điều phối các loader hiện có theo thứ tự
+`source_health -> load_staging -> load_nds -> load_dds -> reconciliation ->
+mark_dds_ready`; nó không sao chép logic ETL. CLI nằm ở
+`scripts/run_pipeline.py`. Streamlit Control Panel là giao diện vận hành kỹ
+thuật 7 tab và không phải dashboard BI.
+
+File lock `data/.pipeline.lock` được tạo độc quyền, chứa PID, hostname, thời
+điểm tạo và owner token. Lock chết/cũ có thể được phục hồi qua recovery guard;
+lock đang hoạt động và corrupt lock còn mới không bị xóa. `finally` chỉ giải
+phóng lock khi process còn chạy; process kill hoặc mất điện được xử lý ở lần
+acquire sau bằng stale recovery.

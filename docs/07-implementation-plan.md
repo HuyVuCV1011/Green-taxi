@@ -69,6 +69,8 @@ vào DQ/NDS.
 
 ## Phase 3 - DQ and NDS
 
+Status: `IMPLEMENTED; FRESH-ENV FULL VALIDATION PENDING`
+
 - Chuẩn hóa type và timestamp.
 - Upsert driver, vehicle, vendor và location.
 - Xử lý inferred/late-arriving master.
@@ -78,6 +80,8 @@ vào DQ/NDS.
 
 ## Phase 4 - DDS
 
+Status: `IMPLEMENTED; FRESH-ENV FULL VALIDATION PENDING`
+
 - Sinh `dim_date` và `dim_time`.
 - Load SCD2 `dim_driver`, `dim_vehicle`.
 - Load `fact_driver_trip`.
@@ -85,6 +89,8 @@ vào DQ/NDS.
 - Reconcile row counts, revenue, distance và shift measures với NDS.
 
 ## Phase 5 - Analytics
+
+Status: `PLANNED`
 
 Dashboard tối thiểu:
 

@@ -410,9 +410,12 @@ trục phân tích dùng chung độc lập.
 
 ---
 
-## 4. Thiết kế Schema data quality & Quarantine (Placeholder DDL)
+## 4. Thiết kế Schema data quality & Quarantine
 
-Cấu trúc bảng lưu vết lỗi DQ và quarantine lưu dữ liệu thô bị reject:
+Cấu trúc thực thi chuẩn nằm trong `sql/warehouse/05_dq_quarantine.sql`.
+Contract chính cho bản ghi bị reject là bảng generic
+`dq.quarantine_record` với payload JSONB; các bảng quarantine theo nguồn chỉ là
+lớp tương thích và không được Control Panel giả định là contract chính.
 
 ```sql
 -- 4.1 Bảng lưu thông tin lỗi DQ chi tiết (Đã triển khai trong audit_metadata)
