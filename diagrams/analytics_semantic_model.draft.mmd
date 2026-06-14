@@ -1,0 +1,145 @@
+erDiagram
+    %% Dimensional Model Semantic Relationships Draft
+    %% Note: Active/Inactive status for multiple relationships to same dimensions (e.g. dim_date, dim_location) is TBD_AFTER_RECONCILIATION.
+
+    dim_date {
+        int date_key PK
+        date date
+        int day
+        int month
+        varchar month_name
+        int quarter
+        int year
+        int day_of_week
+        varchar day_name
+        boolean is_weekend
+        boolean is_holiday
+        int week_of_year
+    }
+
+    dim_time {
+        int time_key PK
+        time time_of_day
+        int hour
+        int minute
+        varchar time_bucket
+        boolean is_peak_hour
+    }
+
+    dim_driver {
+        int driver_key PK
+        varchar driver_id
+        varchar driver_code
+        varchar display_name
+        varchar home_borough
+        varchar employment_status
+        varchar license_status
+        date license_expiry_date
+        int experience_years
+        timestamp start_date
+        timestamp end_date
+        boolean is_current
+    }
+
+    dim_vehicle {
+        int vehicle_key PK
+        varchar vehicle_id
+        varchar plate_token
+        int model_year
+        varchar vehicle_type
+        varchar vehicle_status
+        date last_inspection_date
+        timestamp start_date
+        timestamp end_date
+        boolean is_current
+    }
+
+    dim_vendor {
+        int vendor_key PK
+        int vendor_id
+        varchar vendor_name
+    }
+
+    dim_location {
+        int location_key PK
+        int location_id
+        varchar borough
+        varchar zone
+        varchar service_zone
+    }
+
+    dim_junk_trip {
+        int junk_trip_key PK
+        varchar payment_type_desc
+        varchar ratecode_desc
+        varchar trip_type_desc
+        varchar assignment_method
+        boolean is_anomaly
+    }
+
+    fact_driver_trip {
+        bigint fact_trip_id PK
+        text trip_id
+        varchar shift_id FK
+        int pickup_date_key FK
+        int pickup_time_key FK
+        int dropoff_date_key FK
+        int dropoff_time_key FK
+        int driver_key FK
+        int vehicle_key FK
+        int vendor_key FK
+        int pickup_location_key FK
+        int dropoff_location_key FK
+        int junk_trip_key FK
+        int passenger_count
+        decimal trip_distance
+        decimal trip_duration_minutes
+        decimal fare_amount
+        decimal extra
+        decimal mta_tax
+        decimal tip_amount
+        decimal tolls_amount
+        decimal improvement_surcharge
+        decimal total_amount
+        decimal assignment_delay_minutes
+    }
+
+    fact_driver_shift {
+        bigint fact_shift_id PK
+        varchar shift_id
+        int shift_start_date_key FK
+        int shift_start_time_key FK
+        int driver_key FK
+        int vehicle_key FK
+        int vendor_key FK
+        varchar shift_status
+        timestamp shift_start
+        timestamp shift_end
+        boolean is_anomaly
+        decimal shift_duration_minutes
+        int trip_count
+        decimal occupied_minutes
+        decimal idle_minutes
+        decimal utilization_rate
+        decimal total_revenue
+        decimal total_tips
+    }
+
+    %% Relationships for fact_driver_trip
+    fact_driver_trip }o--|| dim_date : "pickup_date_key (Active/Inactive: TBD_AFTER_RECONCILIATION)"
+    fact_driver_trip }o--|| dim_date : "dropoff_date_key (Active/Inactive: TBD_AFTER_RECONCILIATION)"
+    fact_driver_trip }o--|| dim_time : "pickup_time_key (Active/Inactive: TBD_AFTER_RECONCILIATION)"
+    fact_driver_trip }o--|| dim_time : "dropoff_time_key (Active/Inactive: TBD_AFTER_RECONCILIATION)"
+    fact_driver_trip }o--|| dim_driver : "driver_key"
+    fact_driver_trip }o--|| dim_vehicle : "vehicle_key"
+    fact_driver_trip }o--|| dim_vendor : "vendor_key"
+    fact_driver_trip }o--|| dim_location : "pickup_location_key (Active/Inactive: TBD_AFTER_RECONCILIATION)"
+    fact_driver_trip }o--|| dim_location : "dropoff_location_key (Active/Inactive: TBD_AFTER_RECONCILIATION)"
+    fact_driver_trip }o--|| dim_junk_trip : "junk_trip_key"
+
+    %% Relationships for fact_driver_shift
+    fact_driver_shift }o--|| dim_date : "shift_start_date_key"
+    fact_driver_shift }o--|| dim_time : "shift_start_time_key"
+    fact_driver_shift }o--|| dim_driver : "driver_key"
+    fact_driver_shift }o--|| dim_vehicle : "vehicle_key"
+    fact_driver_shift }o--|| dim_vendor : "vendor_key"
