@@ -101,6 +101,16 @@ python scripts/load_dds.py --release-id green-taxi-full-v1
 `load_nds.py` thực thi DQ Gate 1, quarantine và chuẩn hóa 3NF.
 `load_dds.py` thực thi DQ Gate 2, SCD2 và upsert hai fact theo business key.
 
-## Planned entry points
+## Validate pipeline
 
-- `validate_pipeline`
+```powershell
+# Reconciliation cho full release
+python scripts/validate_warehouse_pipeline.py --release-id green-taxi-full-v1
+
+# DQ và idempotency fixture, chỉ chạy trên database test riêng
+python scripts/validate_warehouse_pipeline.py --release-id dq-validation-v1 --dq-fixtures
+```
+
+Validator kiểm tra lineage Source/Staging/NDS/DDS, count và measure, duplicate
+business key, current SCD2 row, shift duration, quarantine, WARN/ERROR và rerun
+không sinh thêm fact hoặc SCD version.

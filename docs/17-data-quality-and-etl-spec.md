@@ -53,7 +53,7 @@ Tập trung vào kiểm tra tính hợp lý nghiệp vụ (Business Logic / Anom
 
 Khi một bản ghi vi phạm luật ở mức độ **ERROR**, nó sẽ bị cách ly ra khỏi luồng tích hợp chính:
 
-1. **Ghi nhận vào Quarantine**: Dữ liệu thô của dòng vi phạm được sao chép nguyên trạng từ bảng Staging sang bảng tương ứng trong schema `dq` (ví dụ: `dq.quarantine_stg_tlc_green_trips`), kèm theo `batch_id` và `error_rule_code`.
+1. **Ghi nhận vào Quarantine**: Dữ liệu thô của dòng vi phạm được giữ nguyên trong `dq.quarantine_record.raw_payload`, kèm `batch_id`, `release_id`, source identity và `error_rule_code`. Bảng quarantine riêng theo nguồn chỉ là lớp tương thích tùy chọn, không phải contract chính.
 2. **Ghi log vào `dq.dq_issue`**: Hệ thống chèn 1 dòng log mô tả chi tiết: mã luật vi phạm, khóa tự nhiên của bản ghi, thông báo lỗi và payload JSON chứa các cột bị lỗi để phục vụ đối soát.
 3. **Báo cáo và sửa lỗi**: Báo cáo DQ trên Power BI hiển thị số lượng bản ghi bị cách ly. Người vận hành hệ thống có thể kiểm tra danh sách này để phối hợp với bên cung cấp dữ liệu nguồn điều chỉnh hoặc tái nạp.
 
@@ -172,3 +172,9 @@ Quy trình nạp dữ liệu phải tuân thủ nghiêm ngặt nguyên tắc **N
      để tránh transaction quá lớn với hàng triệu trips.
    - Chỉ cập nhật `audit.metadata_etl_batch` thành `SUCCEEDED` sau khi tất cả
      entity/partition hoàn tất và reconciliation pass.
+
+6. **DQ audit idempotent theo source identity**:
+   - Cùng `release_id`, source system, entity, source record và rule chỉ ghi một
+     `dq_issue` hoặc quarantine record.
+   - Rerun tạo `batch_id` mới nhưng không nhân đôi cùng một lỗi nguồn đã ghi
+     nhận; lịch sử audit của batch thành công không bị xóa.

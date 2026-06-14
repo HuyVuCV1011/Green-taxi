@@ -434,7 +434,17 @@ class NDSLoader:
             INSERT INTO dq.dq_issue (
                 batch_id, release_id, source_system_code, source_entity,
                 source_record_id, rule_code, severity, issue_message, issue_payload
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            )
+            SELECT %s, %s, %s, %s, %s, %s, %s, %s, %s
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM dq.dq_issue
+                WHERE release_id = %s
+                  AND source_system_code = %s
+                  AND source_entity = %s
+                  AND source_record_id IS NOT DISTINCT FROM %s
+                  AND rule_code = %s
+            )
         """
         with conn.cursor() as cur:
             cur.execute(
@@ -448,7 +458,12 @@ class NDSLoader:
                     rule_code,
                     severity,
                     message,
-                    json.dumps(payload, default=str)
+                    json.dumps(payload, default=str),
+                    self.release_id,
+                    source_system,
+                    source_entity,
+                    source_record_id,
+                    rule_code,
                 )
             )
 
@@ -465,7 +480,17 @@ class NDSLoader:
                     batch_id, release_id, source_system_code, source_entity,
                     source_record_id, source_file, source_row_number,
                     error_rule_code, severity, raw_payload
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'ERROR', %s)
+                )
+                SELECT %s, %s, %s, %s, %s, %s, %s, %s, 'ERROR', %s
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM dq.quarantine_record
+                    WHERE release_id = %s
+                      AND source_system_code = %s
+                      AND source_entity = %s
+                      AND source_record_id IS NOT DISTINCT FROM %s
+                      AND error_rule_code = %s
+                )
                 """,
                 (
                     str(self.batch_id),
@@ -477,6 +502,11 @@ class NDSLoader:
                     payload.get("source_row_number"),
                     error_rule_code,
                     json.dumps(payload, default=str),
+                    self.release_id,
+                    source_system,
+                    source_entity,
+                    source_record_id,
+                    error_rule_code,
                 ),
             )
 
@@ -1180,9 +1210,10 @@ class NDSLoader:
                 FROM staging.stg_dispatch_shifts s
                 JOIN nds.nds_driver d ON d.driver_nk = s.driver_id
                 WHERE s.release_id = %s AND d.is_inferred = true AND NOT EXISTS (
-                    SELECT 1 FROM dq.dq_issue i WHERE i.batch_id = %s AND i.source_record_id = s.driver_id AND i.rule_code = 'DQ_MISSING_MASTER'
-                );
-            """, (str(self.batch_id), self.release_id, self.release_id, str(self.batch_id)))
+                    SELECT 1 FROM dq.dq_issue i WHERE i.release_id = %s AND i.source_record_id = s.driver_id AND i.rule_code = 'DQ_MISSING_MASTER'
+                )
+                ON CONFLICT DO NOTHING;
+            """, (str(self.batch_id), self.release_id, self.release_id, self.release_id))
             
             # 2. Inferred vehicles for shifts
             cur.execute("""
@@ -1212,9 +1243,10 @@ class NDSLoader:
                 FROM staging.stg_dispatch_shifts s
                 JOIN nds.nds_vehicle v ON v.vehicle_nk = s.vehicle_id
                 WHERE s.release_id = %s AND v.is_inferred = true AND NOT EXISTS (
-                    SELECT 1 FROM dq.dq_issue i WHERE i.batch_id = %s AND i.source_record_id = s.vehicle_id AND i.rule_code = 'DQ_MISSING_MASTER'
-                );
-            """, (str(self.batch_id), self.release_id, self.release_id, str(self.batch_id)))
+                    SELECT 1 FROM dq.dq_issue i WHERE i.release_id = %s AND i.source_record_id = s.vehicle_id AND i.rule_code = 'DQ_MISSING_MASTER'
+                )
+                ON CONFLICT DO NOTHING;
+            """, (str(self.batch_id), self.release_id, self.release_id, self.release_id))
             
         dwh.commit()
         
@@ -1591,9 +1623,10 @@ class NDSLoader:
                 FROM staging.stg_dispatch_trip_assignments ta
                 JOIN nds.nds_driver d ON d.driver_nk = ta.driver_id
                 WHERE ta.release_id = %s AND d.is_inferred = true AND NOT EXISTS (
-                    SELECT 1 FROM dq.dq_issue i WHERE i.batch_id = %s AND i.source_record_id = ta.driver_id AND i.rule_code = 'DQ_MISSING_MASTER'
-                );
-            """, (str(self.batch_id), self.release_id, self.release_id, str(self.batch_id)))
+                    SELECT 1 FROM dq.dq_issue i WHERE i.release_id = %s AND i.source_record_id = ta.driver_id AND i.rule_code = 'DQ_MISSING_MASTER'
+                )
+                ON CONFLICT DO NOTHING;
+            """, (str(self.batch_id), self.release_id, self.release_id, self.release_id))
             
             # 2. Inferred vehicles for assignments
             cur.execute("""
@@ -1623,9 +1656,10 @@ class NDSLoader:
                 FROM staging.stg_dispatch_trip_assignments ta
                 JOIN nds.nds_vehicle v ON v.vehicle_nk = ta.vehicle_id
                 WHERE ta.release_id = %s AND v.is_inferred = true AND NOT EXISTS (
-                    SELECT 1 FROM dq.dq_issue i WHERE i.batch_id = %s AND i.source_record_id = ta.vehicle_id AND i.rule_code = 'DQ_MISSING_MASTER'
-                );
-            """, (str(self.batch_id), self.release_id, self.release_id, str(self.batch_id)))
+                    SELECT 1 FROM dq.dq_issue i WHERE i.release_id = %s AND i.source_record_id = ta.vehicle_id AND i.rule_code = 'DQ_MISSING_MASTER'
+                )
+                ON CONFLICT DO NOTHING;
+            """, (str(self.batch_id), self.release_id, self.release_id, self.release_id))
             
             # 3. Inferred trips for assignments (Essential for performance as TLC trips might not be loaded yet)
             cur.execute("""
@@ -1659,9 +1693,10 @@ class NDSLoader:
                 FROM staging.stg_dispatch_trip_assignments ta
                 JOIN nds.nds_trip t ON t.trip_nk = ta.trip_key
                 WHERE ta.release_id = %s AND t.source_file = 'inferred' AND NOT EXISTS (
-                    SELECT 1 FROM dq.dq_issue i WHERE i.batch_id = %s AND i.source_record_id = ta.trip_key AND i.rule_code = 'DQ_MISSING_MASTER'
-                );
-            """, (str(self.batch_id), self.release_id, self.release_id, str(self.batch_id)))
+                    SELECT 1 FROM dq.dq_issue i WHERE i.release_id = %s AND i.source_record_id = ta.trip_key AND i.rule_code = 'DQ_MISSING_MASTER'
+                )
+                ON CONFLICT DO NOTHING;
+            """, (str(self.batch_id), self.release_id, self.release_id, self.release_id))
             
             # 4. Inferred shifts for assignments
             cur.execute("""
@@ -1699,9 +1734,10 @@ class NDSLoader:
                 FROM staging.stg_dispatch_trip_assignments ta
                 JOIN nds.nds_shift s ON s.shift_nk = ta.shift_id
                 WHERE ta.release_id = %s AND s.trip_count_source = 0 AND s.occupied_minutes_source = 0 AND NOT EXISTS (
-                    SELECT 1 FROM dq.dq_issue i WHERE i.batch_id = %s AND i.source_record_id = ta.shift_id AND i.rule_code = 'DQ_MISSING_MASTER'
-                );
-            """, (str(self.batch_id), self.release_id, self.release_id, str(self.batch_id)))
+                    SELECT 1 FROM dq.dq_issue i WHERE i.release_id = %s AND i.source_record_id = ta.shift_id AND i.rule_code = 'DQ_MISSING_MASTER'
+                )
+                ON CONFLICT DO NOTHING;
+            """, (str(self.batch_id), self.release_id, self.release_id, self.release_id))
             
         dwh.commit()
         

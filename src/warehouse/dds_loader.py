@@ -177,7 +177,17 @@ class DDSLoader:
                 INSERT INTO dq.dq_issue (
                     batch_id, release_id, source_system_code, source_entity,
                     source_record_id, rule_code, severity, issue_message, issue_payload
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                )
+                SELECT %s, %s, %s, %s, %s, %s, %s, %s, %s
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM dq.dq_issue
+                    WHERE release_id = %s
+                      AND source_system_code = %s
+                      AND source_entity = %s
+                      AND source_record_id IS NOT DISTINCT FROM %s
+                      AND rule_code = %s
+                )
                 """,
                 (
                     str(self.batch_id),
@@ -189,6 +199,11 @@ class DDSLoader:
                     severity,
                     message,
                     json.dumps(payload, default=str),
+                    self.release_id,
+                    source_system,
+                    source_entity,
+                    source_record_id,
+                    rule_code,
                 ),
             )
 

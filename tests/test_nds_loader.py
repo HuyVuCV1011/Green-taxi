@@ -255,6 +255,18 @@ class TestNDSIntegrationContracts(unittest.TestCase):
         source = inspect.getsource(mod.NDSLoader.write_quarantine)
         self.assertIn("dq.quarantine_record", source)
         self.assertIn("source_system_code", source)
+        self.assertIn("WHERE NOT EXISTS", source)
+        self.assertIn("release_id = %s", source)
+
+    def test_dq_issue_is_idempotent_for_release_record_and_rule(self) -> None:
+        import inspect
+        from src.warehouse import nds_loader as mod
+
+        source = inspect.getsource(mod.NDSLoader.log_dq_issue)
+        self.assertIn("WHERE NOT EXISTS", source)
+        self.assertIn("release_id = %s", source)
+        self.assertIn("source_record_id IS NOT DISTINCT FROM %s", source)
+        self.assertIn("rule_code = %s", source)
 
 
 if __name__ == "__main__":

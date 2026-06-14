@@ -57,3 +57,26 @@ Smoke test ngày 14/06/2026 trên database test riêng:
 Rerun DDS tạo `0` version SCD2 mới cho 860 drivers và 860 vehicles. Revenue
 trip DDS khớp NDS; duplicate fact/natural key và multiple-current SCD2 đều bằng
 `0`.
+
+Reconciliation cũng xác nhận staging audit `4.768.237/4.768.237`, revenue
+`48.535.884,47`, distance `87.426.352,1700` và duration làm tròn theo từng trip
+`48.423.718,63` đều khớp giữa NDS và DDS. Không có shift có tổng
+`occupied_minutes + idle_minutes` lệch `shift_duration_minutes`.
+
+## DQ fixture verification
+
+Fixture trên database test riêng được chạy hai lần:
+
+| Kiểm tra | Kết quả |
+|---|---:|
+| Invalid enum mức ERROR bị quarantine và không vào NDS | PASS |
+| WARN giá trị âm vẫn vào NDS | PASS |
+| Inferred driver/vehicle được tạo | PASS |
+| Driver overlap, vehicle overlap, trip ngoài shift | PASS |
+| `dq_issue` ERROR đối soát với quarantine | 1/1 |
+| SCD2 version mới ở lần chạy lại | 0 |
+| Count NDS, DDS, DQ và quarantine sau rerun | Không đổi |
+
+Chạy đối soát bằng `scripts/validate_warehouse_pipeline.py`; tùy chọn
+`--dq-fixtures` chỉ được dùng trên database test riêng vì script chủ động chèn
+fixture.

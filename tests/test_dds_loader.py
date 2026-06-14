@@ -70,6 +70,16 @@ class TestDDSLoaderInit(unittest.TestCase):
         loader = DDSLoader("test-release", bid)
         self.assertEqual(loader.batch_id, bid)
 
+    def test_dq_issue_is_idempotent_for_release_record_and_rule(self) -> None:
+        import inspect
+        from src.warehouse import dds_loader as mod
+
+        source = inspect.getsource(mod.DDSLoader.log_dq_issue)
+        self.assertIn("WHERE NOT EXISTS", source)
+        self.assertIn("release_id = %s", source)
+        self.assertIn("source_record_id IS NOT DISTINCT FROM %s", source)
+        self.assertIn("rule_code = %s", source)
+
 
 class TestSCD2DriverHashNoChange(unittest.TestCase):
     """Hash unchanged -> no-op, no new SCD2 version."""
