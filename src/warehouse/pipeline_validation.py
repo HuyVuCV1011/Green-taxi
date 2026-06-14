@@ -294,6 +294,7 @@ def _run_fixture_pipeline(release_id: str) -> dict[str, int]:
     ) == 0:
         _seed_fixture_staging(nds.connect_warehouse(), release_id, str(nds.batch_id))
     nds.load_drivers()
+    nds.load_driver_changes()
     nds.load_shifts()
     nds.load_trips()
     nds.load_trip_assignments()
