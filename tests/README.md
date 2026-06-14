@@ -15,3 +15,8 @@ python -m unittest tests.test_streamlit_control_panel -v
 python -m unittest tests.test_pipeline_runner -v
 python -m unittest discover -s tests -v
 ```
+
+Nhóm test Streamlit kiểm tra cấu trúc 4 tab, Green Taxi light theme,
+Presentation Mode, health cache, sanitization, DDS readiness và file-lock stale
+recovery. Không ghi cứng tổng số test trong tài liệu vì con số thay đổi khi bổ
+sung regression coverage.

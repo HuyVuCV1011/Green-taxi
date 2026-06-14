@@ -20,6 +20,7 @@ from src.orchestration.models import PipelineRunResult
 class TestStreamlitControlPanel(unittest.TestCase):
     def setUp(self) -> None:
         self.app_path = Path(__file__).resolve().parents[1] / "app" / "streamlit_app.py"
+        self.theme_path = Path(__file__).resolve().parents[1] / ".streamlit" / "config.toml"
 
     def test_app_file_exists(self) -> None:
         self.assertTrue(self.app_path.exists())
@@ -253,6 +254,40 @@ class TestStreamlitControlPanel(unittest.TestCase):
         # Verify that health checks are cached via st.cache_data
         self.assertIn("@st.cache_data", content)
         self.assertIn("get_cached_db_health", content)
+
+    def test_app_uses_four_standard_tabs(self) -> None:
+        content = self.app_path.read_text(encoding="utf-8")
+
+        for label in (
+            "🏥 Tổng quan Hệ thống",
+            "⚙️ Vận hành Pipeline",
+            "🛡️ Chất lượng & Đối soát",
+            "🔌 Khám phá Nguồn",
+        ):
+            self.assertIn(label, content)
+        self.assertNotIn('"🚀 Auto-Demo"', content)
+
+    def test_auto_demo_is_in_presentation_expander(self) -> None:
+        content = self.app_path.read_text(encoding="utf-8")
+
+        self.assertIn('st.expander("🚀 Chế độ Demo Thuyết trình (Presentation Mode)")', content)
+        self.assertIn('"🚀 Khởi chạy Auto-Demo"', content)
+
+    def test_theme_config_uses_green_taxi_light_palette(self) -> None:
+        self.assertTrue(self.theme_path.exists())
+        content = self.theme_path.read_text(encoding="utf-8")
+
+        self.assertIn('primaryColor = "#10B981"', content)
+        self.assertIn('backgroundColor = "#FFFFFF"', content)
+        self.assertIn('textColor = "#0F172A"', content)
+
+    def test_app_avoids_removed_streamlit_layout_apis(self) -> None:
+        content = self.app_path.read_text(encoding="utf-8")
+
+        self.assertNotIn("use_container_width", content)
+        self.assertNotIn("streamlit.components.v1", content)
+        self.assertNotIn("components.html", content)
+        self.assertIn("st.iframe", content)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ Status: `COMPLETED`
 
 ## Milestone 2 - Staging
 
-Status: `IMPLEMENTED BASELINE / REVIEW PENDING`
+Status: `IMPLEMENTED BASELINE; FRESH-ENV FULL VALIDATION PENDING`
 
 ### M2A - Warehouse staging baseline
 

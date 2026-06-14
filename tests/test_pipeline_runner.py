@@ -89,7 +89,7 @@ class PipelineRunnerTest(unittest.TestCase):
         result = runner.run(dry_run=True)
 
         self.assertEqual([step.status for step in result.steps], ["DRY_RUN", "DRY_RUN"])
-        self.assertEqual(result.status, "SUCCEEDED")
+        self.assertEqual(result.status, "DRY_RUN")
 
     def test_error_sanitization(self) -> None:
         message = sanitize_error("postgres://user:super-secret@localhost/db password=abc123 token=def456")

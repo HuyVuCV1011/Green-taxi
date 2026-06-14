@@ -12,7 +12,7 @@ Tùy thuộc vào vai trò của bạn khi tiếp cận repository này, hãy th
 1. **[README.md](../README.md):** Tổng quan nhanh về dự án, cách khởi động local và trạng thái hiện tại.
 2. **[docs/00-team-onboarding-and-data-setup.md](00-team-onboarding-and-data-setup.md):** Cẩm nang thiết lập môi trường phát triển local, tải, xác thực checksum và nạp dữ liệu nguồn.
 3. **[docs/03-scope.md](03-scope.md):** Nắm vững các câu hỏi nghiệp vụ và phạm vi phân tích của đồ án.
-4. **[docs/16-pipeline-control-panel.md](16-pipeline-control-panel.md):** Chạy `PipelineRunner` và giao diện vận hành 7 tab.
+4. **[docs/16-pipeline-control-panel.md](16-pipeline-control-panel.md):** Chạy `PipelineRunner` và giao diện vận hành 4 tab.
 
 ### Dành cho Kỹ sư dữ liệu (Data Engineer / Developer)
 1. **[docs/05-architecture.md](05-architecture.md):** Hiểu kiến trúc dữ liệu 4 tầng (Staging -> DQ/Audit -> NDS -> DDS).

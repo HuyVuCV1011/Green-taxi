@@ -1,6 +1,6 @@
 # System Architecture
 
-Status: `APPROVED FOR IMPLEMENTATION`
+Status: `IMPLEMENTED BASELINE; FRESH-ENV FULL VALIDATION PENDING`
 
 ## Architectural principles
 
@@ -245,7 +245,9 @@ batch hằng ngày, nhưng streaming/CDC không thuộc yêu cầu hiện tại.
 `source_health -> load_staging -> load_nds -> load_dds -> reconciliation ->
 mark_dds_ready`; nó không sao chép logic ETL. CLI nằm ở
 `scripts/run_pipeline.py`. Streamlit Control Panel là giao diện vận hành kỹ
-thuật 7 tab và không phải dashboard BI.
+thuật 4 tab: Tổng quan Hệ thống, Vận hành Pipeline, Chất lượng & Đối soát và
+Khám phá Nguồn. Auto-Demo nằm trong Presentation Mode của tab vận hành.
+Control Panel không phải dashboard BI.
 
 File lock `data/.pipeline.lock` được tạo độc quyền, chứa PID, hostname, thời
 điểm tạo và owner token. Lock chết/cũ có thể được phục hồi qua recovery guard;

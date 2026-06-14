@@ -42,7 +42,7 @@ nhẹ. Warehouse DDL hiện nằm trong `sql/warehouse/` và được apply bằ
 
 ## Phase 2B - Simulated operational sources
 
-Status: `IMPLEMENTED BASELINE / REVIEW AND HARDENING`
+Status: `IMPLEMENTED BASELINE; FRESH-ENV FULL VALIDATION PENDING`
 
 - Bổ sung MySQL source cho Driver HR.
 - Bổ sung MongoDB source cho Fleet.
@@ -64,8 +64,8 @@ Exit criteria:
 
 Repo hiện đã có Docker Compose, source seed scripts và source-to-staging loader
 baseline. Công việc còn lại của Phase 2B là review trên fresh environment, bổ
-sung integration tests có kiểm soát chi phí và chuẩn hóa lỗi/retry trước khi đi
-vào DQ/NDS.
+sung integration tests có kiểm soát chi phí và chuẩn hóa lỗi/retry trước khi
+đóng milestone; DQ/NDS và DDS đã được triển khai ở các phase sau.
 
 ## Phase 3 - DQ and NDS
 

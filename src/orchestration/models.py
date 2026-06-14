@@ -73,6 +73,8 @@ class PipelineRunResult:
         self.finished_at = utc_now()
         if any(step.status == "FAILED" for step in self.steps):
             self.status = "FAILED"
+        elif self.steps and all(step.status == "DRY_RUN" for step in self.steps):
+            self.status = "DRY_RUN"
         elif self.steps and all(step.status in {"SUCCEEDED", "SKIPPED", "DRY_RUN"} for step in self.steps):
             self.status = "SUCCEEDED"
         else:

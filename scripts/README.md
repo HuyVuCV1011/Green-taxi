@@ -130,4 +130,5 @@ python scripts/run_pipeline.py --release-id green-taxi-full-v1 --step reconcilia
 
 Không chạy full write pipeline trên dữ liệu local dùng chung nếu chưa xác nhận
 backup/reload policy. `DDS Ready` chỉ hợp lệ với run thực `SUCCEEDED` có step
-`mark_dds_ready` cũng `SUCCEEDED`.
+`mark_dds_ready` cũng `SUCCEEDED`. Dry-run trả status `DRY_RUN` và exit code
+`0`, nhưng không thực thi handler hoặc ghi dữ liệu.

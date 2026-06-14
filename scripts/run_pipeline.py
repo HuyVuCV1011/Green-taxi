@@ -41,7 +41,7 @@ def main() -> int:
         fail_fast=not args.no_fail_fast,
     )
     print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
-    return 0 if result.status == "SUCCEEDED" else 1
+    return 0 if result.status in {"SUCCEEDED", "DRY_RUN"} else 1
 
 
 if __name__ == "__main__":

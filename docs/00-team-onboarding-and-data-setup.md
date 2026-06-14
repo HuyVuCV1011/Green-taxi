@@ -275,7 +275,9 @@ python scripts/load_dds.py --release-id green-taxi-full-v1
 Để hiểu rõ hơn về kiến trúc, cơ chế sinh mã băm `row_hash`, idempotency và cách đối soát số dòng, xem thêm tại [Hướng dẫn Load Warehouse Staging](15-staging-load.md).
 
 ### 7. Khởi chạy Giao diện điều khiển đối soát (Pipeline Control Panel) - Tùy chọn
-Sau khi hoàn tất nạp Staging, bạn có thể khởi chạy ứng dụng Streamlit để kiểm tra trực quan sức khỏe kết nối và đối soát số lượng dòng dữ liệu:
+Khi các service local đã khởi động, bạn có thể mở Streamlit để kiểm tra health
+và dữ liệu nguồn. Các khu vực row count, batch history, DQ và reconciliation
+chỉ có dữ liệu đầy đủ sau khi schema tương ứng đã được tạo và pipeline đã chạy:
 
 ```powershell
 streamlit run app/streamlit_app.py
@@ -287,6 +289,9 @@ Có thể kiểm tra orchestration trước bằng dry-run không ghi dữ liệ
 ```powershell
 python scripts/run_pipeline.py --release-id green-taxi-full-v1 --dry-run
 ```
+
+Dry-run trả run-level status `DRY_RUN`, exit code `0` và không đánh dấu DDS sẵn
+sàng cho BI.
 
 ---
 

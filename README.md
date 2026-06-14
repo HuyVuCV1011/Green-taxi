@@ -212,9 +212,11 @@ python scripts/run_pipeline.py --release-id green-taxi-full-v1
 streamlit run app/streamlit_app.py
 ```
 
-Control Panel có 7 tab kỹ thuật: tổng quan, Source Explorer, điều khiển step,
-tiến độ chạy, trạng thái warehouse, DQ/quarantine và Auto-Demo. Power BI là
-công cụ BI độc lập, không được nhúng trong Streamlit.
+Control Panel dùng Green Taxi light theme và có 4 tab nghiệp vụ:
+**Tổng quan Hệ thống**, **Vận hành Pipeline**, **Chất lượng & Đối soát** và
+**Khám phá Nguồn**. Auto-Demo nằm trong expander Presentation Mode của tab vận
+hành để tránh bấm nhầm. Power BI là công cụ BI độc lập, không được nhúng trong
+Streamlit.
 
 ---
 
@@ -246,6 +248,8 @@ Các dịch vụ cơ sở dữ liệu được cấu hình sẵn trong `docker-c
 
 ```text
 Green-taxi/
+|-- .streamlit/           # Green Taxi light theme cho Control Panel
+|-- app/                  # Streamlit Data Pipeline Control Panel
 |-- configs/              # Cấu hình môi trường an toàn, không chứa secret
 |-- data/
 |   |-- sample/           # Bộ dữ liệu mẫu nhỏ dùng cho unit test và review nhanh
@@ -281,7 +285,7 @@ Dự án tuân thủ nguyên tắc thiết kế **docs-first** và **data-contra
 * **[Warehouse Physical Model Specification](docs/14-warehouse-ddl.md):** DDL executable và mô hình vật lý Staging/DQ/NDS/DDS.
 * **[NDS/DDS implementation notes](docs/18-nds-dds-implementation-notes.md):** Ghi chú triển khai, tối ưu, idempotency và reconciliation.
 * **[Staging Load](docs/15-staging-load.md):** Cơ chế source adapters, row hash, audit metadata và source-to-staging reconciliation.
-* **[Pipeline Control Panel](docs/16-pipeline-control-panel.md):** Giao diện điều khiển Streamlit giám sát sức khoẻ kết nối database và đối soát dữ liệu sau seed.
+* **[Pipeline Control Panel](docs/16-pipeline-control-panel.md):** Giao diện Streamlit 4 tab để giám sát health, vận hành pipeline, xem DQ/reconciliation và khám phá nguồn.
 * **[Documentation index](docs/README.md):** Danh mục tài liệu đầy đủ và gợi ý lộ trình đọc.
 
 ---
