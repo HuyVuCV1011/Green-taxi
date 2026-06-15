@@ -23,11 +23,14 @@ Data Sources -> Staging -> ODS -> DQ/Audit -> NDS -> DDS -> BI/OLAP/Mining
   `postgres_dispatch` và `postgres_warehouse`.
 - Seed scripts đã nạp được release vào MySQL HR, MongoDB Fleet và PostgreSQL
   Dispatch theo cơ chế idempotent.
-- PostgreSQL warehouse đã có baseline schemas/tables cho `staging`, `audit` và
-  `dq`.
+- PostgreSQL warehouse đã triển khai đầy đủ `staging`, `audit`, `dq`, `nds`,
+  `dds` và approved `analytics` views.
 - Source-to-staging loader đã được bổ sung để extract từ source interfaces vào
   staging kèm audit metadata, row hash và row-count reconciliation.
-- NDS, DDS, DQ rules đầy đủ và dashboard nghiệp vụ chưa được triển khai.
+- NDS, DDS, DQ rules và full-release reconciliation đã hoàn tất.
+- Superset local demo đã triển khai với metadata PostgreSQL riêng, warehouse
+  role read-only, 4 certified datasets, 39 certified metric instances,
+  26 charts và dashboard BQ01-BQ05 trên 3 tabs.
 - Báo cáo, slide và sơ đồ cũ trong `archive/` là tài liệu trước feedback, không
   phải thiết kế hiện hành.
 - Data release hiện hành bao phủ 01/2020-07/2021, đúng phạm vi đã chốt cho
@@ -35,9 +38,6 @@ Data Sources -> Staging -> ODS -> DQ/Audit -> NDS -> DDS -> BI/OLAP/Mining
 
 ## Việc cần làm tiếp theo
 
-Tiếp tục sau Milestone 2 baseline:
-
-1. Review và harden source-to-staging loader trên fresh environment.
-2. Triển khai DQ rules, quarantine và audit issue workflow.
-3. Load dữ liệu đã qua DQ từ staging vào NDS.
-4. Xây Driver Operations DDS và dashboard phân tích.
+1. Hoàn thiện báo cáo học thuật và slide.
+2. Chốt demo recording và contribution evidence.
+3. Giữ pipeline/Superset reproducible bằng onboarding, runbook và smoke tests.

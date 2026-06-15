@@ -12,7 +12,7 @@ Status: `COMPLETED`
 
 ## Milestone 2 - Staging
 
-Status: `IMPLEMENTED BASELINE; FRESH-ENV FULL VALIDATION PENDING`
+Status: `COMPLETED`
 
 ### M2A - Warehouse staging baseline
 
@@ -33,13 +33,12 @@ Status: `IMPLEMENTED BASELINE; FRESH-ENV FULL VALIDATION PENDING`
 Deliverable: source systems được seed đồng nhất và records được extract vào
 staging với audit counts/lineage.
 
-Current baseline đã có Docker Compose, source seed scripts, warehouse DDL và
-source-to-staging loader. Trước khi khóa Milestone 2, cần review chéo loader,
-chạy smoke/full setup trên môi trường sạch và lưu lại kết quả reconciliation.
+Full-release source-to-staging reconciliation đã được lưu trong validation
+evidence.
 
 ## Milestone 3 - DQ and NDS
 
-Status: `IMPLEMENTED; INTEGRATION REPORT PENDING`
+Status: `COMPLETED`
 
 - Type/schema validation.
 - Driver/vehicle upsert.
@@ -52,7 +51,7 @@ Deliverable: integrated relational model and DQ report.
 
 ## Milestone 4 - DDS
 
-Status: `IMPLEMENTED; INTEGRATION REPORT PENDING`
+Status: `COMPLETED`
 
 - Date/time dimensions.
 - Driver/vehicle/location/vendor dimensions.
@@ -64,13 +63,14 @@ Deliverable: reconciled Driver Operations star schema.
 
 ## Milestone 5 - Analytics
 
-Status: `PLANNED`
+Status: `COMPLETED`
 
-- KPI definitions.
-- Dashboard wireframe.
-- Power BI/Superset implementation.
+- Certified KPI definitions.
+- Superset metadata DB và read-only warehouse connection.
+- Ba Superset datasets và dashboard theo analytics contract.
 - Driver/shift peer comparison.
 - Business anomaly rules.
+- Health, permission, query và browser smoke tests.
 
 Deliverable: dashboard answering BQ01-BQ05.
 

@@ -73,6 +73,7 @@ services:
     image: postgres:16
     container_name: green_taxi_postgres_warehouse
     restart: unless-stopped
+    shm_size: 1gb
     environment:
       POSTGRES_DB: ${POSTGRES_WAREHOUSE_DATABASE:-green_taxi_warehouse}
       POSTGRES_USER: ${POSTGRES_WAREHOUSE_USER:-green_taxi_warehouse_app}

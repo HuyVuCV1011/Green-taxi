@@ -42,7 +42,7 @@ nhẹ. Warehouse DDL hiện nằm trong `sql/warehouse/` và được apply bằ
 
 ## Phase 2B - Simulated operational sources
 
-Status: `IMPLEMENTED BASELINE; FRESH-ENV FULL VALIDATION PENDING`
+Status: `IMPLEMENTED AND VALIDATED`
 
 - Bổ sung MySQL source cho Driver HR.
 - Bổ sung MongoDB source cho Fleet.
@@ -62,14 +62,12 @@ Exit criteria:
 - Full mode extract từ source interfaces, không đọc HR/Fleet/Dispatch seed files
   trực tiếp vào warehouse.
 
-Repo hiện đã có Docker Compose, source seed scripts và source-to-staging loader
-baseline. Công việc còn lại của Phase 2B là review trên fresh environment, bổ
-sung integration tests có kiểm soát chi phí và chuẩn hóa lỗi/retry trước khi
-đóng milestone; DQ/NDS và DDS đã được triển khai ở các phase sau.
+Repo đã có Docker Compose, source seed scripts, source adapters và
+source-to-staging reconciliation trên full release.
 
 ## Phase 3 - DQ and NDS
 
-Status: `IMPLEMENTED; FRESH-ENV FULL VALIDATION PENDING`
+Status: `IMPLEMENTED AND VALIDATED`
 
 - Chuẩn hóa type và timestamp.
 - Upsert driver, vehicle, vendor và location.
@@ -80,7 +78,7 @@ Status: `IMPLEMENTED; FRESH-ENV FULL VALIDATION PENDING`
 
 ## Phase 4 - DDS
 
-Status: `IMPLEMENTED; FRESH-ENV FULL VALIDATION PENDING`
+Status: `IMPLEMENTED AND VALIDATED`
 
 - Sinh `dim_date` và `dim_time`.
 - Load SCD2 `dim_driver`, `dim_vehicle`.
@@ -90,14 +88,16 @@ Status: `IMPLEMENTED; FRESH-ENV FULL VALIDATION PENDING`
 
 ## Phase 5 - Analytics
 
-Status: `PLANNED`
+Status: `IMPLEMENTED AND SMOKE-TESTED`
 
-Dashboard tối thiểu:
+Đã triển khai:
 
-1. Operations overview.
-2. Driver and shift performance.
-3. Zone/time utilization.
-4. Data quality and anomaly review.
+1. Superset metadata database và local web app.
+2. Warehouse login `superset_ro` chỉ đọc approved analytics views.
+3. Dataset `trip_pickup`, `trip_dropoff`, `shift` và `dq_summary`.
+4. Certified metrics theo semantic contract.
+5. Dashboard operations, driver/shift, zone/time, vehicle, anomaly và DQ.
+6. Health, API, permission, query và browser smoke tests.
 
 Measures:
 
@@ -106,9 +106,12 @@ Measures:
 - Idle minutes.
 - Shift utilization.
 - Revenue per hour.
-- Revenue per mile.
 - Average trip duration/distance.
 - DQ/anomaly counts.
+
+Dashboard dùng 3 business datasets và 1 DQ dataset theo analytics boundary.
+Chi tiết:
+[../analytics/superset-local-demo-runbook.md](../analytics/superset-local-demo-runbook.md).
 
 ## Phase 6 - Delivery
 

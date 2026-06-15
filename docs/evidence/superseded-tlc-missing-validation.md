@@ -1,5 +1,14 @@
 # Full Pipeline Validation On Clean Warehouse
 
+Status: `HISTORICAL / SUPERSEDED EVIDENCE`
+
+> [!IMPORTANT]
+> Đây là lần chạy lịch sử thiếu TLC local và đã được supersede bởi full release
+> validation/reconciliation trong
+> [full-release-reconciliation.md](full-release-reconciliation.md),
+> nơi 19 TLC CSV và các metric khác 0 đã được xác nhận. Không dùng số liệu TLC=0
+> bên dưới làm trạng thái hiện tại.
+
 Ngày chạy: 2026-06-14
 
 Vai trò: Pipeline Validation Owner

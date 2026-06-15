@@ -4,8 +4,8 @@ Status: `IMPLEMENTED`
 
 Tài liệu này ghi ngắn gọn các quyết định kỹ thuật của pipeline
 `Staging -> DQ/Audit -> NDS -> DDS`. Contract chi tiết vẫn nằm tại
-`10-source-to-target-plan.md`, `14-warehouse-ddl.md` và
-`17-data-quality-and-etl-spec.md`.
+`docs/contracts/source-to-target-mapping.md`, `docs/warehouse/physical-model.md` và
+`docs/warehouse/data-quality-etl-spec.md`.
 
 ## NDS loader
 

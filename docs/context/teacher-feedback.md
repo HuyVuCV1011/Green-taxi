@@ -19,7 +19,7 @@ Nguồn: `[AdvancedBI] Feedback mid project.txt`.
 ## Tác động
 
 Thiết kế cũ được giữ lại trong `archive/` để tham khảo. Thiết kế mới chỉ được
-chốt sau khi hoàn thành `03-scope.md`, `04-data-sources.md` và ADR tương ứng.
+chốt sau khi hoàn thành `docs/context/scope.md`, `docs/contracts/data-sources.md` và ADR tương ứng.
 
 Để phản hồi trực tiếp nhận xét “nhiều định dạng không đồng nghĩa với nhiều
 nguồn”, project phân biệt:

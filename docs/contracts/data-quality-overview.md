@@ -8,10 +8,10 @@
 | DQ02 | Dropoff trước pickup | Quarantine hoặc flag |
 | DQ03 | Trip duration lớn hơn 24 giờ | Quarantine |
 | DQ04 | Driver/vehicle/shift không tồn tại | Inferred member + missing-master log |
-| DQ05 | Trip nằm ngoài shift | Reject assignment |
+| DQ05 | Trip nằm ngoài shift | WARN anomaly; vẫn nạp để giữ lineage và đánh dấu `is_anomaly` |
 | DQ06 | Driver có hai trip chồng thời gian | Reject/duplicate log |
 | DQ07 | Vehicle có hai trip chồng thời gian | Reject/duplicate log |
-| DQ08 | Driver, vehicle và trip khác vendor | Reject assignment |
+| DQ08 | Driver, vehicle và trip khác vendor, trừ Legacy Pool `vendor_id = 0` | Log DQ/anomaly theo gate hiện hành; không tự sửa vendor |
 | DQ09 | License/vehicle không active tại thời điểm trip | Flag |
 | DQ10 | Assignment hoặc source row trùng | Deduplicate bằng business key/row hash |
 | DQ11 | Pickup/dropoff location không tồn tại | Unknown location |

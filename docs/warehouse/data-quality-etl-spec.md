@@ -1,13 +1,15 @@
 # Data Quality (DQ) & ETL Specification
 **NYC Green Taxi Driver Operations BI - Warehouse Design Phase**
 
-Tài liệu này đặc tả chi tiết bộ luật kiểm tra chất lượng dữ liệu (Data Quality Rules), cơ chế cách ly bản ghi lỗi (Quarantine), logic xử lý dữ liệu đến muộn (Late-Arriving Master), và chiến lược vận hành quy trình ETL để đảm bảo tính toàn vẹn và tin cậy cho kho dữ liệu.
+Tài liệu này đặc tả **DQ rules**, **quarantine workflow**, **late-arriving master**
+và ETL strategy để bảo đảm data integrity và auditability cho warehouse.
 
 ---
 
-## 1. Bộ luật Kiểm soát Chất lượng Dữ liệu (DQ Rules)
+## 1. DQ Rules
 
-Dự án thiết lập **2 lớp chốt chặn DQ** độc lập để bảo vệ kho dữ liệu khỏi dữ liệu lỗi, đồng thời giữ lại tối đa thông tin cho báo cáo tài chính.
+Dự án thiết lập 2 **DQ gates** độc lập để bảo vệ warehouse khỏi dữ liệu lỗi,
+đồng thời giữ lại tối đa thông tin cho báo cáo tài chính.
 
 ```mermaid
 flowchart LR
@@ -18,7 +20,7 @@ flowchart LR
     DQ2 -->|"Anomaly (Cờ)"| DDS[DDS Star Schema]
 ```
 
-### 1.1 Lớp chốt chặn 1: DQ Gate 1 (Staging $\rightarrow$ NDS)
+### 1.1 DQ Gate 1: Staging $\rightarrow$ NDS
 Tập trung vào kiểm tra kỹ thuật (Technical constraints), định dạng dữ liệu và các giá trị không thể bỏ trống (Null check).
 
 | Mã luật (Rule Code) | Tên luật | Thuộc tính kiểm tra | Điều kiện hợp lệ | Mức độ (Severity) | Hành động khi vi phạm (Action) |
@@ -34,7 +36,7 @@ Giá trị `Unknown` chỉ được dùng cho **inferred member** khi natural ke
 nhưng master chưa đến. Nó không được dùng để che giấu một enum nguồn không hợp
 lệ.
 
-### 1.2 Lớp chốt chặn 2: DQ Gate 2 (NDS $\rightarrow$ DDS)
+### 1.2 DQ Gate 2: NDS $\rightarrow$ DDS
 Tập trung vào kiểm tra tính hợp lý nghiệp vụ (Business Logic / Anomaly checks) và quan hệ thời gian chéo giữa các hệ thống.
 
 | Mã luật (Rule Code) | Tên luật | Logic kiểm tra nghiệp vụ | Mức độ | Hành động khi vi phạm |
@@ -49,17 +51,18 @@ Tập trung vào kiểm tra tính hợp lý nghiệp vụ (Business Logic / Anom
 
 ---
 
-## 2. Quy trình Cách ly Dữ liệu lỗi (Quarantine Schema)
+## 2. Quarantine Workflow
 
 Khi một bản ghi vi phạm luật ở mức độ **ERROR**, nó sẽ bị cách ly ra khỏi luồng tích hợp chính:
 
 1. **Ghi nhận vào Quarantine**: Dữ liệu thô của dòng vi phạm được giữ nguyên trong `dq.quarantine_record.raw_payload`, kèm `batch_id`, `release_id`, source identity và `error_rule_code`. Bảng quarantine riêng theo nguồn chỉ là lớp tương thích tùy chọn, không phải contract chính.
 2. **Ghi log vào `dq.dq_issue`**: Hệ thống chèn 1 dòng log mô tả chi tiết: mã luật vi phạm, khóa tự nhiên của bản ghi, thông báo lỗi và payload JSON chứa các cột bị lỗi để phục vụ đối soát.
-3. **Báo cáo và sửa lỗi**: Báo cáo DQ trên Power BI hiển thị số lượng bản ghi bị cách ly. Người vận hành hệ thống có thể kiểm tra danh sách này để phối hợp với bên cung cấp dữ liệu nguồn điều chỉnh hoặc tái nạp.
+3. **Báo cáo và sửa lỗi**: DQ analytics dataset hiển thị issue và quarantine
+   theo rule/severity/source/release. Nó không join trực tiếp vào business fact.
 
 ---
 
-## 3. Đặc tả Xử lý Dữ liệu Master Đến muộn (Late-Arriving Master)
+## 3. Late-Arriving Master Handling
 
 Trong thực tế vận hành taxi, dữ liệu ca làm hoặc chuyến đi có thể được đẩy vào DWH trước khi dữ liệu nhân sự (Driver) hoặc đội xe (Vehicle) được cập nhật (ví dụ: tài xế mới đăng ký ca chạy trước khi HR hoàn thiện hồ sơ trên MySQL). 
 
@@ -109,7 +112,7 @@ sequenceDiagram
 
 ---
 
-## 4. Chiến lược Vận hành ETL (ETL Strategy)
+## 4. ETL Strategy
 
 ### 4.1 Thứ tự nạp dữ liệu (Load Order)
 Quy trình nạp dữ liệu phải tuân thủ nghiêm ngặt nguyên tắc **Nạp Dimension/Master trước, Fact/Transaction sau** để đảm bảo toàn vẹn khóa ngoại.

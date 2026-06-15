@@ -13,14 +13,23 @@ service-account*.json
 # Python
 __pycache__/
 *.py[cod]
+.python-version
 .venv/
 venv/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+build/
+dist/
+*.egg-info/
 
 # Notebooks
 .ipynb_checkpoints/
+.jupyter/
 
 # Data: only sample and small lookup files belong in Git
 data/raw/**
@@ -39,17 +48,28 @@ data/.pipeline.lock.recovery
 *.db
 *.duckdb
 *.sqlite
+*.sqlite3
 *.parquet
 *.delta
 *.pbix
+*.bak
+*.backup
+*.dump
+*.dmp
 docker-data/
 volumes/
+superset_home/
+superset_data/
+superset_exports/
+superset_imports/
 
 # Recordings
 *.m4a
 *.mp3
 *.mp4
 *.wav
+*.webm
+*.mov
 
 # Generated outputs and logs
 outputs/
@@ -57,9 +77,24 @@ logs/
 *.log
 tmp/
 temp/
+cache/
+.cache/
+downloads/
+exports/
+reports/generated/
+
+# Large local release/archive files
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
 
 # Office lock/temp files
 ~$*
+*.tmp
+*.temp
 
 # OS/editor files
 .DS_Store

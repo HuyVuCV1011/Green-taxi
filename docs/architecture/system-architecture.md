@@ -1,41 +1,41 @@
-# Kiến trúc Hệ thống (System Architecture)
+# System Architecture
 
-> Trạng thái: `IMPLEMENTED BASELINE; FRESH-ENV FULL VALIDATION PENDING`
+> Trạng thái: `IMPLEMENTED AND FULL-RELEASE VALIDATED`
 
 ---
 
-## Nguyên tắc Kiến trúc (Architectural Principles)
+## Architectural Principles
 
-1.  **Ranh giới Sở hữu rõ ràng:** Hệ thống nghiệp vụ nguồn và kho dữ liệu tích hợp (Warehouse) phải có ranh giới rõ ràng về quyền sở hữu dữ liệu.
+1.  **Clear ownership boundary:** Source systems và integrated warehouse phải có ranh giới ownership rõ ràng.
 2.  **Google Drive Release:** Chỉ sử dụng để phân phối và seed dữ liệu local; không thay thế hay đóng vai trò là một hệ thống nguồn trực tiếp.
 3.  **Staging Contract Ổn định:** Staging contract phải được giữ vững cho dù cơ chế trích xuất (extract) của từng nguồn dữ liệu khác nhau.
-4.  **Kiểm soát Batch nghiêm ngặt:** Mọi lô dữ liệu (batch) phải có Lineage, Checksum/Watermark, Row Count và tính Idempotency rõ ràng.
-5.  **Chuẩn hóa & Tích hợp:** NDS chịu trách nhiệm chuẩn hóa tích hợp dữ liệu; DDS tối ưu hóa cấu trúc Star Schema phục vụ phân tích Driver Operations.
-6.  **Tối giản Kiến trúc:** Không bổ sung ODS, MinIO, streaming hay CDC khi chưa xuất hiện yêu cầu nghiệp vụ thực tế.
+4.  **Strict batch control:** Mọi batch phải có lineage, checksum/watermark, row count và idempotency rõ ràng.
+5.  **Normalize and publish:** NDS chịu trách nhiệm tích hợp dữ liệu; DDS tối ưu star schema phục vụ Driver Operations analytics.
+6.  **Minimal architecture:** Không bổ sung ODS, MinIO, streaming hay CDC khi chưa xuất hiện yêu cầu nghiệp vụ thực tế.
 
 > [!NOTE]
-> Các thành viên trong nhóm cần tải bản release dữ liệu `green-taxi-full-v1.zip` từ Google Drive, kiểm tra mã băm SHA-256 và thực hiện giải nén theo hướng dẫn tại [Tài liệu Onboarding](00-team-onboarding-and-data-setup.md) trước khi chạy chế độ full mode.
+> Các thành viên trong nhóm cần tải bản release dữ liệu `green-taxi-full-v1.zip` từ Google Drive, kiểm tra mã băm SHA-256 và thực hiện giải nén theo hướng dẫn tại [Tài liệu Onboarding](../setup/local-reproducibility.md) trước khi chạy chế độ full mode.
 
 ---
 
-## Kiến trúc Logic (Logical Architecture)
+## Logical Architecture
 
 Sơ đồ runtime dưới đây mô tả pipeline ở góc nhìn nghiệp vụ/vận hành. Google Drive không phải là hệ thống nguồn nghiệp vụ nên không nằm trên luồng chính này.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#ecfdf5', 'primaryTextColor': '#065f46', 'primaryBorderColor': '#10b981', 'lineColor': '#64748b', 'secondaryColor': '#f8fafc', 'tertiaryColor': '#fffbeb'}}}%%
 flowchart TD
-    subgraph SimulationSources["1. Hệ thống nghiệp vụ nguồn (Source Systems)"]
+    subgraph SimulationSources["1. Source Systems"]
         MySQL[("MySQL<br>(Driver HR Database)")]
         Mongo[("MongoDB<br>(Fleet Collection)")]
         PG_Src[("PostgreSQL Source<br>(Dispatch System)")]
         TLC_Files[("File Batch Source<br>(TLC & Lookup Files)")]
     end
 
-    subgraph WarehouseSystem["2. Kho dữ liệu tích hợp (PostgreSQL Warehouse)"]
+    subgraph WarehouseSystem["2. PostgreSQL Warehouse"]
         STG[("Staging Schema<br>(Raw Mirror Tables)")]
 
-        subgraph IntegrityFlow["Kiểm soát chất lượng & Tích hợp"]
+        subgraph IntegrityFlow["DQ & Integration"]
             DQ{"DQ & Audit Gate"}
             NDS[("NDS Schema<br>(Normalized Store)")]
             Q_Schema[("Quarantine Schema<br>(Rejected Records)")]
@@ -44,8 +44,8 @@ flowchart TD
         DDS[("DDS Schema<br>(Driver Operations Star Schema)")]
     end
 
-    subgraph AnalysisBI["3. Tầng trình diễn (BI Layer)"]
-        Dashboard[("Power BI Dashboard /<br>Anomaly Analysis")]
+    subgraph AnalysisBI["3. BI Layer"]
+        Dashboard[("Apache Superset /<br>Approved BI Client")]
     end
 
     MySQL -->|"Extract via SQL Adapter"| STG
@@ -57,7 +57,7 @@ flowchart TD
     DQ -->|"Hợp lệ"| NDS
     DQ -->|"Lỗi DQ"| Q_Schema
     NDS -->|"SCD Type 1 & 2 Loading"| DDS
-    DDS -->|"Queries"| Dashboard
+    DDS -->|"Approved analytics views"| Dashboard
 
     %% Styling
     style MySQL fill:#e1f5fe,stroke:#0288d1,stroke-width:1px
@@ -74,7 +74,7 @@ flowchart TD
 
 ---
 
-## Quy trình Khởi tạo & Tái lập (Local Setup Flow)
+## Local Setup Flow
 
 Google Drive chỉ xuất hiện trong luồng chuẩn bị dữ liệu và khởi tạo môi trường local:
 
@@ -100,23 +100,30 @@ flowchart LR
 
 ---
 
-## Kiến trúc Vật lý (Physical Deployment)
+## Physical Deployment
 
-Docker Compose định nghĩa 4 dịch vụ dữ liệu chính phục vụ mô phỏng local:
+Compose chính định nghĩa 4 dịch vụ dữ liệu. Compose Superset bổ sung web app và
+metadata database độc lập:
 
 | Compose Service | Công nghệ | Vai trò trong hệ thống |
 | :--- | :--- | :--- |
 | `mysql_hr` | MySQL 8.4 | Quản lý Driver Master và các sự kiện thay đổi nhân sự (HR changes) |
 | `mongodb_fleet` | MongoDB 7.0 | Quản lý thông tin chi tiết phương tiện (Vehicle documents) |
 | `postgres_dispatch` | PostgreSQL 16 | Quản lý lịch trình ca làm (Shifts) và chỉ định chuyến đi (Trip assignments) |
-| `postgres_warehouse` | PostgreSQL 16 | Kho dữ liệu tích hợp chứa các schema: Staging, DQ/Audit, NDS và DDS |
+| `postgres_warehouse` | PostgreSQL 16 | Integrated warehouse chứa các schema: Staging, DQ/Audit, NDS và DDS |
+| `superset_metadata_db` | PostgreSQL 16 Alpine | Metadata riêng cho Superset |
+| `superset_app` | Apache Superset 6.1.0 | Dashboard nghiệp vụ trên approved analytics views |
+
+Hai service Superset nằm trong `docker-compose.superset.yml`, cùng tham gia
+network `green_taxi_net`. Hướng dẫn vận hành hiện hành:
+[../analytics/superset-local-demo-runbook.md](../analytics/superset-local-demo-runbook.md).
 
 > [!NOTE]
 > Các tệp tin TLC trips và lookup files được mount trực tiếp từ thư mục `data/raw/`; không cần cấu hình hệ thống lưu trữ đối tượng MinIO. Mỗi dịch vụ được cấp một cơ sở dữ liệu, thông tin đăng nhập và volume lưu trữ độc lập. Warehouse tuyệt đối không query trực tiếp các bảng của DB nguồn trong quá trình biến đổi dữ liệu SQL.
 
 ---
 
-## Luồng Khởi tạo & Seed (Bootstrap and Seed Flow)
+## Bootstrap And Seed Flow
 
 Các cơ sở dữ liệu nguồn được thiết lập dưới dạng các snapshot/chỉ mục có thể tái lập:
 
@@ -211,7 +218,8 @@ Tầng NDS (Normalized Data Store) tổ chức dữ liệu tích hợp dưới d
 
 ## Tầng Dữ liệu Chiều (DDS Schema)
 
-Tầng DDS thiết kế theo mô hình hình sao (Star Schema) tối ưu hóa tối đa cho Power BI:
+Tầng DDS thiết kế theo mô hình hình sao, độc lập công cụ BI và phù hợp với
+Apache Superset:
 
 ### Dimensions (Bảng chiều):
 *   `dim_date` / `dim_time`: Hỗ trợ phân tích thời gian chi tiết.
@@ -254,6 +262,6 @@ Hệ thống xử lý định kỳ theo tháng (Monthly Batch) đối với dữ
 ## Orchestration & Giao diện Vận hành
 
 *   **`PipelineRunner`**: Đảm nhận nhiệm vụ điều phối trình tự chạy của các loaders: `source_health -> load_staging -> load_nds -> load_dds -> reconciliation -> mark_dds_ready`.
-*   **CLI**: Thực thi tại [scripts/run_pipeline.py](../scripts/run_pipeline.py).
+*   **CLI**: Thực thi tại [scripts/run_pipeline.py](../../scripts/run_pipeline.py).
 *   **Control Panel**: Giao diện Streamlit 4 tab (`Tổng quan Hệ thống`, `Vận hành Pipeline`, `Chất lượng & Đối soát`, `Khám phá Nguồn`). Auto-Demo chạy kịch bản tự động được bọc trong một expander riêng tại Tab vận hành để tránh kích hoạt ngoài ý muốn.
 *   **Cơ chế Lock:** Sử dụng file lock `data/.pipeline.lock` để kiểm soát phiên chạy độc quyền. Các lỗi sập nguồn/kill process đột ngột khiến `finally` block không kịp chạy giải phóng lock sẽ được tự động xử lý và khôi phục (Stale lock recovery) ở lượt acquire tiếp theo thông qua kiểm tra timestamp và PID hoạt động.

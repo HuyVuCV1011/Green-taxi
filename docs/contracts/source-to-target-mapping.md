@@ -6,7 +6,7 @@ Tài liệu này đặc tả chi tiết ánh xạ và chuyển đổi dữ liệ
 ## Sơ đồ Tổng quan luồng dữ liệu DDS
 
 Nguồn thiết kế chuẩn của Star Schema là
-[`dds_schema.dbml`](../diagrams/dds_schema.dbml). File PNG chỉ là snapshot được
+[`dds_schema.dbml`](../../diagrams/dds_schema.dbml). File PNG chỉ là snapshot được
 regenerate từ DBML và không được dùng làm contract khi hai file chưa đồng bộ.
 
 ---

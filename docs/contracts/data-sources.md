@@ -24,7 +24,7 @@ seed artifacts, không phải interface extract cuối cùng của pipeline.
 
 File cần tải từ Drive là `green-taxi-full-v1.zip` và
 `green-taxi-full-v1.zip.sha256`. Cách kiểm SHA-256, giải nén và copy vào
-`data/raw/` được mô tả trong `docs/00-team-onboarding-and-data-setup.md`.
+`data/raw/` được mô tả trong `docs/setup/local-reproducibility.md`.
 
 Sau khi tải release:
 

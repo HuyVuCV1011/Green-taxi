@@ -1,24 +1,37 @@
 # Diagrams & Visualizations
 
-Thư mục này quản lý các sơ đồ kiến trúc, luồng dữ liệu và mô hình thực thể liên kết (ERD) của dự án.
+Thư mục này quản lý các sơ đồ đã xuất bản của dự án. Kiến trúc runtime canonical
+nằm trong [../docs/architecture/system-architecture.md](../docs/architecture/system-architecture.md); README này chỉ
+là index artifact hiện có, không phải nguồn thiết kế độc lập.
 
 > [!TIP]
 > Bạn có thể lưu các file thiết kế gốc dạng `.drawio` cùng với các tệp ảnh định dạng `.png` hoặc `.svg` được xuất ra tại đây. Mỗi sơ đồ bắt buộc phải nhất quán với các quyết định kiến trúc đã chốt (ADR) và các tài liệu thiết kế liên quan.
 
 ---
 
-## Danh mục sơ đồ cần có (Diagram Catalog)
+## Artifact hiện có
 
-1. **Sơ đồ triển khai vật lý (Physical Deployment Diagram):** Mô tả các container Docker (`mysql_hr`, `mongodb_fleet`, `postgres_dispatch`, `postgres_warehouse`), ánh xạ cổng và mạng nội bộ `green_taxi_net`.
-2. **Sơ đồ luồng dữ liệu runtime (Runtime Data Flow Diagram):** Mô tả các bước chuyển đổi dữ liệu từ MySQL/MongoDB/PostgreSQL Dispatch/TLC files -> Staging -> DQ -> NDS -> DDS -> Power BI.
-3. **Sơ đồ setup/reproducibility:** Mô tả cách Google Drive release được tải, kiểm checksum, giải nén và seed vào các source systems local.
-4. **Mô hình thực thể liên kết nguồn (Source ERD):** Mô tả mối quan hệ giữa các bảng nghiệp vụ giả lập và dữ liệu chuyến đi thực tế.
+| File | Vai trò |
+|---|---|
+| `nds_schema.dbml` / `nds_schema.png` | Mô hình NDS |
+| `dds_schema.dbml` / `dds_schema.png` | Mô hình DDS |
+| `analytics_semantic_model.mmd` | Semantic model analytics/Superset |
 
 ---
 
-## Các Mermaid Snippets mẫu
+## Sơ đồ chưa tách thành artifact riêng
 
-Dưới đây là mã Mermaid của các sơ đồ cốt lõi, bạn có thể sử dụng các extension hoặc github viewer để render trực tiếp:
+Các sơ đồ triển khai vật lý, runtime data flow, setup/reproducibility và source ERD
+hiện được mô tả trong `README.md`, `docs/architecture/system-architecture.md`,
+`docs/setup/local-reproducibility.md` và `docs/contracts/source-data-contracts.md`. Nếu
+cần nộp riêng dạng ảnh, xuất artifact tại đây và cập nhật bảng trên.
+
+---
+
+## Reference Mermaid snippets
+
+Các snippet dưới đây chỉ phục vụ tham khảo khi cần xuất sơ đồ mới. Nếu khác tài
+liệu canonical, ưu tiên tài liệu canonical và cập nhật snippet sau.
 
 ### 1. Kiến trúc luồng dữ liệu runtime (Runtime Data Flow)
 ```mermaid
@@ -31,7 +44,7 @@ flowchart TD
         Files[("Local Directory<br>(TLC Trips & Lookup Files)")]
     end
 
-    subgraph DWH["PostgreSQL Warehouse (Kho dữ liệu tích hợp)"]
+    subgraph DWH["PostgreSQL Warehouse"]
         STG[("Staging Schema<br>(Raw Mirror Tables)")]
 
         subgraph Pipeline["Data Quality & Integration Engine"]
@@ -44,7 +57,7 @@ flowchart TD
     end
 
     subgraph Presentation["Tầng trình diễn & Phân tích (BI Layer)"]
-        PBI[("Power BI Dashboard /<br>Anomaly Analysis")]
+        BI[("Apache Superset /<br>Approved BI Client")]
     end
 
     MySQL -->|"Extract"| STG
@@ -56,7 +69,7 @@ flowchart TD
     DQ -->|"Lỗi (Schema, PK, FK, Range)"| Q_Table
     DQ -->|"Hợp lệ"| NDS
     NDS -->|"SCD Type 1/2"| DDS
-    DDS -->|"Analyze"| PBI
+    DDS -->|"Certified datasets"| BI
 ```
 
 ### 2. Luồng setup/reproducibility

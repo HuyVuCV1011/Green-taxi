@@ -14,12 +14,12 @@ Thiết kế bao gồm 5 schema chính:
 1. `staging`: Lưu trữ dữ liệu raw mirror.
 2. `audit`: Ghi nhận nhật ký chạy batch, kiểm soát và đối soát.
 3. `nds`: Lưu trữ dữ liệu chuẩn hóa quan hệ 3NF tích hợp.
-4. `dds`: Lưu trữ mô hình chiều hình sao (Star Schema) tối ưu cho báo cáo phân tích.
+4. `dds`: Lưu trữ star schema tối ưu cho analytics queries.
 5. `dq`: Lưu trữ log lỗi chất lượng dữ liệu và các bảng quarantine.
 
 ---
 
-## 1. Kiến trúc Schema tổng thể
+## 1. Schema Architecture
 
 ```sql
 -- Khởi tạo các schema chính trong PostgreSQL Warehouse
@@ -32,17 +32,17 @@ CREATE SCHEMA IF NOT EXISTS dq;
 
 ---
 
-## 1. Sơ đồ Quan hệ NDS (Normalized Data Store - 3NF)
+## 2. NDS Relationship Model
 
 Dưới đây là sơ đồ thực thể chuẩn hóa 3NF của tầng NDS:
 
 Nguồn thiết kế chuẩn là
-[`nds_schema.dbml`](../diagrams/nds_schema.dbml). File PNG chỉ là snapshot được
+[`nds_schema.dbml`](../../diagrams/nds_schema.dbml). File PNG chỉ là snapshot được
 regenerate từ DBML và không được dùng làm contract khi hai file chưa đồng bộ.
 
 ---
 
-## 2. Đặc tả DDL Tầng NDS (Normalized Data Store - 3NF)
+## 3. NDS DDL Specification
 
 Tầng NDS lưu trữ dữ liệu chuẩn hóa 3NF để giảm thiểu dư thừa thông tin, duy trì toàn vẹn dữ liệu và lưu vết lịch sử.
 
@@ -217,19 +217,20 @@ CREATE TABLE IF NOT EXISTS nds.nds_trip_assignment (
 
 ---
 
-## 2. Sơ đồ Mô hình chiều DDS (Star Schema)
+## 4. DDS Star Schema Model
 
 Dưới đây là sơ đồ Star Schema của tầng DDS:
 
 Nguồn thiết kế chuẩn là
-[`dds_schema.dbml`](../diagrams/dds_schema.dbml). File PNG chỉ là snapshot được
+[`dds_schema.dbml`](../../diagrams/dds_schema.dbml). File PNG chỉ là snapshot được
 regenerate từ DBML và không được dùng làm contract khi hai file chưa đồng bộ.
 
 ---
 
-## 3. Đặc tả DDL Tầng DDS (Dimensional Data Store - Star Schema)
+## 5. DDS DDL Specification
 
-Tầng DDS được mô hình hóa theo dạng chòm sao/ngôi sao phẳng (Star Schema), sử dụng các DDS Surrogate Key riêng để tối ưu hóa Power BI và SCD.
+Tầng DDS được mô hình hóa theo dạng chòm sao/ngôi sao phẳng, sử dụng DDS
+surrogate key riêng để hỗ trợ SCD và các BI client như Apache Superset.
 
 ```sql
 -- 3.1 Bảng chiều Date (Tĩnh - SCD Type 0)

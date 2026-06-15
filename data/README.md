@@ -80,4 +80,4 @@ Các source database volumes và warehouse volumes không thuộc thư mục `da
 và không được chia sẻ như một phần của data release.
 
 Hướng dẫn dành cho thành viên mới và quy trình data release:
-`../docs/00-team-onboarding-and-data-setup.md`.
+`../docs/setup/local-reproducibility.md`.

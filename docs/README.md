@@ -1,64 +1,132 @@
-# Documentation Index & Reading Map
+# Documentation Map
 
-Chào mừng bạn đến với thư mục tài liệu kỹ thuật của dự án **NYC Green Taxi Driver Operations BI**. Để thuận tiện cho việc tìm hiểu và tiếp cận hệ thống, tài liệu được tổ chức theo các nhóm chủ đề và được đề xuất lộ trình đọc riêng cho từng đối tượng.
+Status: `CURRENT DOCUMENTATION ENTRY POINT`
 
----
+Tài liệu được tổ chức theo chức năng thay vì theo timeline milestone. Mục tiêu là
+giúp reviewer và thành viên mới tìm đúng nguồn sự thật, không phải đọc toàn bộ
+lịch sử phát triển.
 
-## Lộ trình đọc tài liệu (Reading Paths)
+## Source Of Truth
 
-Tùy thuộc vào vai trò của bạn khi tiếp cận repository này, hãy tham khảo thứ tự đọc được gợi ý dưới đây:
+| Chủ đề | Nguồn sự thật hiện hành |
+|---|---|
+| Setup end-to-end | [setup/local-reproducibility.md](setup/local-reproducibility.md) |
+| Pipeline Control Panel | [setup/pipeline-control-panel.md](setup/pipeline-control-panel.md) |
+| Kiến trúc runtime | [architecture/system-architecture.md](architecture/system-architecture.md) và [decisions/](decisions/) |
+| Phạm vi nghiệp vụ | [context/scope.md](context/scope.md) |
+| Source contracts | [contracts/source-data-contracts.md](contracts/source-data-contracts.md) |
+| Source-to-target mapping | [contracts/source-to-target-mapping.md](contracts/source-to-target-mapping.md) |
+| DQ rule execution | [warehouse/data-quality-etl-spec.md](warehouse/data-quality-etl-spec.md) |
+| Warehouse physical model | [warehouse/physical-model.md](warehouse/physical-model.md) và `../sql/warehouse/` |
+| DDS dictionary | [warehouse/dds-data-dictionary.md](warehouse/dds-data-dictionary.md) |
+| Business questions | [analytics/business-questions.md](analytics/business-questions.md) |
+| Semantic model | [analytics/semantic-contract.md](analytics/semantic-contract.md) |
+| Metric formulas | [analytics/metric-catalog.md](analytics/metric-catalog.md) |
+| Superset operation | [analytics/superset-local-demo-runbook.md](analytics/superset-local-demo-runbook.md) |
+| Full-release evidence | [evidence/full-release-reconciliation.md](evidence/full-release-reconciliation.md) và [evidence/integration-review.md](evidence/integration-review.md) |
 
-### Dành cho Thành viên mới (New Team Member)
-1. **[README.md](../README.md):** Tổng quan nhanh về dự án, cách khởi động local và trạng thái hiện tại.
-2. **[docs/00-team-onboarding-and-data-setup.md](00-team-onboarding-and-data-setup.md):** Cẩm nang thiết lập môi trường phát triển local, tải, xác thực checksum và nạp dữ liệu nguồn.
-3. **[docs/03-scope.md](03-scope.md):** Nắm vững các câu hỏi nghiệp vụ và phạm vi phân tích của đồ án.
-4. **[docs/16-pipeline-control-panel.md](16-pipeline-control-panel.md):** Chạy `PipelineRunner` và giao diện vận hành 4 tab.
+Khi có mâu thuẫn, ưu tiên code/SQL/tests/runtime artifacts hiện tại, sau đó tới
+source-of-truth table ở trên, ADR, evidence mới nhất, và cuối cùng là tài liệu
+historical/archive.
 
-### Dành cho Kỹ sư dữ liệu (Data Engineer / Developer)
-1. **[docs/05-architecture.md](05-architecture.md):** Hiểu kiến trúc dữ liệu 4 tầng (Staging -> DQ/Audit -> NDS -> DDS).
-2. **[docs/04-data-sources.md](04-data-sources.md):** Danh mục chi tiết các nguồn dữ liệu thật và dữ liệu mô phỏng.
-3. **[docs/08-data-contracts.md](08-data-contracts.md):** Các cam kết về schema và kiểu dữ liệu đầu vào.
-4. **[docs/10-source-to-target-plan.md](10-source-to-target-plan.md):** Logic ánh xạ, chuyển đổi dữ liệu và SCD Type 1/2.
-5. **[docs/14-warehouse-ddl.md](14-warehouse-ddl.md):** DDL executable và mô hình vật lý Staging/DQ/NDS/DDS.
-6. **[docs/15-staging-load.md](15-staging-load.md):** Hướng dẫn cơ chế nạp Staging, sinh row hash và đối soát.
-7. **[docs/17-data-quality-and-etl-spec.md](17-data-quality-and-etl-spec.md):** Đặc tả quy tắc kiểm soát chất lượng dữ liệu, cách cách ly và xử lý dữ liệu đến trễ.
-8. **[docs/18-nds-dds-implementation-notes.md](18-nds-dds-implementation-notes.md):** Ghi chú triển khai, tối ưu và reconciliation NDS/DDS.
+## Reader Journeys
 
-### Dành cho Giảng viên & Người đánh giá (Reviewer)
-1. **[docs/01-project-context.md](01-project-context.md):** Bối cảnh và định hướng phân tích của đồ án.
-2. **[docs/03-scope.md](03-scope.md):** Phạm vi nghiệp vụ và 5 nhóm câu hỏi quyết định.
-3. **[docs/05-architecture.md](05-architecture.md):** Kiến trúc runtime, setup flow và ranh giới source systems.
-4. **[docs/09-analytics-requirements.md](09-analytics-requirements.md):** Chi tiết các chỉ số đo lường (KPI) và công thức tính.
-5. **[docs/07-implementation-plan.md](07-implementation-plan.md):** Kế hoạch triển khai mã nguồn, tiến độ các Milestone.
-6. **[docs/02-teacher-feedback.md](02-teacher-feedback.md):** Tiếp thu ý kiến đóng góp của giáo viên hướng dẫn và các hành động khắc phục.
+| Người đọc | Thứ tự đọc khuyến nghị |
+|---|---|
+| Thành viên mới | `setup/local-reproducibility` -> `architecture/system-architecture` -> `contracts/source-data-contracts` -> `analytics/superset-local-demo-runbook` |
+| Data engineer | `architecture/system-architecture` -> `contracts/source-data-contracts` -> `contracts/source-to-target-mapping` -> `warehouse/physical-model` -> `warehouse/data-quality-etl-spec` -> `evidence/full-release-reconciliation` |
+| BI engineer | `context/scope` -> `analytics/business-questions` -> `analytics/semantic-contract` -> `analytics/metric-catalog` -> `analytics/superset-local-demo-runbook` |
+| Reviewer/giảng viên | `README.md` ở root -> `context/project-context` -> `context/scope` -> `architecture/system-architecture` -> `evidence/integration-review` -> `analytics/superset-local-demo-runbook` |
 
----
+## Current Structure
 
-## Danh mục tài liệu đầy đủ (Documentation Map)
+```text
+docs/
+|-- README.md
+|-- setup/          # Local reproducibility, pipeline operation
+|-- context/        # Project context, scope, feedback
+|-- architecture/   # System architecture
+|-- contracts/      # Source inventory, contracts, DQ overview, S2T mapping
+|-- warehouse/      # Physical model, staging, DQ/ETL, NDS/DDS, DDS dictionary
+|-- analytics/      # Business questions, semantic model, metrics, Superset
+|-- evidence/       # Validation and integration evidence
+|-- planning/       # Implementation plan and work breakdown
+|-- decisions/      # Accepted Architecture Decision Records
+`-- meetings/       # Meeting notes placeholder
+```
 
-| Tên tài liệu | Phân loại | Nội dung chính |
-|---|---|---|
-| 📂 **Thiết lập ban đầu** | | |
-| 📄 [00-team-onboarding-and-data-setup.md](00-team-onboarding-and-data-setup.md) | Hướng dẫn | Cách cấu hình môi trường local, seed nguồn và chạy unittest |
-| 📂 **Tổng quan & Bối cảnh** | | |
-| 📄 [01-project-context.md](01-project-context.md) | Bối cảnh | Lý do lựa chọn đề tài và mục tiêu tổng quát của đồ án |
-| 📄 [02-teacher-feedback.md](02-teacher-feedback.md) | Phản hồi | Nhật ký tiếp thu ý kiến của giáo viên và phương án điều chỉnh |
-| 📄 [03-scope.md](03-scope.md) | Nghiệp vụ | Chi tiết 5 nhóm câu hỏi quyết định và ranh giới hệ thống |
-| 📄 [09-analytics-requirements.md](09-analytics-requirements.md) | KPI | Định nghĩa chi tiết các độ đo, thứ chiều phân tích |
-| 📂 **Kiến trúc & Đặc tả Dữ liệu** | | |
-| 📄 [04-data-sources.md](04-data-sources.md) | Nguồn dữ liệu | Inventory chi tiết các hệ thống nguồn thật và giả lập |
-| 📄 [05-architecture.md](05-architecture.md) | Kiến trúc | Thiết kế kiến trúc logic, vật lý, bootstrap và múi giờ |
-| 📄 [08-data-contracts.md](08-data-contracts.md) | Hợp đồng dữ liệu | Quy định ràng buộc cấu trúc đầu vào cho từng nguồn |
-| 📄 [10-source-to-target-plan.md](10-source-to-target-plan.md) | ETL Mapping | Ánh xạ chi tiết từ nguồn vào NDS và DDS |
-| 📄 [14-warehouse-ddl.md](14-warehouse-ddl.md) | Physical model | DDL executable và contract vật lý Staging/DQ/NDS/DDS |
-| 📄 [15-staging-load.md](15-staging-load.md) | Ingestion | Hướng dẫn cơ chế nạp Staging, sinh row hash và đối soát |
-| 📄 [17-data-quality-and-etl-spec.md](17-data-quality-and-etl-spec.md) | ETL & DQ Spec | Quy tắc kiểm soát chất lượng dữ liệu, cách cách ly và xử lý dữ liệu đến trễ |
-| 📄 [18-nds-dds-implementation-notes.md](18-nds-dds-implementation-notes.md) | Implementation | Ghi chú loader, index, phân trang, idempotency và full-load reconciliation |
-| 📂 **Quản lý & Hướng dẫn Vận hành** | | |
-| 📄 [07-implementation-plan.md](07-implementation-plan.md) | Kế hoạch | Kế hoạch triển khai chi tiết mã nguồn và definition of done |
-| 📄 [11-work-breakdown.md](11-work-breakdown.md) | Milestone | Phân chia công việc theo Work Breakdown Structure |
-| 📄 [12-synthetic-generation-report.md](12-synthetic-generation-report.md) | Dữ liệu mô phỏng | Báo cáo chi tiết thuật toán sinh dữ liệu và validation |
-| 📄 [16-pipeline-control-panel.md](16-pipeline-control-panel.md) | Hướng dẫn | Tài liệu hướng dẫn sử dụng và đặc tả của Streamlit Control Panel |
-| 📂 **Thư mục mở rộng** | | |
-| 📁 [decisions/](decisions/) | Kiến trúc (ADR) | Lưu trữ các quyết định thiết kế hệ thống quan trọng (Architecture Decision Records) |
-| 📁 [meetings/](meetings/) | Biên bản | Nhật ký các buổi họp nhóm |
+## Operational Documentation
+
+| Tài liệu | Vai trò |
+|---|---|
+| [setup/local-reproducibility.md](setup/local-reproducibility.md) | Nguồn setup chính từ clone đến pipeline, Superset, smoke test và login |
+| [setup/pipeline-control-panel.md](setup/pipeline-control-panel.md) | Vận hành PipelineRunner và Streamlit Control Panel |
+| [analytics/superset-local-demo-runbook.md](analytics/superset-local-demo-runbook.md) | Superset setup, operation, backup, reset và demo |
+| [../scripts/README.md](../scripts/README.md) | Tham chiếu CLI chi tiết cho từng script |
+
+README ở root chỉ là landing page và Quick Start. Không thêm hướng dẫn vận hành
+chi tiết mới vào README nếu nội dung đó thuộc setup/runbook.
+
+## Architecture And Contracts
+
+| Nhóm | Tài liệu |
+|---|---|
+| Context | [context/project-context.md](context/project-context.md), [context/scope.md](context/scope.md), [context/teacher-feedback.md](context/teacher-feedback.md) |
+| Architecture | [architecture/system-architecture.md](architecture/system-architecture.md), [decisions/](decisions/) |
+| Sources/contracts | [contracts/data-sources.md](contracts/data-sources.md), [contracts/source-data-contracts.md](contracts/source-data-contracts.md), [contracts/source-to-target-mapping.md](contracts/source-to-target-mapping.md) |
+| Warehouse/DQ | [contracts/data-quality-overview.md](contracts/data-quality-overview.md), [warehouse/physical-model.md](warehouse/physical-model.md), [warehouse/staging-load.md](warehouse/staging-load.md), [warehouse/data-quality-etl-spec.md](warehouse/data-quality-etl-spec.md), [warehouse/nds-dds-implementation.md](warehouse/nds-dds-implementation.md), [warehouse/dds-data-dictionary.md](warehouse/dds-data-dictionary.md) |
+| Analytics | [analytics/business-questions.md](analytics/business-questions.md), [analytics/semantic-contract.md](analytics/semantic-contract.md), [analytics/metric-catalog.md](analytics/metric-catalog.md), [analytics/requirements-traceability.md](analytics/requirements-traceability.md), [analytics/superset-local-demo-runbook.md](analytics/superset-local-demo-runbook.md) |
+
+## Evidence And Planning
+
+| Nhóm | Tài liệu |
+|---|---|
+| Evidence | [evidence/synthetic-generation-report.md](evidence/synthetic-generation-report.md), [evidence/full-release-reconciliation.md](evidence/full-release-reconciliation.md), [evidence/integration-review.md](evidence/integration-review.md) |
+| Historical evidence | [evidence/superseded-tlc-missing-validation.md](evidence/superseded-tlc-missing-validation.md) |
+| Planning/status | [planning/implementation-plan.md](planning/implementation-plan.md), [planning/work-breakdown.md](planning/work-breakdown.md) |
+
+## Historical And Superseded Material
+
+Proposal Superset/OLAP cũ đã được loại khỏi `docs/drafts/` để tránh bị dùng nhầm.
+Tên artifact, phát hiện kỹ thuật còn giá trị và replacement links được giữ tại
+[../archive/superset-and-olap-proposals.md](../archive/superset-and-olap-proposals.md).
+Nội dung chi tiết còn trong Git history khi cần audit.
+
+## Naming Rules
+
+- File hiện hành dùng tên chức năng rõ nghĩa, dạng `kebab-case.md`, trong thư mục
+  theo domain.
+- Không thêm file mới dạng `NN-title.md` vào `docs/`; số thứ tự cũ chỉ còn trong
+  Git history.
+- Proposal, draft hoặc nội dung đã thay thế phải vào `archive/`, Git history hoặc
+  có banner `SUPERSEDED`; không đặt cạnh operational docs như nguồn hiện hành.
+- Mỗi chủ đề chỉ có một canonical source. File khác phải link sang thay vì copy
+  công thức, command hoặc số liệu dài.
+- Evidence phải ghi rõ date, environment, input, command/result và limitation.
+- Runbook phải có prerequisites, steps, expected result và reset/troubleshooting.
+
+## Terminology Rules
+
+- Giữ nguyên thuật ngữ kỹ thuật chuẩn bằng tiếng Anh khi đó là tên khái niệm hoặc
+  contract: `staging`, `source system`, `data contract`, `lineage`,
+  `reconciliation`, `quarantine`, `metric`, `semantic model`, `runbook`,
+  `dashboard`, `dataset`, `source-to-target mapping`, `idempotency`, `SCD Type 2`.
+- Có thể giải thích tiếng Việt ngay sau thuật ngữ ở lần xuất hiện đầu tiên, ví dụ
+  `reconciliation (đối soát số liệu)`.
+- Không dịch schema, table, column, script, command, service, file path hoặc Docker
+  service name.
+- Dùng tiếng Việt cho bối cảnh nghiệp vụ, giải thích quyết định và kết luận báo
+  cáo. Dùng tiếng Anh cho tên artifact kỹ thuật và heading của runbook/spec khi
+  heading đó là thuật ngữ chuẩn.
+
+## Documentation Quality Gate
+
+Static checks cho Markdown nằm trong `tests/test_markdown_docs.py` và được chạy
+cùng full suite:
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+Các checks này bảo vệ link tương đối, script references, stale numbered docs,
+canonical-source conflicts và secret patterns trong tài liệu.
