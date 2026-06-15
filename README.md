@@ -2,17 +2,22 @@
 
 # NYC Green Taxi Driver Operations BI
 
-**Kho dữ liệu phân tích hiệu quả vận hành tài xế và đội xe từ NYC Green Taxi Trip Records**
+**Driver Operations Data Warehouse for NYC Green Taxi trip records**
 
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Docker](https://img.shields.io/badge/Docker-Docker_Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?style=flat-square&logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Superset Ready](https://img.shields.io/badge/Apache_Superset-Ready-20A7C9?style=flat-square)](https://superset.apache.org/)
-[![Milestone](https://img.shields.io/badge/Status-DQ_NDS_DDS_Implemented-2EA44F?style=flat-square)](https://github.com/HuyVuCV1011/Green-taxi)
+[![Apache Superset](https://img.shields.io/badge/Apache_Superset-6.1.0-20A7C9?style=flat-square&logo=apachesuperset&logoColor=white)](https://superset.apache.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.x-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io/)
 
-[Tổng quan](#tổng quan) • [Điểm nổi bật](#điểm-nổi-bật) • [Kiến trúc dữ liệu (Data Flow)](#kiến-trúc-dữ-liệu-data-flow) • [Bắt đầu nhanh (Quick Start)](#bắt-đầu-nhanh-quick-start) • [Ma trận dịch vụ Docker (Service Matrix)](#ma-trận-dịch-vụ-docker-service-matrix) • [Bản đồ tài liệu](#bản-đồ-tài-liệu) • [Lộ trình dự án (Project Roadmap)](#lộ-trình-dự-án-project-roadmap) • [Quy tắc dữ liệu (Data & Security Policy)](#quy-tắc-dữ-liệu-data--security-policy)
+**[Setup](docs/setup/local-reproducibility.md)** ·
+**[Architecture](docs/architecture/system-architecture.md)** ·
+**[Contracts](docs/contracts/source-data-contracts.md)** ·
+**[Metrics](docs/analytics/metric-catalog.md)** ·
+**[Superset Demo](docs/analytics/superset-local-demo-runbook.md)** ·
+**[Evidence](docs/evidence/integration-review.md)**
 
 ---
 </div>
@@ -22,33 +27,81 @@
 
 ---
 
-## Tổng quan
+## Mục lục
 
-Dự án tập trung vào việc giải quyết 5 nhóm câu hỏi vận hành chính của doanh nghiệp taxi thông qua các chỉ số đo lường (KPI):
-1. **Hiệu suất tài xế**: Doanh thu, số chuyến đi và năng suất làm việc.
-2. **Hiệu quả ca làm**: Thời gian hoạt động, thời gian rảnh, đối soát ca.
-3. **Mức sử dụng phương tiện**: Tần suất khai thác và bảo dưỡng xe.
-4. **Hiệu quả theo khu vực/thời gian**: Điểm pickup/dropoff phổ biến và thời gian cao điểm.
-5. **Chất lượng dữ liệu**: Quản lý bản ghi lỗi, quarantine và đối soát dữ liệu (reconciliation).
-
-### Tóm tắt thông số dự án
-*   **Dữ liệu chuyến đi (Thật):** NYC TLC Green Taxi trip records.
-*   **Dữ liệu vận hành (Giả lập):** Driver HR, Fleet, Dispatch Shift, Trip Assignment.
-*   **Phạm vi phân tích:** Từ tháng 01/2020 đến tháng 07/2021 (19 tháng).
-*   **Kho dữ liệu đích:** PostgreSQL (`Staging -> DQ/Audit -> NDS -> DDS`).
-*   **Nhịp xử lý:** Batch theo tháng đối với dữ liệu lịch sử (Không dùng ODS, streaming hay CDC).
+| Section | Nội dung |
+|---|---|
+| [Tổng quan](#overview) | Bài toán, dữ liệu, phạm vi và KPI chính |
+| [Điểm nổi bật](#highlights) | Những phần đã triển khai và giá trị kỹ thuật |
+| [Tech stack](#tech-stack) | Công cụ, database, BI và testing |
+| [Kiến trúc dữ liệu](#data-flow) | Runtime flow và local setup flow |
+| [Quick Start](#quick-start) | Lệnh reproduce môi trường local |
+| [Docker services](#docker-services) | Ma trận service nguồn và warehouse |
+| [Documentation](#documentation) | Source-of-truth docs theo chủ đề |
+| [Roadmap](#roadmap) | Trạng thái milestone hiện tại |
+| [Data policy](#data-policy) | Data, secret và reproducibility rules |
 
 ---
+
+<a id="overview"></a>
+
+## Tổng quan
+
+Dự án xây dựng **data warehouse** phục vụ quản lý driver operations của Green Taxi. Dữ liệu
+TLC trip records được tích hợp với nguồn vận hành mô phỏng gồm Driver HR, Fleet,
+Dispatch Shift và Trip Assignment để trả lời 5 nhóm câu hỏi nghiệp vụ.
+
+| Nhóm câu hỏi | Trọng tâm phân tích |
+|---|---|
+| Hiệu suất tài xế | Doanh thu, số chuyến, năng suất và peer comparison |
+| Hiệu quả ca làm | Occupied/idle minutes, utilization và shift reconciliation |
+| Mức sử dụng phương tiện | Tần suất khai thác, trạng thái xe và phân bổ vendor |
+| Khu vực/thời gian | Pickup/dropoff zone, giờ cao điểm và phân bố hoạt động |
+| Chất lượng dữ liệu | DQ issue, quarantine, anomaly và reconciliation |
+
+| Thuộc tính | Giá trị |
+|---|---|
+| Trip data | NYC TLC Green Taxi trip records |
+| Operational data | Synthetic Driver HR, Fleet, Dispatch Shift, Trip Assignment |
+| Time range | 01/2020 đến 07/2021, 19 tháng |
+| Warehouse target | PostgreSQL `Staging -> DQ/Audit -> NDS -> DDS` |
+| Processing mode | Historical monthly batch; không dùng ODS, streaming hoặc CDC |
+| BI layer | Approved analytics views + Apache Superset local demo |
+
+---
+
+<a id="highlights"></a>
 
 ## Điểm nổi bật
 
-*   **Mô phỏng nguồn dữ liệu đa dạng:** Khởi tạo các hệ thống nguồn mô phỏng đa dạng (MySQL, MongoDB, PostgreSQL) từ một gói dữ liệu release chuẩn nhằm tái lập môi trường thực tế của doanh nghiệp.
-*   **Hợp đồng dữ liệu (Data Contracts):** Thiết lập quy định chặt chẽ về schema, kiểu dữ liệu, các business key cho từng nguồn dữ liệu thô.
-*   **Quản lý chất lượng dữ liệu (DQ):** Kiểm tra khóa, enum, thời gian, tham chiếu; lỗi `ERROR` được ghi audit và cách ly trước NDS.
-*   **Khả năng kiểm toán (Auditability):** Sử dụng cơ chế Manifest, mã băm SHA-256 cho các gói dữ liệu và hệ thống metadata lưu vết xử lý đến từng dòng (Row-level traceability).
-*   **Mô hình hóa dữ liệu kho:** Thiết kế kho dữ liệu chuẩn hóa NDS (Normalized Data Store) tích hợp và kho dữ liệu DDS (Dimensional Data Store) dạng Star Schema tối ưu hóa cho truy vấn phân tích.
+| Năng lực | Mô tả |
+|---|---|
+| Heterogeneous source simulation | MySQL HR, MongoDB Fleet, PostgreSQL Dispatch và file batch TLC/lookup |
+| Data contracts | Schema, enum, key, temporal semantics và release integrity được version-control |
+| DQ/Audit/Quarantine | `ERROR` bị quarantine; `WARN`/anomaly được giữ lineage để phân tích |
+| NDS + DDS | NDS chuẩn hóa tích hợp và DDS star schema cho Driver Operations |
+| Idempotency | Seed, staging, NDS, DDS và Superset provisioning chạy lại an toàn |
+| BI-ready analytics | 4 certified datasets, 39 metric instances, 26 charts, read-only BI role và dashboard BQ01-BQ05 |
 
 ---
+
+<a id="tech-stack"></a>
+
+## Tech stack
+
+| Layer | Tools |
+|---|---|
+| Language/runtime | Python 3.11+, Pandas |
+| Source systems | MySQL 8.4, MongoDB 7.0, PostgreSQL 16, CSV/TSV/JSONL files |
+| Warehouse | PostgreSQL 16, SQL DDL, NDS, DDS, audit and DQ schemas |
+| Orchestration | Python CLI scripts, `PipelineRunner`, idempotent loaders |
+| Monitoring | Streamlit Data Pipeline Control Panel |
+| BI | Apache Superset 6.1.0, approved `analytics` views, read-only warehouse role |
+| Testing | `unittest`, contract tests, Markdown docs quality gate |
+
+---
+
+<a id="data-flow"></a>
 
 ## Kiến trúc dữ liệu (Data Flow)
 
@@ -65,7 +118,7 @@ flowchart TD
         Files[("File Batch Source<br>(TLC Trips & Lookup Files)")]
     end
 
-    subgraph DWH["PostgreSQL Warehouse (Kho dữ liệu tích hợp)"]
+    subgraph DWH["PostgreSQL Warehouse"]
         STG[("Staging Schema<br>(Raw Mirror Tables)")]
 
         subgraph Pipeline["Data Quality & Integration Engine"]
@@ -127,103 +180,40 @@ flowchart LR
 
 ---
 
-## Bắt đầu nhanh (Quick Start)
+<a id="quick-start"></a>
 
-Làm theo hướng dẫn dưới đây để thiết lập nhanh môi trường phát triển local và chuẩn bị dữ liệu.
+## Quick Start
 
-### Điều kiện cần (Prerequisites)
-*   Hệ điều hành Windows/Linux/macOS
-*   **Git**
-*   **Python 3.11** trở lên
-*   **Docker Desktop** (hoặc Docker Engine tích hợp Docker Compose v2)
+Nguồn hướng dẫn chính là
+[Team Onboarding and Local Setup](docs/setup/local-reproducibility.md).
+Flow chuẩn:
 
----
-
-### Các bước thiết lập
-
-#### Bước 1: Clone Repository & Cài đặt thư viện Python
 ```powershell
-# Clone mã nguồn dự án
 git clone https://github.com/HuyVuCV1011/Green-taxi.git
 cd Green-taxi
-
-# Cài đặt các thư viện Python cần thiết
 python -m pip install -r requirements.txt
-```
-
-#### Bước 2: Khởi tạo tệp cấu hình môi trường `.env`
-```powershell
-# Sao chép cấu hình mẫu thành tệp cấu hình local hoạt động
 Copy-Item configs\.env.example .env
-```
-> [!TIP]
-> Bạn có thể chỉnh sửa các cổng kết nối (port) local trong tệp `.env` nếu chúng bị trùng lặp với các phần mềm khác có sẵn trên máy.
-
-#### Bước 3: Dựng các container cơ sở dữ liệu (Docker Services)
-```powershell
-# Khởi chạy các container ở chế độ chạy ngầm (detached mode)
+# Tải, kiểm checksum và copy full release vào data/raw/ theo onboarding trước khi chạy Docker/seed.
 docker compose up -d
-
-# Kiểm tra trạng thái hoạt động của các container
-docker compose ps
-```
-
-#### Bước 4: Tải dữ liệu đầy đủ & Seed vào các hệ thống nguồn
-Tải gói dữ liệu release `green-taxi-full-v1.zip` từ Google Drive (theo link chi tiết và mã băm SHA-256 kiểm chứng tại [Tài liệu Onboarding](docs/00-team-onboarding-and-data-setup.md)) giải nén vào thư mục `data/raw/`.
-
-Chạy các tập lệnh seed dữ liệu thô từ thư mục giải nén vào các cơ sở dữ liệu nguồn cục bộ tương ứng:
-```powershell
-# Seed dữ liệu Driver HR vào MySQL
 python scripts/seed_mysql_hr.py --release-id green-taxi-full-v1
-
-# Seed dữ liệu Fleet vào MongoDB
 python scripts/seed_mongodb_fleet.py --release-id green-taxi-full-v1
-
-# Seed dữ liệu Dispatch và Trip Assignment vào PostgreSQL Source
 python scripts/seed_postgres_dispatch.py --release-id green-taxi-full-v1
-```
-
-#### Bước 5: Áp dụng DDL để khởi tạo cấu trúc Kho dữ liệu PostgreSQL
-```powershell
-# Khởi tạo đầy đủ staging, audit, dq, NDS và DDS
 python scripts/apply_warehouse_ddl.py --mode docker
-```
-
-#### Bước 6: Trích xuất và nạp dữ liệu từ các nguồn vào Staging Warehouse
-```powershell
-# Trích xuất và nạp toàn bộ dữ liệu từ các nguồn vào Staging
-python scripts/load_staging.py --release-id green-taxi-full-v1 --source all
-
-# DQ Gate 1 và chuẩn hóa Staging -> NDS
-python scripts/load_nds.py --release-id green-taxi-full-v1
-
-# DQ Gate 2, SCD2 và NDS -> DDS
-python scripts/load_dds.py --release-id green-taxi-full-v1
-```
-
-#### Bước 7: Khởi chạy Giao diện điều khiển (Pipeline Control Panel)
-```powershell
-# Chạy orchestration từ CLI (mô phỏng hoặc thực chạy)
-python scripts/run_pipeline.py --release-id green-taxi-full-v1 --dry-run
 python scripts/run_pipeline.py --release-id green-taxi-full-v1
-
-# Khởi chạy giao diện Streamlit để theo dõi và đối soát dữ liệu
-streamlit run app/streamlit_app.py
-```
-> [!NOTE]
-> Control Panel dùng Green Taxi light theme và có 4 tab nghiệp vụ: **Tổng quan Hệ thống**, **Vận hành Pipeline**, **Chất lượng & Đối soát** và **Khám phá Nguồn**. Đây là giao diện vận hành, tách biệt với dashboard nghiệp vụ trên Superset hoặc BI client được phê duyệt.
-
----
-
-### Chạy thử nghiệm với dữ liệu mẫu (Sample Mode)
-Nếu bạn chỉ muốn kiểm thử nhanh logic ETL hoặc xác minh mã nguồn chạy đúng mà không cần tải gói dữ liệu đầy đủ hay thiết lập Docker, hãy chạy bộ kiểm thử sử dụng dữ liệu mẫu có sẵn trong repository:
-```powershell
-python -m unittest discover -s tests -v
+python -m scripts.init_superset_env
+python -m scripts.setup_superset_warehouse
+docker compose --env-file .env.superset -f docker-compose.superset.yml up -d --build
+python -m scripts.smoke_test_superset
+python -m scripts.show_superset_login
 ```
 
----
+Mỗi thành viên tự sinh credential Superset local; không chia sẻ hoặc commit output
+của lệnh lấy login. Vận hành và demo dashboard:
+[Superset Local Demo Runbook](docs/analytics/superset-local-demo-runbook.md).
 
-## Ma trận dịch vụ Docker (Service Matrix)
+<a id="docker-services"></a>
+
+## Docker services
 
 Các dịch vụ cơ sở dữ liệu được cấu hình sẵn trong `docker-compose.yml` để mô phỏng một môi trường phân tán thực tế:
 
@@ -236,16 +226,17 @@ Các dịch vụ cơ sở dữ liệu được cấu hình sẵn trong `docker-c
 
 ---
 
-## Cấu trúc dự án
+<a id="project-structure"></a>
+
+## Project Structure
 
 <details>
 <summary><b>Xem cây thư mục chính</b></summary>
 
 ```text
 Green-taxi/
-├── .streamlit/           # Green Taxi light theme cho Control Panel
 ├── app/                  # Streamlit Data Pipeline Control Panel
-├── configs/              # Cấu hình môi trường an toàn, không chứa secret
+├── configs/              # Safe config templates, không chứa secret
 ├── data/
 │   ├── sample/           # Bộ dữ liệu mẫu nhỏ dùng cho unit test và review nhanh
 │   ├── lookup/           # Dữ liệu tra cứu chuẩn (Taxi Zone, Vendor) được phép commit
@@ -253,45 +244,47 @@ Green-taxi/
 │   ├── raw/              # Chứa dữ liệu đầy đủ từ release giải nén ra (Bị Git ignore)
 │   ├── interim/          # Thư mục lưu dữ liệu trung gian trong quá trình ETL (Bị Git ignore)
 │   └── processed/        # Kết quả đầu ra sau khi xử lý (Bị Git ignore)
-├── diagrams/             # Sơ đồ kiến trúc và mô hình dữ liệu (.drawio, Mermaid)
-├── docs/                 # Scope, tài liệu kiến trúc, ADR và biên bản họp nhóm
-├── notebooks/            # Các notebook phân tích EDA và thử nghiệm thuật toán
-├── scripts/              # Tập lệnh sinh dữ liệu, seed nguồn và tiện ích quản trị
-├── sql/                  # Tập lệnh SQL DDL, transformation, data tests và truy vấn analytics
-├── src/                  # Mã nguồn Python (Ingestion, DQ, Warehouse, Analytics)
-├── tests/                # Bộ kiểm thử unit test, integration và data-quality
-├── deliverables/         # Báo cáo, slide thuyết trình và bảng tính phân tích bàn giao
-└── archive/              # Tài liệu, code cũ được đưa vào lưu trữ (Chỉ dùng tham khảo)
+├── diagrams/             # Data model và semantic model diagrams
+├── docs/                 # Setup, architecture, contracts, warehouse, analytics, evidence
+├── notebooks/            # EDA notebooks và reproducible experiments
+├── scripts/              # Generator, seed, pipeline, validation và Superset utilities
+├── sql/                  # Source DDL, warehouse DDL, analytics views và grants
+├── src/                  # Python source code: ingestion, warehouse, orchestration, monitoring
+├── tests/                # Unit, integration, contract và documentation tests
+├── deliverables/         # Final report, slides, spreadsheets và evidence package
+└── archive/              # Superseded/historical material, chỉ dùng tham khảo
 ```
 </details>
 
 ---
 
-## Bản đồ tài liệu
+<a id="documentation"></a>
 
-Dự án tuân thủ nguyên tắc thiết kế **docs-first** và **data-contract-first**. Dưới đây là các tài liệu thiết kế cốt lõi:
+## Documentation
 
-*   **[Team onboarding](docs/00-team-onboarding-and-data-setup.md):** Hướng dẫn cấu hình môi trường phát triển local, cách tải và kiểm tra dữ liệu đầy đủ.
-*   **[Project scope](docs/03-scope.md):** Định nghĩa phạm vi bài toán nghiệp vụ, nhóm người dùng mục tiêu và các câu hỏi vận hành cần giải quyết.
-*   **[System architecture](docs/05-architecture.md):** Bản thiết kế chi tiết kiến trúc các tầng dữ liệu từ nguồn đến DDS.
-*   **[Data sources](docs/04-data-sources.md):** Danh sách chi tiết các hệ thống nguồn và đặc tính dữ liệu.
-*   **[Data contracts](docs/08-data-contracts.md):** Các cam kết về schema và kiểu dữ liệu đầu vào.
-*   **[Source-to-target plan](docs/10-source-to-target-plan.md):** Thiết kế ánh xạ và chuyển đổi dữ liệu từ nguồn vào NDS và DDS.
-*   **[Warehouse Physical Model Specification](docs/14-warehouse-ddl.md):** DDL executable và mô hình vật lý Staging/DQ/NDS/DDS.
-*   **[NDS/DDS implementation notes](docs/18-nds-dds-implementation-notes.md):** Ghi chú triển khai, tối ưu, idempotency và reconciliation.
-*   **[DDS data dictionary](docs/21-data-dictionary.md):** Catalog 9 bảng và 107 cột DDS.
-*   **[Analytics semantic contract](docs/22-analytics-semantic-contract.md):** Grain, roles, joins và analytics boundary.
-*   **[Certified metric catalog](docs/23-metric-catalog.md):** Công thức metric chuẩn cho Superset/SQL.
-*   **[Analytics requirements traceability](docs/24-analytics-requirements-traceability.md):** Ánh xạ requirement sang dataset và metric.
-*   **[Staging Load](docs/15-staging-load.md):** Cơ chế source adapters, row hash, audit metadata và source-to-staging reconciliation.
-*   **[Pipeline Control Panel](docs/16-pipeline-control-panel.md):** Giao diện Streamlit 4 tab để giám sát health, vận hành pipeline, xem DQ/reconciliation và khám phá nguồn.
-*   **[Documentation index](docs/README.md):** Danh mục tài liệu đầy đủ và gợi ý lộ trình đọc.
+Dự án tuân thủ nguyên tắc **docs-first** và **data-contract-first**. Nguồn sự
+thật đầy đủ nằm ở [Documentation map](docs/README.md); các link dưới đây là entry
+points chính.
+
+*   **[Documentation map](docs/README.md):** Documentation entry point theo role, source of truth và trạng thái.
+*   **[Team onboarding](docs/setup/local-reproducibility.md):** Hướng dẫn cấu hình local, tải dữ liệu, chạy pipeline, Superset và smoke test.
+*   **[Project scope](docs/context/scope.md):** Phạm vi bài toán nghiệp vụ, người dùng mục tiêu và câu hỏi vận hành.
+*   **[System architecture](docs/architecture/system-architecture.md):** Kiến trúc runtime, setup flow và ranh giới source systems.
+*   **[Source contracts](docs/contracts/source-data-contracts.md):** Schema, key, enum, temporal semantics và contract nguồn.
+*   **[Source-to-target mapping](docs/contracts/source-to-target-mapping.md):** Ánh xạ từ nguồn vào NDS và DDS.
+*   **[Warehouse physical model](docs/warehouse/physical-model.md):** DDL executable và mô hình vật lý Staging/DQ/NDS/DDS.
+*   **[DQ/ETL spec](docs/warehouse/data-quality-etl-spec.md):** Rule execution, quarantine, inferred member và idempotency.
+*   **[Semantic contract](docs/analytics/semantic-contract.md):** Grain, roles, joins và analytics boundary.
+*   **[Metric catalog](docs/analytics/metric-catalog.md):** Công thức metric chuẩn cho Superset/SQL.
+*   **[Superset runbook](docs/analytics/superset-local-demo-runbook.md):** Dựng metadata DB, role read-only, dataset, metric, dashboard và smoke test.
 
 ---
 
-## Lộ trình dự án (Project Roadmap)
+<a id="roadmap"></a>
 
-### Những phần đã hoàn thành (Milestone 1-3)
+## Roadmap
+
+### Completed (Milestone 1-5)
 - [x] Xác định phạm vi nghiệp vụ và chốt kiến trúc dữ liệu không sử dụng ODS.
 - [x] Thiết kế Data Contracts và đóng gói thư viện sinh dữ liệu mô phỏng (`scripts/generate_synthetic_sources.py`).
 - [x] Tạo Manifest, validation report và tích hợp dữ liệu mẫu (sample data) vào Git phục vụ test nhanh.
@@ -304,15 +297,18 @@ Dự án tuân thủ nguyên tắc thiết kế **docs-first** và **data-contra
 - [x] Triển khai `PipelineRunner`, CLI orchestration và Streamlit Control Panel.
 - [x] Chạy full release với 19 TLC files và xác nhận reconciliation/idempotency.
 - [x] Khóa analytics semantic contract, certified metrics và analytics SQL views.
+- [x] Triển khai Superset local với metadata DB và warehouse role read-only.
+- [x] Provision 4 certified datasets, 39 metric instances, 26 charts và dashboard BQ01-BQ05 trên 3 tabs.
+- [x] Chạy health, permission, query, reconciliation và browser smoke tests.
 
-### Lộ trình tiếp theo (Milestone 4+)
-- [ ] Triển khai và smoke-test Superset local demo từ proposal đã review.
-- [ ] Xây Superset datasets/dashboard và anomaly analysis theo certified contract.
+### Next (Milestone 6)
 - [ ] Hoàn thiện báo cáo học thuật, slide báo cáo và tài liệu hướng dẫn tái lập kết quả.
 
 ---
 
-## Quy tắc dữ liệu (Data & Security Policy)
+<a id="data-policy"></a>
+
+## Data Policy
 
 1.  **Tính bất biến của dữ liệu thô (Raw Data Immutability):** Dữ liệu thô sau khi được tải từ Google Drive là bất biến. Thành viên không được phép tự sửa đổi tệp tin nguồn để vượt qua lỗi của pipeline.
 2.  **Không commit dữ liệu lớn và bí mật:** Nghiêm cấm commit dữ liệu thô, dữ liệu trung gian có dung lượng lớn, database volume, tệp cấu hình `.env` hoặc các khoá bảo mật lên Git. Mọi tệp tin này đã được cấu hình loại trừ qua `.gitignore`.

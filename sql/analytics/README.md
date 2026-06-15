@@ -10,7 +10,9 @@
 | `analytics.shift_trip_aggregate` | 1 row/shift_id | Safe trip aggregate before any fact comparison |
 | `analytics.dq_summary` | 1 row/DQ grouping | Issue/quarantine monitoring without fact joins |
 
-Apply only through the project DDL/deployment process after review. The script
-does not materialize data and does not modify warehouse rows. Superset should
-receive `USAGE` on `analytics` and `SELECT` on these views only as a separate
-security task; this workstream does not create users or secrets.
+`python -m scripts.setup_superset_warehouse` áp dụng views và security grants.
+Các view không materialize hoặc sửa warehouse rows.
+
+`02_superset_readonly_role.sql` cấp quyền tối thiểu cho `superset_ro`. Role và
+password được tạo/cập nhật bởi `python -m scripts.setup_superset_warehouse`;
+password chỉ đọc từ `.env.superset` local bị Git ignore.

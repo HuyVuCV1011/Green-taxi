@@ -31,10 +31,12 @@ table, column, file kỹ thuật và thuật ngữ chuẩn có thể giữ bằn
 
 ## Trạng thái và phạm vi hiện tại
 
-- Milestone 1 đã hoàn tất: scope, kiến trúc, data contracts, synthetic source
-  package, manifest, validation và repository sample.
-- Các tầng tiếp theo đang triển khai: source systems, Staging, DQ/Audit,
-  Quarantine, NDS, Driver Operations DDS, dashboard và anomaly analysis.
+- Milestone 1-5 đã hoàn tất theo tài liệu hiện hành: scope, kiến trúc, data
+  contracts, synthetic source package, heterogeneous source simulation, Staging,
+  DQ/Audit/Quarantine, NDS, Driver Operations DDS, analytics semantic contract và
+  Superset local demo.
+- Milestone 6 đang tập trung vào báo cáo, slide, demo script và đóng gói bằng
+  chứng nộp bài.
 - Kiến trúc đích:
 
 ```text
@@ -62,10 +64,11 @@ TLC/lookup files + MySQL HR + MongoDB Fleet + PostgreSQL Dispatch
 Trước thay đổi không nhỏ, đọc các nguồn liên quan theo thứ tự:
 
 1. `README.md` để hiểu trạng thái và cách vận hành hiện tại.
-2. `docs/03-scope.md` và `docs/09-analytics-requirements.md` cho phạm vi nghiệp
-   vụ, KPI và câu hỏi quyết định.
-3. `docs/05-architecture.md`, `docs/08-data-contracts.md` và
-   `docs/10-source-to-target-plan.md` cho kiến trúc và hợp đồng dữ liệu.
+2. `docs/context/scope.md` và `docs/analytics/business-questions.md` cho phạm vi
+   nghiệp vụ, KPI và câu hỏi quyết định.
+3. `docs/architecture/system-architecture.md`,
+   `docs/contracts/source-data-contracts.md` và
+   `docs/contracts/source-to-target-mapping.md` cho kiến trúc và hợp đồng dữ liệu.
 4. `docs/decisions/` cho các quyết định đã chốt.
 5. Code, SQL, tests và sample data hiện tại để xác nhận hành vi thực tế.
 6. `archive/` chỉ dùng tham khảo; không xem là nguồn sự thật hiện hành.
@@ -76,16 +79,17 @@ hành vi đúng theo quyết định mới nhất, sửa đồng bộ hoặc bá
 ## Bản đồ repository
 
 ```text
+app/           Streamlit Data Pipeline Control Panel
 configs/       Cấu hình an toàn, không chứa secret
 data/          Sample, lookup, metadata và thư mục dữ liệu local bị ignore
 deliverables/  Báo cáo, slide và bảng tính bàn giao
-diagrams/      Sơ đồ kiến trúc và mô hình dữ liệu
-docs/          Scope, kiến trúc, data contracts, ADR và meeting notes
+diagrams/      Sơ đồ mô hình dữ liệu và semantic model hiện có
+docs/          Scope, kiến trúc, data contracts, ADR, runbook và evidence
 notebooks/     EDA và thử nghiệm có thể tái lập
-scripts/       Generator, validator, seeding và pipeline utilities
-sql/           DDL, transformations, data tests và analytics queries
-src/           Ingestion, quality, warehouse và analytics code
-tests/         Unit, integration và data-quality tests
+scripts/       Generator, validator, seeding, pipeline và Superset utilities
+sql/           Source DDL, warehouse DDL và analytics views/grants
+src/           Ingestion, warehouse, orchestration và monitoring code
+tests/         Unit, integration, data-quality và Superset contract tests
 archive/       Nội dung cũ chỉ dùng tham khảo
 ```
 
@@ -94,13 +98,14 @@ archive/       Nội dung cũ chỉ dùng tham khảo
 - `scripts/` dành cho entry point và tác vụ vận hành; logic dùng lại nên đặt trong
   `src/`.
 - `src/ingestion/` đọc dữ liệu nguồn và đưa vào Staging.
-- `src/quality/` sở hữu rule kiểm tra, quarantine và báo cáo chất lượng.
-- `src/warehouse/` sở hữu orchestration và transformation của NDS/DDS.
-- `src/analytics/` sở hữu KPI, semantic logic và anomaly analysis.
-- `src/common/` chỉ chứa tiện ích dùng chung thật sự; không biến thành nơi chứa
-  logic không rõ ownership.
-- `sql/ddl/`, `sql/transformations/`, `sql/tests/` và `sql/analytics/` phải giữ
-  trách nhiệm tách biệt.
+- `src/warehouse/` sở hữu transformation, validation và load NDS/DDS.
+- `src/orchestration/` sở hữu PipelineRunner, step contract và lock vận hành.
+- `src/monitoring/` sở hữu repository đọc trạng thái cho Streamlit và sanitization.
+- Nếu bổ sung `src/quality/`, `src/analytics/` hoặc `src/common/`, chỉ tạo khi có
+  logic dùng lại thật sự và cập nhật `src/README.md` cùng tests liên quan.
+- `sql/warehouse/`, `sql/source_mysql_hr/`, `sql/source_postgres_dispatch/` và
+  `sql/analytics/` là các thư mục SQL có artifact thực thi hiện tại; `sql/ddl/`,
+  `sql/transformations/` và `sql/tests/` là placeholder reserved cho phần mở rộng.
 - Không nhúng logic nghiệp vụ quan trọng chỉ trong notebook hoặc BI tool nếu có
   thể biểu diễn và kiểm thử ở SQL/Python.
 
@@ -195,7 +200,7 @@ python -m unittest discover -s tests -v
 ```
 
 Các tác vụ dữ liệu hiện có phải được chạy theo hướng dẫn trong `scripts/README.md`
-và `docs/00-team-onboarding-and-data-setup.md`. Trước khi chạy generator trên
+và `docs/setup/local-reproducibility.md`. Trước khi chạy generator trên
 phạm vi lớn, kiểm tra cấu hình, seed và output path để tránh ghi đè release chuẩn.
 
 Khi thêm tooling mới:

@@ -1,0 +1,102 @@
+name: green-taxi-superset
+
+x-superset-common: &superset-common
+  build:
+    context: .
+    dockerfile: docker/superset/Dockerfile
+  image: green-taxi-superset:6.1.0
+  env_file:
+    - .env.superset
+  environment:
+    SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+    SUPERSET_METADATA_DATABASE_URI: postgresql+psycopg2://${SUPERSET_METADATA_DB_USER}:${SUPERSET_METADATA_DB_PASSWORD}@superset_metadata_db:5432/${SUPERSET_METADATA_DB_NAME}
+    SUPERSET_VIEWER_USERNAME: ${SUPERSET_VIEWER_USERNAME}
+    SUPERSET_VIEWER_PASSWORD: ${SUPERSET_VIEWER_PASSWORD}
+  volumes:
+    - ./docker/superset/superset_config.py:/app/pythonpath/superset_config.py:ro
+    - ./scripts/provision_superset.py:/app/pythonpath/provision_superset.py:ro
+  networks:
+    - green_taxi_net
+
+services:
+  superset_metadata_db:
+    image: postgres:16-alpine
+    container_name: green_taxi_superset_metadata_db
+    restart: unless-stopped
+    env_file:
+      - .env.superset
+    environment:
+      POSTGRES_DB: ${SUPERSET_METADATA_DB_NAME}
+      POSTGRES_USER: ${SUPERSET_METADATA_DB_USER}
+      POSTGRES_PASSWORD: ${SUPERSET_METADATA_DB_PASSWORD}
+    volumes:
+      - superset_metadata_data:/var/lib/postgresql/data
+    networks:
+      - green_taxi_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  superset_init:
+    <<: *superset-common
+    container_name: green_taxi_superset_init
+    restart: "no"
+    depends_on:
+      superset_metadata_db:
+        condition: service_healthy
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+        superset db upgrade
+        superset fab create-admin \
+          --username "$${SUPERSET_ADMIN_USERNAME}" \
+          --firstname "$${SUPERSET_ADMIN_FIRSTNAME}" \
+          --lastname "$${SUPERSET_ADMIN_LASTNAME}" \
+          --email "$${SUPERSET_ADMIN_EMAIL}" \
+          --password "$${SUPERSET_ADMIN_PASSWORD}" || true
+        superset init
+        python -c "from superset.app import create_app; app = create_app(); ctx = app.app_context(); ctx.push(); exec(compile(open('/app/pythonpath/provision_superset.py').read(), '/app/pythonpath/provision_superset.py', 'exec'))"
+
+  superset_app:
+    <<: *superset-common
+    container_name: green_taxi_superset_app
+    restart: unless-stopped
+    depends_on:
+      superset_metadata_db:
+        condition: service_healthy
+      superset_init:
+        condition: service_completed_successfully
+    ports:
+      - "${SUPERSET_PORT:-8088}:8088"
+    command:
+      - /bin/sh
+      - -c
+      - |
+        exec gunicorn \
+          --bind 0.0.0.0:8088 \
+          --workers 2 \
+          --worker-class gthread \
+          --threads 20 \
+          --timeout 120 \
+          --limit-request-line 0 \
+          "superset.app:create_app()"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:8088/health | grep -q OK"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+networks:
+  green_taxi_net:
+    external: true
+    name: green_taxi_net
+
+volumes:
+  superset_metadata_data:
+    name: green_taxi_superset_metadata_data

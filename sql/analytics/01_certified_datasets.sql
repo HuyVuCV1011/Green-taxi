@@ -2,6 +2,12 @@
 
 CREATE SCHEMA IF NOT EXISTS analytics;
 
+DROP VIEW IF EXISTS analytics.shift_trip_aggregate CASCADE;
+DROP VIEW IF EXISTS analytics.trip_dropoff CASCADE;
+DROP VIEW IF EXISTS analytics.trip_pickup CASCADE;
+DROP VIEW IF EXISTS analytics.shift CASCADE;
+DROP VIEW IF EXISTS analytics.dq_summary CASCADE;
+
 -- Grain: one row per trip. Default temporal/location role: pickup.
 CREATE OR REPLACE VIEW analytics.trip_pickup AS
 SELECT
@@ -9,6 +15,14 @@ SELECT
     f.shift_id,
     pickup_date.date + pickup_time.time_of_day AS pickup_datetime,
     dropoff_date.date + dropoff_time.time_of_day AS dropoff_datetime,
+    pickup_time.hour AS pickup_hour,
+    pickup_date.day_of_week AS pickup_day_of_week,
+    pickup_date.day_name AS pickup_day_name,
+    pickup_date.year AS pickup_year,
+    pickup_date.month AS pickup_month,
+    dropoff_time.hour AS dropoff_hour,
+    dropoff_date.day_of_week AS dropoff_day_of_week,
+    dropoff_date.day_name AS dropoff_day_name,
     f.pickup_date_key,
     f.pickup_time_key,
     f.dropoff_date_key,
@@ -83,6 +97,14 @@ SELECT
     shift_id,
     pickup_datetime,
     dropoff_datetime,
+    pickup_hour,
+    pickup_day_of_week,
+    pickup_day_name,
+    pickup_year,
+    pickup_month,
+    dropoff_hour,
+    dropoff_day_of_week,
+    dropoff_day_name,
     pickup_date_key,
     pickup_time_key,
     dropoff_date_key,
@@ -138,6 +160,9 @@ SELECT
     f.shift_end,
     f.shift_start_date_key,
     f.shift_start_time_key,
+    start_time.hour AS shift_start_hour,
+    start_date.day_of_week AS shift_start_day_of_week,
+    start_date.day_name AS shift_start_day_name,
     f.driver_key,
     driver.driver_id,
     driver.display_name AS driver_name,
@@ -174,6 +199,10 @@ JOIN dds.dim_vehicle AS vehicle
   ON vehicle.vehicle_key = f.vehicle_key
 JOIN dds.dim_vendor AS vendor
   ON vendor.vendor_key = f.vendor_key
+JOIN dds.dim_date AS start_date
+  ON start_date.date_key = f.shift_start_date_key
+JOIN dds.dim_time AS start_time
+  ON start_time.time_key = f.shift_start_time_key
 JOIN nds.nds_shift AS source_shift
   ON source_shift.shift_nk = f.shift_id
 JOIN nds.nds_location AS source_start_location

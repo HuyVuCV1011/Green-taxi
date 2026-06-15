@@ -7,10 +7,10 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 SQL_PATH = ROOT / "sql" / "analytics" / "01_certified_datasets.sql"
-SEMANTIC_PATH = ROOT / "docs" / "22-analytics-semantic-contract.md"
-METRIC_PATH = ROOT / "docs" / "23-metric-catalog.md"
-DICTIONARY_PATH = ROOT / "docs" / "21-data-dictionary.md"
-TRACEABILITY_PATH = ROOT / "docs" / "24-analytics-requirements-traceability.md"
+SEMANTIC_PATH = ROOT / "docs" / "analytics" / "semantic-contract.md"
+METRIC_PATH = ROOT / "docs" / "analytics" / "metric-catalog.md"
+DICTIONARY_PATH = ROOT / "docs" / "warehouse" / "dds-data-dictionary.md"
+TRACEABILITY_PATH = ROOT / "docs" / "analytics" / "requirements-traceability.md"
 
 
 class AnalyticsContractTests(unittest.TestCase):
@@ -31,6 +31,13 @@ class AnalyticsContractTests(unittest.TestCase):
             "analytics.dq_summary",
         ):
             self.assertIn(f"CREATE OR REPLACE VIEW {view_name}", self.sql)
+
+    def test_new_time_dimensions_are_exposed(self) -> None:
+        self.assertIn("pickup_hour", self.sql.lower())
+        self.assertIn("pickup_day_of_week", self.sql.lower())
+        self.assertIn("pickup_day_name", self.sql.lower())
+        self.assertIn("shift_start_hour", self.sql.lower())
+        self.assertIn("shift_start_day_name", self.sql.lower())
 
     def test_sql_is_read_only_and_explicit(self) -> None:
         self.assertNotRegex(self.sql.upper(), r"\bSELECT\s+\*")

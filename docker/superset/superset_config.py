@@ -1,0 +1,24 @@
+import os
+
+
+SECRET_KEY = os.environ["SUPERSET_SECRET_KEY"]
+SQLALCHEMY_DATABASE_URI = os.environ["SUPERSET_METADATA_DATABASE_URI"]
+
+WTF_CSRF_ENABLED = True
+TALISMAN_ENABLED = False
+ENABLE_PROXY_FIX = False
+
+FEATURE_FLAGS = {
+    "DASHBOARD_RBAC": True,
+    "ENABLE_TEMPLATE_PROCESSING": False,
+}
+
+ROW_LIMIT = 50000
+SQL_MAX_ROW = 100000
+SUPERSET_WEBSERVER_TIMEOUT = 120
+
+LANGUAGES = {
+    "en": {"flag": "us", "name": "English"},
+    "vi": {"flag": "vn", "name": "Vietnamese"},
+}
+BABEL_DEFAULT_LOCALE = "vi"

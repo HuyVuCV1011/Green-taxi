@@ -26,7 +26,7 @@ Raw synthetic data bị Git ignore; generator, config, manifest và validation
 report được version-control để bảo đảm khả năng tái tạo.
 
 Thành viên lấy full dataset đã được kiểm tra từ Google Drive theo
-`docs/00-team-onboarding-and-data-setup.md` và không tự chạy generator.
+`docs/setup/local-reproducibility.md` và không tự chạy generator.
 
 ## Runtime dependencies
 
@@ -132,3 +132,19 @@ Không chạy full write pipeline trên dữ liệu local dùng chung nếu chư
 backup/reload policy. `DDS Ready` chỉ hợp lệ với run thực `SUCCEEDED` có step
 `mark_dds_ready` cũng `SUCCEEDED`. Dry-run trả status `DRY_RUN` và exit code
 `0`, nhưng không thực thi handler hoặc ghi dữ liệu.
+
+## Superset local demo
+
+Luồng setup end-to-end chỉ được duy trì tại
+`docs/setup/local-reproducibility.md`. Các entry point Superset:
+
+| Script | Chức năng |
+|---|---|
+| `init_superset_env.py` | Sinh `.env.superset` local với credential ngẫu nhiên |
+| `setup_superset_warehouse.py` | Áp dụng analytics views và role `superset_ro` |
+| `provision_superset.py` | Bootstrap datasets, certified metrics, charts và dashboard trong container init |
+| `smoke_test_superset.py` | Health, API, permission và query smoke tests |
+| `show_superset_login.py` | Hiển thị login local khi người dùng chủ động yêu cầu |
+
+Không paste output của `show_superset_login.py` vào tài liệu, issue hoặc commit.
+Vận hành chi tiết xem `docs/analytics/superset-local-demo-runbook.md`.
