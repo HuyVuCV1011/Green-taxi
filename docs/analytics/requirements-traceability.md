@@ -9,8 +9,9 @@ contract và metric catalog. Mọi dependency reconciliation trong draft đã đ
 | ID | Requirement | Dataset/fact | Certified metrics | Default role | Support |
 |---|---|---|---|---|---|
 | `BQ01` | Khu vực/khung giờ cần ưu tiên năng lực | `analytics.trip_pickup` | `total_trips`, `total_revenue` | Pickup date/time/location | DDS supported |
-| `BQ02` | Ca sử dụng thời gian hiệu quả | `analytics.shift` | `utilization_rate`, `occupied_minutes`, `idle_minutes`, `shift_duration_minutes` | Shift start | DDS supported |
-| `BQ03` | Driver revenue/hour thấp hoặc idle cao | `analytics.shift` | `revenue_per_hour`, `idle_minutes`, `total_revenue` | Shift start | DDS supported |
+| `BQ01` (zone concentration) | Phân tích tập trung nhu cầu khu vực đón | `analytics.pareto_pickup_zone` | `total_trips`, `cum_trips_pct`, `total_revenue`, `cum_revenue_pct` | Pickup location | Concentration view |
+| `BQ02` | Ca sử dụng thời gian hiệu quả | `analytics.shift` | `utilization_rate`, `occupied_minutes`, `idle_minutes`, `avg_idle_minutes`, `shift_duration_minutes` | Shift start | DDS supported |
+| `BQ03` | Driver revenue/hour thấp hoặc idle cao | `analytics.driver_performance_summary` | `revenue_per_hour`, `idle_minutes_per_shift`, `utilization_rate`, `completed_shifts`, `review_driver_count` | Driver summary | Peer-review view |
 | `BQ04` | Vehicle hoạt động dưới mức thông thường | `analytics.shift` | `utilization_rate`, `trips_per_shift`, `revenue_per_shift` | Shift start | DDS supported |
 | `BQ05A` | Trip bất thường cần kiểm tra | `analytics.trip_pickup` | `anomaly_trip_count`, `anomaly_rate` | Pickup | DDS supported |
 | `BQ05B` | Shift bất thường cần kiểm tra | `analytics.shift` | `anomaly_shift_count` | Shift start | DDS supported |

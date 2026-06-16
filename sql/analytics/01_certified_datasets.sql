@@ -7,6 +7,8 @@ DROP VIEW IF EXISTS analytics.trip_dropoff CASCADE;
 DROP VIEW IF EXISTS analytics.trip_pickup CASCADE;
 DROP VIEW IF EXISTS analytics.shift CASCADE;
 DROP VIEW IF EXISTS analytics.dq_summary CASCADE;
+DROP VIEW IF EXISTS analytics.pareto_pickup_zone CASCADE;
+DROP VIEW IF EXISTS analytics.driver_performance_summary CASCADE;
 
 -- Grain: one row per trip. Default temporal/location role: pickup.
 CREATE OR REPLACE VIEW analytics.trip_pickup AS
@@ -271,3 +273,88 @@ GROUP BY
     quarantine.source_entity,
     quarantine.error_rule_code,
     quarantine.severity;
+
+-- Grain: one row per pickup zone. Pre-calculates cumulative contribution metrics.
+CREATE OR REPLACE VIEW analytics.pareto_pickup_zone AS
+WITH zone_trips AS (
+    SELECT
+        pickup_location_key,
+        pickup_zone,
+        pickup_borough,
+        COUNT(*) AS trips,
+        SUM(total_amount) AS revenue
+    FROM analytics.trip_pickup
+    GROUP BY pickup_location_key, pickup_zone, pickup_borough
+),
+zone_cum AS (
+    SELECT
+        pickup_location_key,
+        pickup_zone,
+        pickup_borough,
+        trips,
+        revenue,
+        SUM(trips) OVER (ORDER BY trips DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cum_trips,
+        SUM(trips) OVER () AS total_trips,
+        SUM(revenue) OVER (ORDER BY revenue DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cum_revenue,
+        SUM(revenue) OVER () AS total_revenue
+    FROM zone_trips
+)
+SELECT
+    pickup_location_key,
+    pickup_zone,
+    pickup_borough,
+    trips,
+    revenue,
+    cum_trips::double precision / NULLIF(total_trips, 0) AS cum_trips_pct,
+    cum_revenue::double precision / NULLIF(total_revenue, 0) AS cum_revenue_pct
+FROM zone_cum;
+
+-- Grain: one row per driver across the certified completed-shift population.
+CREATE OR REPLACE VIEW analytics.driver_performance_summary AS
+WITH driver_rollup AS (
+    SELECT
+        driver_key,
+        driver_id,
+        driver_name,
+        COUNT(shift_id) AS completed_shifts,
+        SUM(trip_count)::numeric / NULLIF(COUNT(shift_id), 0) AS trips_per_shift,
+        SUM(total_revenue) / NULLIF(COUNT(shift_id), 0) AS revenue_per_shift,
+        SUM(total_revenue) * 60 / NULLIF(SUM(shift_duration_minutes), 0) AS revenue_per_hour,
+        SUM(occupied_minutes) / NULLIF(SUM(shift_duration_minutes), 0) AS utilization_rate,
+        SUM(idle_minutes)::numeric / NULLIF(COUNT(shift_id), 0) AS idle_minutes_per_shift
+    FROM analytics.shift
+    GROUP BY driver_key, driver_id, driver_name
+),
+benchmarked AS (
+    SELECT
+        driver_rollup.*,
+        PERCENT_RANK() OVER (ORDER BY revenue_per_hour) AS revenue_per_hour_percentile,
+        PERCENT_RANK() OVER (ORDER BY utilization_rate) AS utilization_percentile,
+        PERCENT_RANK() OVER (ORDER BY idle_minutes_per_shift) AS idle_percentile
+    FROM driver_rollup
+)
+SELECT
+    driver_key,
+    driver_id,
+    driver_name,
+    completed_shifts,
+    trips_per_shift,
+    revenue_per_shift,
+    revenue_per_hour,
+    utilization_rate,
+    idle_minutes_per_shift,
+    revenue_per_hour_percentile,
+    utilization_percentile,
+    idle_percentile,
+    revenue_per_hour_percentile < 0.25
+        AND idle_percentile >= 0.75 AS needs_review,
+    CASE
+        WHEN revenue_per_hour_percentile < 0.25 AND idle_percentile >= 0.75
+            THEN 'Low revenue/hour and high idle/shift'
+        WHEN revenue_per_hour_percentile < 0.25
+            THEN 'Low revenue/hour'
+        WHEN idle_percentile >= 0.75
+            THEN 'High idle/shift'
+        ELSE 'Within peer range'
+    END AS review_reason
+FROM benchmarked;

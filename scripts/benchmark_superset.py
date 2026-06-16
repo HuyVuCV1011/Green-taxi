@@ -1,4 +1,4 @@
-"""Benchmark query performance of the 26 provisioned Superset charts.
+"""Benchmark query performance of the provisioned Superset dashboard charts.
 
 This script executes REST API calls to measure load times, warm-ups,
 and P95 response times. Results are saved in deliverables/benchmark/.

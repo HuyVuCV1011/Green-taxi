@@ -17,6 +17,9 @@ Base commit: `720a60beeddddece58d3efde7d3810942f958140`
 - Không join trực tiếp hai fact ở row level. Khi cần phối hợp, dùng
   `analytics.shift_trip_aggregate` (một dòng mỗi `shift_id`) rồi join 1:1 với
   `analytics.shift`, hoặc lấy metric từ đúng fact sở hữu.
+- Các summary views như `analytics.pareto_pickup_zone` và
+  `analytics.driver_performance_summary` đã aggregate trước theo grain bảo vệ;
+  dashboard không dùng chúng để thay thế fact grain chi tiết.
 - Business timestamps là local wall-clock time `America/New_York` và dùng
   `TIMESTAMP WITHOUT TIME ZONE`. Audit timestamps là UTC và dùng `TIMESTAMPTZ`.
   Đây là contract đã triển khai trong DDL/loader, không phải assumption.
@@ -67,6 +70,8 @@ alias rõ `shift_start_*` và `shift_end_*`; join vẫn 1:1 và không nhân fac
 | `analytics.shift` | `shift_start` | `shift_start_*` | Chọn `shift_end` và `shift_end_*` tường minh khi phân tích kết thúc ca |
 | `analytics.shift_trip_aggregate` | Không áp đặt; join theo `shift_id` | Không có | Aggregate kỹ thuật chống fan-out |
 | `analytics.dq_summary` | `event_date_utc` | Không có | Audit/DQ UTC |
+| `analytics.pareto_pickup_zone` | Không áp đặt | `pickup_*` | Một dòng mỗi pickup zone, phục vụ concentration/ranking |
+| `analytics.driver_performance_summary` | Không áp đặt | Driver | Một dòng mỗi driver, phục vụ peer benchmark và review queue |
 
 Pickup là default role vì nhu cầu vận hành phát sinh tại nơi/thời điểm đón.
 Dropoff analysis phải dùng dataset dropoff. Semantic model chỉ dùng default role
@@ -103,6 +108,10 @@ Catalog chuẩn nằm tại [metric-catalog.md](metric-catalog.md).
   filter period, không phải số master có trạng thái `ACTIVE`.
 - `anomaly_rate` certified ở trip grain. Shift anomaly rate phải dùng metric ID
   riêng nếu được bổ sung; không cộng anomaly trip và anomaly shift.
+- Driver review queue dùng `needs_review` trong
+  `analytics.driver_performance_summary`: revenue/hour thuộc nhóm thấp theo peer
+  percentile và idle minutes/shift thuộc nhóm cao. Không dùng tổng idle minutes
+  để so sánh driver có số ca khác nhau.
 - Unknown/inferred được tính mặc định (calculated by default). Bộ lọc loại trừ chỉ là phân tích DQ có
   chủ đích và phải ghi rõ.
 

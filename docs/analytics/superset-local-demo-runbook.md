@@ -2,7 +2,7 @@
 
 Status: `IMPLEMENTED AND SMOKE-TESTED`
 
-Runtime verified: 14/06/2026
+Runtime verified: 16/06/2026
 
 Superset: `6.1.0`
 Dashboard: `NYC Green Taxi - Driver Operations`
@@ -59,7 +59,9 @@ http://localhost:8088/superset/dashboard/green-taxi-driver-operations/
 |---|---|---|---|
 | `analytics.trip_pickup` | `pickup_datetime` | `pickup_*` | Trip, revenue, fare, tips, distance, duration, anomaly, active driver/vehicle |
 | `analytics.trip_dropoff` | `dropoff_datetime` | `dropoff_*` | Cùng metric trip, nhưng role dropoff tường minh |
-| `analytics.shift` | `shift_start` | `shift_start_*` | Shift count, trips/revenue per shift, revenue/hour, occupied/idle, utilization, anomaly |
+| `analytics.shift` | `shift_start` | `shift_start_*` | Shift count, trips/revenue per shift, revenue/hour, occupied/idle, utilization, avg_idle_minutes, anomaly |
+| `analytics.pareto_pickup_zone` | *None* | `pickup_*` | Total trips, cumulative trips percentage, total revenue, cumulative revenue percentage |
+| `analytics.driver_performance_summary` | *None* | Driver | Driver count, completed shifts, revenue/hour, utilization, idle minutes/shift, trips/shift, review driver count |
 
 Mỗi dataset và metric chứa certification metadata:
 
@@ -67,9 +69,9 @@ Mỗi dataset và metric chứa certification metadata:
 - Contract: `docs/analytics/semantic-contract.md`
 - Metric source: `docs/analytics/metric-catalog.md`
 
-Bootstrap idempotent tạo hoặc cập nhật 4 datasets, 39 metric instances
-(trip metrics được khai báo riêng trên pickup/dropoff), 26 charts và 1 dashboard
-gồm 3 tabs.
+Bootstrap idempotent tạo hoặc cập nhật 6 datasets, 51 metric instances
+(trip metrics được khai báo riêng trên pickup/dropoff), 32 charts và 1
+monitoring dashboard gồm 4 tabs.
 
 Native time filter chưa được provision trên image Superset 6.1.0. Frontend của
 phiên bản này gửi scalar Rison tới `/api/v1/time_range/`, trong khi backend từ
@@ -81,16 +83,16 @@ khi nâng image và xác nhận API tương thích bằng browser smoke test.
 ## 4. Dashboard demo flow
 
 1. Mở dashboard và chỉ badge certified/published.
-2. Chốt quy mô: `2.304.276` trips, `157.379` completed shifts,
-   `$48.535.884,47` total revenue.
-3. BQ01: dùng `Nhu cầu theo tháng` và `Nhu cầu theo khu vực pickup` để chỉ nơi,
-   thời điểm cần ưu tiên năng lực.
-4. BQ02: dùng KPI `Tỷ lệ sử dụng ca` và bảng hiệu suất tài xế.
-5. BQ03: sort/đọc `Doanh thu mỗi giờ ca`, `Tỷ lệ sử dụng ca`, `Tổng phút rảnh`.
-6. BQ04: dùng bảng phương tiện với trips/shift, revenue/shift và utilization.
-7. BQ05: dùng trip anomaly KPI; nhấn mạnh trip anomaly và shift anomaly là hai
-   grain riêng, không cộng chung.
-8. Chỉ dataset dropoff để minh họa date/location role tường minh.
+2. Tab **Operations Overview**: đọc KPI strip, monthly trend, pickup borough,
+   top zone và weekday profile để nắm trạng thái toàn hệ thống trong một màn.
+3. Tab **Demand Patterns**: dùng heatmap weekday/hour, hourly profile, zone
+   concentration và pickup/dropoff borough charts để theo dõi nhu cầu theo thời
+   gian và địa lý.
+4. Tab **Driver & Fleet Performance**: dùng driver matrix, driver review queue,
+   vehicle type và vehicle detail để ưu tiên điều phối/đào tạo.
+5. Tab **Data Quality & Anomalies**: theo dõi DQ issues, quarantine, anomaly KPI,
+   trend, severity/source breakdown và top rules. Không cộng DQ, quarantine,
+   trip anomaly và shift anomaly thành một chỉ số chung.
 
 Số expected của full release:
 
@@ -114,9 +116,9 @@ Smoke suite xác nhận:
 
 - `/health` trả `OK`;
 - admin REST login thành công;
-- dashboard, 4 datasets, 39 metric instances và 26 charts tồn tại;
+- dashboard, 6 datasets, 51 metric instances và 32 charts tồn tại;
 - dashboard không provision native time filter bị lỗi trên Superset 6.1.0;
-- `superset_ro` query được 3 analytics views;
+- `superset_ro` query được approved analytics views;
 - pickup/dropoff count khớp;
 - truy cập trực tiếp DDS bị từ chối;
 - `CREATE TABLE` và `INSERT` qua BI login bị từ chối.
@@ -175,12 +177,12 @@ nếu có dashboard edits local cần giữ.
 - Đây là local synchronous demo: không có Redis, Celery, alerts hoặc reports.
 - `TALISMAN_ENABLED=False` chỉ phù hợp local HTTP demo.
 - Metadata rate-limit storage dùng memory; không phải production topology.
-- Dashboard chỉ dùng approved analytics views. Tab 3 kết hợp business anomaly
+- Dashboard chỉ dùng approved analytics views. Tab 4 kết hợp business anomaly
   từ trip/shift với DQ summary, nhưng không join DQ events vào business facts.
 
 ## 9. Performance Benchmark
 
-Quy trình benchmark tự động đo đạc thời gian tải của 26 charts thuộc dashboard qua REST API v1.
+Quy trình benchmark tự động đo đạc thời gian tải của 32 charts thuộc dashboard qua REST API v1.
 
 ### 9.1. Lệnh thực hiện
 
@@ -195,11 +197,11 @@ Kết quả đo đạc chi tiết của từng lượt chạy được xuất ra
 
 ### 9.2. Tóm tắt kết quả đo đạc thực tế
 
-- **Tổng số charts kiểm thử**: 26 charts.
-- **Trung bình các giá trị P95 của 26 charts**: `0.633` giây trong lần đo local
-  ngày 14/06/2026. Đây không phải end-to-end dashboard P95.
-- **Charts chậm nhất (P95)**: `KPI - Tài xế hoạt động` (`1.866` giây) và
-  `KPI - Xe hoạt động` (`1.789` giây), do `COUNT(DISTINCT ...)` trên hơn
+- **Tổng số charts kiểm thử**: 32 charts.
+- **Trung bình các giá trị P95 của 32 charts**: `0.615` giây trong lần đo local
+  ngày 16/06/2026. Đây không phải end-to-end dashboard P95.
+- **Charts chậm nhất (P95)**: `Active Drivers` (`1.833` giây) và
+  `Active Vehicles` (`1.722` giây), do `COUNT(DISTINCT ...)` trên hơn
   2.3 triệu trip rows.
 - **Các charts còn lại**: P95 khoảng `0.15` đến `0.90` giây trong môi trường đo.
   Kết quả phụ thuộc máy local, cache và tải đồng thời.

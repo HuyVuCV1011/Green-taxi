@@ -80,23 +80,23 @@ business-state deltas were zero and successful batch history was retained.
   `psycopg2-binary==2.9.11`.
 - BI login chỉ có quyền trên approved `analytics` views; quyền đọc DDS trực tiếp
   và quyền ghi đều bị smoke test từ chối.
-- Bốn datasets, 39 certified metric instances, 26 charts và dashboard BQ01-BQ05
-  trên 3 tabs được provision tự động và idempotent.
+- Sáu datasets, 51 certified metric instances, 32 charts và monitoring dashboard BQ01-BQ05 trên 4 tabs được provision tự động và idempotent.
 - Mỗi chart đều được cấu hình tự động sinh `query_context` giúp REST API v1 truy vấn trực tiếp thành công.
-- Benchmark local ghi nhận trung bình các giá trị P95 của 26 charts là
-  `0.633` giây; đây không phải end-to-end dashboard P95. Dữ liệu chi tiết nằm
+- Benchmark local ghi nhận trung bình các giá trị P95 của 32 charts là
+  `0.615` giây; đây không phải end-to-end dashboard P95. Dữ liệu chi tiết nằm
   tại `deliverables/benchmark/superset_benchmark_results.json`.
 
 ## Validation and security
 
 - Python compile: pass cho Superset setup/provision/smoke scripts.
-- Unit tests: 135 pass.
+- Unit tests: 136 pass.
 - Main Docker Compose config: pass; four services healthy.
 - Full clean warehouse validation: 14/14 checks pass.
 - Superset Compose config: pass.
 - Superset app và metadata DB: healthy.
 - Superset runtime/API login/dashboard/dataset smoke tests: pass.
 - Read-only analytics query và write-denial tests: pass.
-- Browser walkthrough: dashboard title, certification và KPI rendering pass.
+- Browser walkthrough: 4 tabs render hoàn chỉnh, không có Data/Network error
+  hoặc loading treo.
 - `.env`, `.env.superset`, raw/full data, database files và volumes remain ignored.
 - No secret, database dump, full data or metadata database was added to Git.

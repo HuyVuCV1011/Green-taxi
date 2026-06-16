@@ -29,6 +29,7 @@ class AnalyticsContractTests(unittest.TestCase):
             "analytics.shift",
             "analytics.shift_trip_aggregate",
             "analytics.dq_summary",
+            "analytics.pareto_pickup_zone",
         ):
             self.assertIn(f"CREATE OR REPLACE VIEW {view_name}", self.sql)
 

@@ -19,6 +19,9 @@ from superset.connectors.sqla.models import SqlMetric, SqlaTable
 from superset.models.core import Database
 from superset.models.dashboard import Dashboard
 from superset.models.slice import Slice
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.orm.attributes import set_committed_value
 
 
 DATABASE_NAME = "Green Taxi Analytics Warehouse"
@@ -44,6 +47,14 @@ DATASETS = {
     "dq_summary": {
         "main_dttm_col": "event_date_utc",
         "description": "One row per UTC date/batch/release/source/rule/severity/event type.",
+    },
+    "pareto_pickup_zone": {
+        "main_dttm_col": None,
+        "description": "One row per pickup zone; pre-calculated cumulative contribution metrics.",
+    },
+    "driver_performance_summary": {
+        "main_dttm_col": None,
+        "description": "One row per driver with peer percentiles and an explicit review rule.",
     },
 }
 
@@ -120,6 +131,11 @@ SHIFT_METRICS = {
         ",.2f",
     ),
     "idle_minutes": ("Tổng phút rảnh", "COALESCE(SUM(idle_minutes), 0)", ",.2f"),
+    "avg_idle_minutes": (
+        "Phút rảnh trung bình ca",
+        "SUM(idle_minutes)::numeric / NULLIF(COUNT(shift_id), 0)",
+        ",.2f",
+    ),
     "shift_duration_minutes": (
         "Tổng phút ca",
         "COALESCE(SUM(shift_duration_minutes), 0)",
@@ -140,6 +156,31 @@ SHIFT_METRICS = {
 DQ_METRICS = {
     "dq_issue_count": ("Tổng số lỗi DQ", "COALESCE(SUM(issue_count), 0)", ",d"),
     "quarantine_count": ("Số dòng bị cách ly", "COALESCE(SUM(quarantine_count), 0)", ",d"),
+}
+
+PARETO_METRICS = {
+    "total_trips": ("Tổng số chuyến", "SUM(trips)", ",d"),
+    "cum_trips_pct": ("Tỷ lệ tích lũy chuyến", "MAX(cum_trips_pct)", ".2%"),
+    "total_revenue": ("Tổng doanh thu", "SUM(revenue)", "$,.2f"),
+    "cum_revenue_pct": ("Tỷ lệ tích lũy doanh thu", "MAX(cum_revenue_pct)", ".2%"),
+}
+
+DRIVER_PERFORMANCE_METRICS = {
+    "driver_count": ("Số tài xế", "COUNT(driver_key)", ",d"),
+    "completed_shifts": ("Số ca hoàn tất", "SUM(completed_shifts)", ",d"),
+    "revenue_per_hour": ("Doanh thu mỗi giờ ca", "AVG(revenue_per_hour)", "$,.2f"),
+    "utilization_rate": ("Tỷ lệ sử dụng ca", "AVG(utilization_rate)", ".2%"),
+    "idle_minutes_per_shift": (
+        "Phút rảnh trung bình mỗi ca",
+        "AVG(idle_minutes_per_shift)",
+        ",.2f",
+    ),
+    "trips_per_shift": ("Số chuyến trung bình mỗi ca", "AVG(trips_per_shift)", ",.2f"),
+    "review_driver_count": (
+        "Số tài xế cần xem xét",
+        "COUNT(*) FILTER (WHERE needs_review)",
+        ",d",
+    ),
 }
 
 
@@ -264,6 +305,18 @@ def ensure_chart(
         "time_range": "No filter",
         "row_limit": params.get("row_limit") or 10000,
     }
+    simple_filters = []
+    for adhoc_filter in params.get("adhoc_filters", []):
+        if adhoc_filter.get("expressionType") == "SIMPLE":
+            simple_filters.append(
+                {
+                    "col": adhoc_filter.get("subject"),
+                    "op": adhoc_filter.get("operator"),
+                    "val": adhoc_filter.get("comparator"),
+                }
+            )
+    if simple_filters:
+        query_obj["filters"] = simple_filters
 
     # Map parameters to query context object based on viz_type
     if viz_type == "big_number_total":
@@ -313,202 +366,100 @@ def ensure_chart(
 
 
 def dashboard_layout(charts_by_id: dict[str, Slice]) -> str:
-    # 3 tabs layout structure
     layout: dict[str, object] = {
         "DASHBOARD_VERSION_KEY": "v2",
-        "ROOT_ID": {
-            "id": "ROOT_ID",
-            "type": "ROOT",
-            "children": ["GRID_ID"]
-        },
+        "ROOT_ID": {"id": "ROOT_ID", "type": "ROOT", "children": ["GRID_ID"]},
         "GRID_ID": {
             "id": "GRID_ID",
             "type": "GRID",
             "children": ["TABS_ID"],
-            "parents": ["ROOT_ID"]
+            "parents": ["ROOT_ID"],
         },
         "TABS_ID": {
             "id": "TABS_ID",
             "type": "TABS",
-            "children": ["TAB-1", "TAB-2", "TAB-3"],
-            "parents": ["ROOT_ID", "GRID_ID"]
+            "children": ["TAB-1", "TAB-2", "TAB-3", "TAB-4"],
+            "parents": ["ROOT_ID", "GRID_ID"],
         },
-        "TAB-1": {
-            "id": "TAB-1",
+    }
+
+    tab_rows = {
+        "TAB-1": [
+            ("TAB1-KPI", ["c_t1_kpi_rev", "c_t1_kpi_trips", "c_t1_kpi_drv", "c_t1_kpi_veh", "c_t1_kpi_util"]),
+            ("TAB1-MAIN", ["c_t1_trend", "c_t1_borough"]),
+            ("TAB1-SUPPORT", ["c_t1_zones", "c_t1_weekday"]),
+        ],
+        "TAB-2": [
+            ("TAB2-MAIN", ["c_t2_heatmap", "c_t2_hourly"]),
+            ("TAB2-ZONES", ["c_t2_zone_trips", "c_t2_zone_revenue"]),
+            ("TAB2-GEO", ["c_t2_pickup_borough", "c_t2_dropoff_borough", "c_t2_distance_borough"]),
+        ],
+        "TAB-3": [
+            ("TAB3-KPI", ["c_t3_kpi_shifts", "c_t3_kpi_rev_hour", "c_t3_kpi_trips_shift", "c_t3_kpi_util"]),
+            ("TAB3-DRIVER", ["c_t3_driver_scatter", "c_t3_driver_ranking"]),
+            ("TAB3-FLEET", ["c_t3_vehicle_type", "c_t3_vehicle_table"]),
+        ],
+        "TAB-4": [
+            ("TAB4-KPI", ["c_t4_kpi_dq", "c_t4_kpi_quarantine", "c_t4_kpi_trip_anomaly", "c_t4_kpi_shift_anomaly"]),
+            ("TAB4-MAIN", ["c_t4_dq_trend", "c_t4_dq_severity"]),
+            ("TAB4-SUPPORT", ["c_t4_dq_source", "c_t4_dq_rules"]),
+        ],
+    }
+    tab_titles = {
+        "TAB-1": "Operations Overview",
+        "TAB-2": "Demand Patterns",
+        "TAB-3": "Driver & Fleet Performance",
+        "TAB-4": "Data Quality & Anomalies",
+    }
+
+    kpi_keys = {
+        key
+        for rows in tab_rows.values()
+        for row_name, keys in rows
+        if row_name.endswith("KPI")
+        for key in keys
+    }
+    wide_keys = {"c_t1_trend", "c_t2_heatmap", "c_t3_driver_scatter", "c_t4_dq_trend"}
+
+    for tab_id, rows in tab_rows.items():
+        layout[tab_id] = {
+            "id": tab_id,
             "type": "TAB",
-            "children": ["TAB1-ROW-1", "TAB1-ROW-2", "TAB1-ROW-3", "TAB1-ROW-4"],
+            "children": [row_id for row_id, _ in rows],
             "parents": ["ROOT_ID", "GRID_ID", "TABS_ID"],
-            "meta": {"text": "1. Tổng quan vận hành"}
-        },
-        "TAB-2": {
-            "id": "TAB-2",
-            "type": "TAB",
-            "children": ["TAB2-ROW-1", "TAB2-ROW-2", "TAB2-ROW-3"],
-            "parents": ["ROOT_ID", "GRID_ID", "TABS_ID"],
-            "meta": {"text": "2. Hiệu suất & Năng suất"}
-        },
-        "TAB-3": {
-            "id": "TAB-3",
-            "type": "TAB",
-            "children": ["TAB3-ROW-1", "TAB3-ROW-2", "TAB3-ROW-3", "TAB3-ROW-4", "TAB3-ROW-5"],
-            "parents": ["ROOT_ID", "GRID_ID", "TABS_ID"],
-            "meta": {"text": "3. Bất thường & Chất lượng"}
+            "meta": {"text": tab_titles[tab_id]},
         }
-    }
-
-    # Tab 1 Rows Setup (9 charts)
-    t1_kpis = ["c_t1_kpi_rev", "c_t1_kpi_trips", "c_t1_kpi_drv", "c_t1_kpi_veh"]
-    layout["TAB1-ROW-1"] = {
-        "id": "TAB1-ROW-1",
-        "type": "ROW",
-        "children": [f"CHART-{charts_by_id[c].id}" for c in t1_kpis if c in charts_by_id],
-        "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", "TAB-1"],
-        "meta": {"background": "BACKGROUND_TRANSPARENT"}
-    }
-
-    layout["TAB1-ROW-2"] = {
-        "id": "TAB1-ROW-2",
-        "type": "ROW",
-        "children": [f"CHART-{charts_by_id['c_t1_trend'].id}"] if "c_t1_trend" in charts_by_id else [],
-        "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", "TAB-1"],
-        "meta": {"background": "BACKGROUND_TRANSPARENT"}
-    }
-
-    t1_mid = ["c_t1_heatmap", "c_t1_borough"]
-    layout["TAB1-ROW-3"] = {
-        "id": "TAB1-ROW-3",
-        "type": "ROW",
-        "children": [f"CHART-{charts_by_id[c].id}" for c in t1_mid if c in charts_by_id],
-        "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", "TAB-1"],
-        "meta": {"background": "BACKGROUND_TRANSPARENT"}
-    }
-
-    t1_bot = ["c_t1_top_zones", "c_t1_dest_borough"]
-    layout["TAB1-ROW-4"] = {
-        "id": "TAB1-ROW-4",
-        "type": "ROW",
-        "children": [f"CHART-{charts_by_id[c].id}" for c in t1_bot if c in charts_by_id],
-        "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", "TAB-1"],
-        "meta": {"background": "BACKGROUND_TRANSPARENT"}
-    }
-
-    # Tab 2 Rows Setup (7 charts - KPI-Active Vehicles removed)
-    t2_kpis = ["c_t2_kpi_completed", "c_t2_kpi_util", "c_t2_kpi_avg_rev"]
-    layout["TAB2-ROW-1"] = {
-        "id": "TAB2-ROW-1",
-        "type": "ROW",
-        "children": [f"CHART-{charts_by_id[c].id}" for c in t2_kpis if c in charts_by_id],
-        "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", "TAB-2"],
-        "meta": {"background": "BACKGROUND_TRANSPARENT"}
-    }
-
-    t2_mid = ["c_t2_driver_scatter", "c_t2_driver_table"]
-    layout["TAB2-ROW-2"] = {
-        "id": "TAB2-ROW-2",
-        "type": "ROW",
-        "children": [f"CHART-{charts_by_id[c].id}" for c in t2_mid if c in charts_by_id],
-        "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", "TAB-2"],
-        "meta": {"background": "BACKGROUND_TRANSPARENT"}
-    }
-
-    t2_bot = ["c_t2_vehicle_type_bar", "c_t2_vehicle_table"]
-    layout["TAB2-ROW-3"] = {
-        "id": "TAB2-ROW-3",
-        "type": "ROW",
-        "children": [f"CHART-{charts_by_id[c].id}" for c in t2_bot if c in charts_by_id],
-        "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", "TAB-2"],
-        "meta": {"background": "BACKGROUND_TRANSPARENT"}
-    }
-
-    # Tab 3 Rows Setup (10 charts)
-    t3_kpis1 = ["c_t3_kpi_anom_trip", "c_t3_kpi_anom_trip_rate", "c_t3_kpi_anom_shf"]
-    layout["TAB3-ROW-1"] = {
-        "id": "TAB3-ROW-1",
-        "type": "ROW",
-        "children": [f"CHART-{charts_by_id[c].id}" for c in t3_kpis1 if c in charts_by_id],
-        "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", "TAB-3"],
-        "meta": {"background": "BACKGROUND_TRANSPARENT"}
-    }
-
-    t3_kpis2 = ["c_t3_kpi_dq_issues", "c_t3_kpi_dq_quar"]
-    layout["TAB3-ROW-2"] = {
-        "id": "TAB3-ROW-2",
-        "type": "ROW",
-        "children": [f"CHART-{charts_by_id[c].id}" for c in t3_kpis2 if c in charts_by_id],
-        "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", "TAB-3"],
-        "meta": {"background": "BACKGROUND_TRANSPARENT"}
-    }
-
-    t3_mid = ["c_t3_dq_trend", "c_t3_dq_source"]
-    layout["TAB3-ROW-3"] = {
-        "id": "TAB3-ROW-3",
-        "type": "ROW",
-        "children": [f"CHART-{charts_by_id[c].id}" for c in t3_mid if c in charts_by_id],
-        "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", "TAB-3"],
-        "meta": {"background": "BACKGROUND_TRANSPARENT"}
-    }
-
-    layout["TAB3-ROW-4"] = {
-        "id": "TAB3-ROW-4",
-        "type": "ROW",
-        "children": [f"CHART-{charts_by_id['c_t3_dq_rules'].id}"] if "c_t3_dq_rules" in charts_by_id else [],
-        "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", "TAB-3"],
-        "meta": {"background": "BACKGROUND_TRANSPARENT"}
-    }
-
-    t3_bot = ["c_t3_anom_zones", "c_t3_anom_drivers"]
-    layout["TAB3-ROW-5"] = {
-        "id": "TAB3-ROW-5",
-        "type": "ROW",
-        "children": [f"CHART-{charts_by_id[c].id}" for c in t3_bot if c in charts_by_id],
-        "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", "TAB-3"],
-        "meta": {"background": "BACKGROUND_TRANSPARENT"}
-    }
-
-    # Helper to calculate width and define nodes
-    for key, chart in charts_by_id.items():
-        chart_id = f"CHART-{chart.id}"
-        # Determine parent ROW
-        parent_row = None
-        for row_name, row_def in layout.items():
-            if row_name.startswith("TAB") and isinstance(row_def, dict) and chart_id in row_def.get("children", []):
-                parent_row = row_name
-                break
-
-        # Calculate width
-        width = 4
-        height = 50
-        if key in t1_kpis:
-            width = 3
-            height = 24
-        elif key in t2_kpis:
-            width = 4
-            height = 24
-        elif key in t3_kpis1:
-            width = 4
-            height = 24
-        elif key in t3_kpis2:
-            width = 6
-            height = 24
-        elif key in ["c_t1_trend", "c_t3_dq_rules"]:
-            width = 12
-            height = 80
-        else:
-            width = 6
-            height = 70
-
-        layout[chart_id] = {
-            "id": chart_id,
-            "type": "CHART",
-            "children": [],
-            "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", parent_row.split("-")[0].replace("ROW", ""), parent_row],
-            "meta": {
-                "chartId": chart.id,
-                "height": height,
-                "width": width,
-                "sliceName": chart.slice_name,
-            },
-        }
+        for row_id, keys in rows:
+            chart_ids = [
+                f"CHART-{charts_by_id[key].id}" for key in keys if key in charts_by_id
+            ]
+            layout[row_id] = {
+                "id": row_id,
+                "type": "ROW",
+                "children": chart_ids,
+                "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", tab_id],
+                "meta": {"background": "BACKGROUND_TRANSPARENT"},
+            }
+            for key in keys:
+                if key not in charts_by_id:
+                    continue
+                chart = charts_by_id[key]
+                width = 12 // max(1, len(chart_ids))
+                height = 24 if key in kpi_keys else 58
+                if key in wide_keys:
+                    height = 64
+                layout[f"CHART-{chart.id}"] = {
+                    "id": f"CHART-{chart.id}",
+                    "type": "CHART",
+                    "children": [],
+                    "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", tab_id, row_id],
+                    "meta": {
+                        "chartId": chart.id,
+                        "height": height,
+                        "width": width,
+                        "sliceName": chart.slice_name,
+                    },
+                }
 
     return json.dumps(layout)
 
@@ -527,7 +478,7 @@ def ensure_security_roles(datasets: dict[str, SqlaTable]) -> None:
     # Copy Gamma permissions
     role.permissions = list(gamma_role.permissions)
 
-    # Add datasource access for 4 datasets
+    # Add datasource access for all analytics datasets.
     for dataset in datasets.values():
         perm = dataset.get_perm()
         pvm = security_manager.find_permission_view_menu("datasource_access", perm)
@@ -578,122 +529,147 @@ def main() -> None:
     ensure_metrics(datasets["trip_dropoff"], TRIP_METRICS)
     ensure_metrics(datasets["shift"], SHIFT_METRICS)
     ensure_metrics(datasets["dq_summary"], DQ_METRICS)
+    ensure_metrics(datasets["pareto_pickup_zone"], PARETO_METRICS)
+    ensure_metrics(
+        datasets["driver_performance_summary"],
+        DRIVER_PERFORMANCE_METRICS,
+    )
     db.session.flush()
 
     charts_spec = {
-        # Tab 1 Charts (9 charts)
-        "c_t1_kpi_rev": (datasets["trip_pickup"], "KPI - Tổng doanh thu", "big_number_total", {"metric": "total_revenue", "y_axis_format": "$,.2f"}),
-        "c_t1_kpi_trips": (datasets["trip_pickup"], "KPI - Tổng số chuyến", "big_number_total", {"metric": "total_trips", "y_axis_format": "SMART_NUMBER"}),
-        "c_t1_kpi_drv": (datasets["trip_pickup"], "KPI - Tài xế hoạt động", "big_number_total", {"metric": "active_driver_count", "y_axis_format": "SMART_NUMBER"}),
-        "c_t1_kpi_veh": (datasets["trip_pickup"], "KPI - Xe hoạt động", "big_number_total", {"metric": "active_vehicle_count", "y_axis_format": "SMART_NUMBER"}),
-        "c_t1_trend": (datasets["trip_pickup"], "Xu hướng vận hành theo tháng", "echarts_timeseries_line", {
+        # Tab 1: Operations Overview
+        "c_t1_kpi_rev": (datasets["trip_pickup"], "Total Revenue", "big_number_total", {"metric": "total_revenue", "y_axis_format": "$,.2f"}),
+        "c_t1_kpi_trips": (datasets["trip_pickup"], "Total Trips", "big_number_total", {"metric": "total_trips", "y_axis_format": "SMART_NUMBER"}),
+        "c_t1_kpi_drv": (datasets["trip_pickup"], "Active Drivers", "big_number_total", {"metric": "active_driver_count", "y_axis_format": "SMART_NUMBER"}),
+        "c_t1_kpi_veh": (datasets["trip_pickup"], "Active Vehicles", "big_number_total", {"metric": "active_vehicle_count", "y_axis_format": "SMART_NUMBER"}),
+        "c_t1_kpi_util": (datasets["shift"], "Overall Shift Utilization", "big_number_total", {"metric": "utilization_rate", "y_axis_format": ".2%"}),
+        "c_t1_trend": (datasets["trip_pickup"], "Monthly Revenue & Trip Volume", "echarts_timeseries_line", {
             "granularity_sqla": "pickup_datetime",
             "time_grain_sqla": "P1M",
             "metrics": ["total_revenue", "total_trips"],
             "x_axis_time_format": "smart_date",
             "y_axis_format": "SMART_NUMBER",
         }),
-        "c_t1_borough": (datasets["trip_pickup"], "Nhu cầu theo khu vực Pickup", "echarts_timeseries_bar", {
-            "x_axis": "pickup_borough",
-            "groupby": [],
-            "metrics": ["total_trips"],
-            "sort_series_type": "sum",
-            "order_desc": True,
+        "c_t1_borough": (datasets["trip_pickup"], "Trips by Pickup Borough", "echarts_timeseries_bar", {
+            "x_axis": "pickup_borough", "groupby": [], "metrics": ["total_trips"],
+            "orientation": "horizontal", "sort_series_type": "sum", "order_desc": True,
         }),
-        "c_t1_heatmap": (datasets["trip_pickup"], "Heatmap Khung giờ & Thứ", "heatmap_v2", {
+        "c_t1_zones": (datasets["trip_pickup"], "Top Pickup Zones", "echarts_timeseries_bar", {
+            "x_axis": "pickup_zone", "groupby": [], "metrics": ["total_trips"],
+            "orientation": "horizontal", "row_limit": 10, "sort_series_type": "sum", "order_desc": True,
+        }),
+        "c_t1_weekday": (datasets["trip_pickup"], "Trips by Weekday", "echarts_timeseries_bar", {
+            "x_axis": "pickup_day_name", "groupby": [], "metrics": ["total_trips"],
+            "sort_series_type": "sum", "order_desc": False,
+        }),
+
+        # Tab 2: Demand Patterns
+        "c_t2_heatmap": (datasets["trip_pickup"], "Demand by Weekday & Hour", "heatmap_v2", {
             "x_axis": "pickup_hour",
             "groupby": "pickup_day_name",
             "metric": "total_trips",
             "linear_color_scheme": "schemeGreen",
         }),
-        "c_t1_top_zones": (datasets["trip_pickup"], "Top 15 Zones Pickup", "echarts_timeseries_bar", {
-            "x_axis": "pickup_zone",
-            "groupby": [],
-            "metrics": ["total_trips"],
-            "row_limit": 15,
-            "sort_series_type": "sum",
-            "order_desc": True,
+        "c_t2_hourly": (datasets["trip_pickup"], "Hourly Demand Profile", "echarts_timeseries_line", {
+            "x_axis": "pickup_hour", "groupby": [], "metrics": ["total_trips"],
         }),
-        "c_t1_dest_borough": (datasets["trip_dropoff"], "Điểm đến theo Borough", "pie", {
-            "groupby": ["dropoff_borough"],
-            "metric": "total_trips",
-            "donut": True,
-            "show_labels_threshold": 5,
+        "c_t2_zone_trips": (datasets["pareto_pickup_zone"], "Zone Concentration by Trips", "table", {
+            "query_mode": "aggregate",
+            "groupby": ["pickup_zone", "pickup_borough"],
+            "metrics": ["total_trips", "cum_trips_pct"],
+            "order_by_cols": [json.dumps(["total_trips", False])],
+            "row_limit": 15,
+            "page_length": 15,
+        }),
+        "c_t2_zone_revenue": (datasets["trip_pickup"], "Top Pickup Zones by Revenue", "echarts_timeseries_bar", {
+            "x_axis": "pickup_zone", "groupby": [], "metrics": ["total_revenue"],
+            "orientation": "horizontal", "row_limit": 15, "sort_series_type": "sum", "order_desc": True,
+        }),
+        "c_t2_pickup_borough": (datasets["trip_pickup"], "Pickup Borough Volume", "echarts_timeseries_bar", {
+            "x_axis": "pickup_borough", "groupby": [], "metrics": ["total_trips"],
+            "sort_series_type": "sum", "order_desc": True,
+        }),
+        "c_t2_dropoff_borough": (datasets["trip_dropoff"], "Dropoff Borough Volume", "echarts_timeseries_bar", {
+            "x_axis": "dropoff_borough", "groupby": [], "metrics": ["total_trips"],
+            "sort_series_type": "sum", "order_desc": True,
+        }),
+        "c_t2_distance_borough": (datasets["trip_pickup"], "Average Trip Distance by Borough", "echarts_timeseries_bar", {
+            "x_axis": "pickup_borough", "groupby": [], "metrics": ["average_trip_distance"],
+            "sort_series_type": "sum", "order_desc": True,
         }),
 
-        # Tab 2 Charts (7 charts - Active Vehicles KPI removed)
-        "c_t2_kpi_completed": (datasets["shift"], "KPI - Số ca hoàn tất", "big_number_total", {"metric": "completed_shifts", "y_axis_format": "SMART_NUMBER"}),
-        "c_t2_kpi_util": (datasets["shift"], "KPI - Tỷ lệ sử dụng ca", "big_number_total", {"metric": "utilization_rate", "y_axis_format": ".2%"}),
-        "c_t2_kpi_avg_rev": (datasets["shift"], "KPI - Doanh thu trung bình ca", "big_number_total", {"metric": "revenue_per_shift", "y_axis_format": "$,.2f"}),
-        "c_t2_driver_scatter": (datasets["shift"], "Phân nhóm hiệu suất Tài xế (Nhóm cần xem xét)", "bubble", {
+        # Tab 3: Driver & Fleet Performance
+        "c_t3_kpi_shifts": (datasets["shift"], "Completed Shifts", "big_number_total", {"metric": "completed_shifts", "y_axis_format": "SMART_NUMBER"}),
+        "c_t3_kpi_rev_hour": (datasets["shift"], "Revenue per Shift Hour", "big_number_total", {"metric": "revenue_per_hour", "y_axis_format": "$,.2f"}),
+        "c_t3_kpi_trips_shift": (datasets["shift"], "Trips per Shift", "big_number_total", {"metric": "trips_per_shift", "y_axis_format": ",.2f"}),
+        "c_t3_kpi_util": (datasets["shift"], "Performance Shift Utilization", "big_number_total", {"metric": "utilization_rate", "y_axis_format": ".2%"}),
+        "c_t3_driver_scatter": (datasets["driver_performance_summary"], "Driver Performance Matrix", "bubble", {
             "series": "driver_name",
             "entity": "driver_name",
             "x": "utilization_rate",
             "y": "revenue_per_hour",
             "size": "completed_shifts",
-            "row_limit": 5000,
+            "row_limit": 1000,
         }),
-        "c_t2_driver_table": (datasets["shift"], "Hiệu suất tài xế theo ca (Nhóm cần xem xét)", "table", {
+        "c_t3_driver_ranking": (datasets["driver_performance_summary"], "Driver Review Queue", "table", {
             "query_mode": "aggregate",
-            "groupby": ["driver_name"],
-            "metrics": ["completed_shifts", "revenue_per_hour", "utilization_rate", "idle_minutes"],
-            "order_by_cols": [json.dumps(["revenue_per_hour", False])],
+            "groupby": ["driver_name", "review_reason"],
+            "metrics": ["completed_shifts", "revenue_per_hour", "utilization_rate", "idle_minutes_per_shift"],
+            "order_by_cols": [json.dumps(["revenue_per_hour", True])],
             "page_length": 15,
+            "adhoc_filters": [
+                {
+                    "expressionType": "SIMPLE",
+                    "subject": "needs_review",
+                    "operator": "==",
+                    "comparator": True,
+                    "clause": "WHERE",
+                    "filterOptionName": "driver_review_rule",
+                }
+            ],
         }),
-        "c_t2_vehicle_type_bar": (datasets["shift"], "Hiệu suất theo loại phương tiện", "echarts_timeseries_bar", {
+        "c_t3_vehicle_type": (datasets["shift"], "Vehicle Type Performance", "echarts_timeseries_bar", {
             "x_axis": "vehicle_type",
             "groupby": [],
             "metrics": ["utilization_rate", "trips_per_shift"],
             "sort_series_type": "sum",
             "order_desc": True,
         }),
-        "c_t2_vehicle_table": (datasets["shift"], "Mức sử dụng phương tiện", "table", {
+        "c_t3_vehicle_table": (datasets["shift"], "Vehicle Performance Detail", "table", {
             "query_mode": "aggregate",
             "groupby": ["vehicle_id", "vehicle_type"],
             "metrics": ["completed_shifts", "trips_per_shift", "revenue_per_shift", "utilization_rate"],
-            "order_by_cols": [json.dumps(["utilization_rate", False])],
+            "order_by_cols": [json.dumps(["utilization_rate", True])],
             "page_length": 15,
         }),
 
-        # Tab 3 Charts (10 charts)
-        "c_t3_kpi_anom_trip": (datasets["trip_pickup"], "KPI - Chuyến bất thường", "big_number_total", {"metric": "anomaly_trip_count", "y_axis_format": "SMART_NUMBER"}),
-        "c_t3_kpi_anom_trip_rate": (datasets["trip_pickup"], "KPI - Tỷ lệ chuyến bất thường", "big_number_total", {"metric": "anomaly_rate", "y_axis_format": ".2%"}),
-        "c_t3_kpi_anom_shf": (datasets["shift"], "KPI - Số ca bất thường", "big_number_total", {"metric": "anomaly_shift_count", "y_axis_format": "SMART_NUMBER"}),
-        "c_t3_kpi_dq_issues": (datasets["dq_summary"], "KPI - Tổng số lỗi DQ", "big_number_total", {"metric": "dq_issue_count", "y_axis_format": "SMART_NUMBER"}),
-        "c_t3_kpi_dq_quar": (datasets["dq_summary"], "KPI - Số dòng bị cách ly", "big_number_total", {"metric": "quarantine_count", "y_axis_format": "SMART_NUMBER"}),
-        "c_t3_dq_trend": (datasets["dq_summary"], "Xu hướng lỗi DQ hàng ngày", "echarts_timeseries_line", {
+        # Tab 4: Data Quality & Anomalies
+        "c_t4_kpi_dq": (datasets["dq_summary"], "DQ Issues", "big_number_total", {"metric": "dq_issue_count", "y_axis_format": "SMART_NUMBER"}),
+        "c_t4_kpi_quarantine": (datasets["dq_summary"], "Quarantine Records", "big_number_total", {"metric": "quarantine_count", "y_axis_format": "SMART_NUMBER"}),
+        "c_t4_kpi_trip_anomaly": (datasets["trip_pickup"], "Trip Anomalies", "big_number_total", {"metric": "anomaly_trip_count", "y_axis_format": "SMART_NUMBER"}),
+        "c_t4_kpi_shift_anomaly": (datasets["shift"], "Shift Anomalies", "big_number_total", {"metric": "anomaly_shift_count", "y_axis_format": "SMART_NUMBER"}),
+        "c_t4_dq_trend": (datasets["dq_summary"], "DQ Issues over Time", "echarts_timeseries_line", {
             "granularity_sqla": "event_date_utc",
             "time_grain_sqla": "P1D",
             "metrics": ["dq_issue_count", "quarantine_count"],
             "x_axis_time_format": "smart_date",
             "y_axis_format": "SMART_NUMBER",
         }),
-        "c_t3_dq_source": (datasets["dq_summary"], "Lỗi DQ theo nguồn & Mức độ", "echarts_timeseries_bar", {
+        "c_t4_dq_severity": (datasets["dq_summary"], "Issues by Severity", "echarts_timeseries_bar", {
+            "x_axis": "severity", "groupby": [], "metrics": ["dq_issue_count"],
+            "sort_series_type": "sum", "order_desc": True,
+        }),
+        "c_t4_dq_source": (datasets["dq_summary"], "Issues by Source System", "echarts_timeseries_bar", {
             "x_axis": "source_system_code",
             "groupby": ["severity"],
             "metrics": ["dq_issue_count"],
             "bar_stacked": True,
         }),
-        "c_t3_dq_rules": (datasets["dq_summary"], "Thống kê lỗi theo Rule DQ", "table", {
+        "c_t4_dq_rules": (datasets["dq_summary"], "Top Data Quality Rules", "table", {
             "query_mode": "aggregate",
             "groupby": ["rule_code", "source_entity", "severity"],
             "metrics": ["dq_issue_count", "quarantine_count"],
             "order_by_cols": [json.dumps(["dq_issue_count", False])],
-            "page_length": 15,
-        }),
-        "c_t3_anom_zones": (datasets["trip_pickup"], "Top Zones có Anomaly cao", "echarts_timeseries_bar", {
-            "x_axis": "pickup_zone",
-            "groupby": [],
-            "metrics": ["anomaly_rate"],
-            "row_limit": 10,
-            "sort_series_type": "sum",
-            "order_desc": True,
-        }),
-        "c_t3_anom_drivers": (datasets["shift"], "Queue tài xế có bất thường ca", "table", {
-            "query_mode": "aggregate",
-            "groupby": ["driver_name"],
-            "metrics": ["anomaly_shift_count"],
-            "order_by_cols": [json.dumps(["anomaly_shift_count", False])],
             "page_length": 15,
         }),
     }
@@ -712,32 +688,143 @@ def main() -> None:
     if dashboard is None:
         dashboard = Dashboard(slug="green-taxi-driver-operations")
         db.session.add(dashboard)
+
+    # ------------------ IDEMPOTENT CLEANUP ------------------
+    # Retrieve all existing slices currently associated with this dashboard
+    old_slices = list(dashboard.slices) if dashboard.slices else []
+    active_slice_ids = {c.id for c in charts.values()}
+
+    # Clear association rows explicitly so replacing the collection is
+    # idempotent even when SQLAlchemy has a previously loaded relationship.
+    dashboard_slices = Dashboard.slices.property.secondary
+    with db.session.no_autoflush:
+        db.session.execute(
+            dashboard_slices.delete().where(
+                dashboard_slices.c.dashboard_id == dashboard.id
+            )
+        )
+    set_committed_value(dashboard, "slices", [])
+
+    # Delete slices from the metadata database if they are no longer active.
+    for slc in old_slices:
+        if slc.id not in active_slice_ids:
+            db.session.delete(slc)
+    db.session.flush()
+    # --------------------------------------------------------
+
     dashboard.dashboard_title = "NYC Green Taxi - Driver Operations"
     dashboard.description = (
-        "Dashboard BQ01-BQ05 organized into 3 operational tabs and provisioned via code."
+        "Operational monitoring dashboard with four focused analysis tabs."
     )
     dashboard.certified_by = CERTIFIED_BY
     dashboard.certification_details = CERTIFICATION_DETAILS
     dashboard.published = True
     dashboard.owners = [admin]
-    dashboard.slices = list(charts.values())
+    linked_slice_ids = set(
+        db.session.execute(
+            select(dashboard_slices.c.slice_id).where(
+                dashboard_slices.c.dashboard_id == dashboard.id
+            )
+        ).scalars()
+    )
+    missing_links = [
+        {"dashboard_id": dashboard.id, "slice_id": chart.id}
+        for chart in charts.values()
+        if chart.id not in linked_slice_ids
+    ]
+    if missing_links:
+        with db.session.no_autoflush:
+            db.session.execute(
+                pg_insert(dashboard_slices).on_conflict_do_nothing(
+                    index_elements=["dashboard_id", "slice_id"]
+                ),
+                missing_links,
+            )
+    set_committed_value(dashboard, "slices", list(charts.values()))
     dashboard.position_json = dashboard_layout(charts)
     dashboard.json_metadata = json.dumps(
         {
-            "color_scheme": "supersetColors",
+            "color_scheme": "bnbColors",
             "refresh_frequency": 0,
             "timed_refresh_immune_slices": [],
             "expanded_slices": {},
             "default_filters": "{}",
-            # Superset 6.1.0 sends scalar time ranges to /api/v1/time_range/ in
-            # a Rison form rejected by its own backend. Keep the dashboard free
-            # of a permanently failing native filter until the image is upgraded.
             "native_filter_configuration": [],
         }
     )
     dashboard.css = """
-.dashboard-header { border-bottom: 3px solid #22c55e; }
-.dashboard-component-chart-holder { border-radius: 8px; }
+.dashboard {
+  background: #f4f6f8;
+  color: #24313d;
+}
+.dashboard-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e3e8ec;
+  box-shadow: 0 1px 3px rgba(36, 49, 61, 0.06);
+  padding: 12px 18px;
+}
+.dashboard-header .dashboard-component-header {
+  font-weight: 700;
+}
+.dashboard-content {
+  padding: 12px 16px 24px;
+}
+.dashboard-component-tabs .ant-tabs-nav {
+  background: #ffffff;
+  border: 1px solid #e3e8ec;
+  border-radius: 10px;
+  margin: 0 0 14px;
+  padding: 0 10px;
+}
+.dashboard-component-tabs .ant-tabs-tab {
+  color: #667785;
+  font-weight: 600;
+  padding: 12px 16px;
+}
+.dashboard-component-tabs .ant-tabs-tab-active {
+  color: #157a55;
+}
+.dashboard-component-tabs .ant-tabs-ink-bar {
+  background: #157a55;
+  height: 3px;
+}
+.dashboard-component-chart-holder {
+  background: #ffffff;
+  border: 1px solid #e3e8ec;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(36, 49, 61, 0.05);
+  overflow: hidden;
+}
+.dashboard-component-chart-holder:hover {
+  border-color: #b9c9c1;
+  box-shadow: 0 4px 12px rgba(36, 49, 61, 0.08);
+}
+.chart-header {
+  border-bottom: 1px solid #eef1f3;
+  padding: 10px 12px 8px;
+}
+.chart-header .header-title {
+  color: #24313d;
+  font-size: 14px;
+  font-weight: 650;
+}
+.dashboard-component-row {
+  margin-bottom: 12px;
+}
+.slice_container {
+  padding: 4px 8px 8px;
+}
+.big_number_total {
+  color: #157a55;
+}
+.table-condensed > thead > tr > th {
+  background: #f7f9fa;
+  color: #526270;
+  font-weight: 650;
+}
+.table-condensed > tbody > tr:hover {
+  background: #f0f7f4;
+}
 """
     db.session.flush()
     ensure_security_roles(datasets)

@@ -113,7 +113,14 @@ def superset_smoke_tests() -> dict[str, object]:
         token=token,
     )
     dataset_names = {item["table_name"] for item in datasets.get("result", [])}
-    expected = {"trip_pickup", "trip_dropoff", "shift", "dq_summary"}
+    expected = {
+        "trip_pickup",
+        "trip_dropoff",
+        "shift",
+        "dq_summary",
+        "pareto_pickup_zone",
+        "driver_performance_summary",
+    }
     if not expected.issubset(dataset_names):
         raise AssertionError(f"Missing Superset datasets: {sorted(expected - dataset_names)}")
 
@@ -129,8 +136,8 @@ def superset_smoke_tests() -> dict[str, object]:
         )
     )
     charts = request_json(f"{base_url}/api/v1/chart/?q={chart_query}", token=token)
-    if charts.get("count") != 26:
-        raise AssertionError(f"Expected 26 dashboard charts, found {charts.get('count')}")
+    if charts.get("count") != 32:
+        raise AssertionError(f"Expected 32 dashboard charts, found {charts.get('count')}")
     viz_types = {item["viz_type"] for item in charts.get("result", [])}
     if "heatmap_v2" not in viz_types or "heatmap" in viz_types:
         raise AssertionError(f"Unexpected heatmap viz types: {sorted(viz_types)}")
@@ -144,8 +151,8 @@ def superset_smoke_tests() -> dict[str, object]:
             token=token,
         )
         metric_count += len(detail["result"].get("metrics", []))
-    if metric_count != 39:
-        raise AssertionError(f"Expected 39 metric instances, found {metric_count}")
+    if metric_count != 51:
+        raise AssertionError(f"Expected 51 metric instances, found {metric_count}")
 
     dashboard_detail = request_json(
         f"{base_url}/api/v1/dashboard/{dashboard_id}",
@@ -157,6 +164,73 @@ def superset_smoke_tests() -> dict[str, object]:
         raise AssertionError(
             "Superset 6.1.0 native time filters are disabled because its "
             f"time_range API rejects the frontend request; found {len(native_filters)}"
+        )
+
+    # Parse position_json and verify the monitoring layout.
+    pos_json_str = dashboard_detail["result"].get("position_json")
+    if not pos_json_str:
+        raise AssertionError("Dashboard position_json is empty")
+    pos_json = json.loads(pos_json_str)
+
+    tabs = [k for k, v in pos_json.items() if isinstance(v, dict) and v.get("type") == "TAB"]
+    markdown_cards = [
+        key
+        for key, value in pos_json.items()
+        if isinstance(value, dict) and value.get("type") == "MARKDOWN"
+    ]
+
+    expected_tabs = {"TAB-1", "TAB-2", "TAB-3", "TAB-4"}
+    if not expected_tabs.issubset(set(tabs)):
+        raise AssertionError(f"Missing expected dashboard tabs: {expected_tabs - set(tabs)}")
+
+    if markdown_cards:
+        raise AssertionError(f"Dashboard must not contain narrative cards: {markdown_cards}")
+
+    required_charts = {
+        "Monthly Revenue & Trip Volume": "echarts_timeseries_line",
+        "Demand by Weekday & Hour": "heatmap_v2",
+        "Zone Concentration by Trips": "table",
+        "Driver Performance Matrix": "bubble",
+        "Driver Review Queue": "table",
+        "DQ Issues over Time": "echarts_timeseries_line",
+    }
+    chart_by_name = {
+        chart["slice_name"]: chart for chart in charts.get("result", [])
+    }
+    for chart_name, expected_viz_type in required_charts.items():
+        chart = chart_by_name.get(chart_name)
+        if chart is None:
+            raise AssertionError(f"Missing required chart: {chart_name}")
+        if chart["viz_type"] != expected_viz_type:
+            raise AssertionError(
+                f"{chart_name} must use {expected_viz_type}, found {chart['viz_type']}"
+            )
+
+    c_driver_table = chart_by_name["Driver Review Queue"]
+    driver_params = json.loads(c_driver_table.get("params") or "{}")
+    driver_filters = driver_params.get("adhoc_filters", [])
+    if not any(
+        item.get("filterOptionName") == "driver_review_rule"
+        and item.get("subject") == "needs_review"
+        and item.get("comparator") is True
+        for item in driver_filters
+    ):
+        raise AssertionError("Driver Review Queue is missing its peer-review filter")
+
+    # 3. Check benchmark results file
+    bench_file = ROOT / "deliverables" / "benchmark" / "superset_benchmark_results.json"
+    if not bench_file.exists():
+        raise AssertionError(f"Benchmark results file not found at: {bench_file}")
+
+    with open(bench_file, "r", encoding="utf-8") as bf:
+        bench_data = json.load(bf)
+    if bench_data.get("total_charts") != 32:
+        raise AssertionError(
+            f"Expected benchmark to cover 32 charts, found {bench_data.get('total_charts')}"
+        )
+    if len(bench_data.get("charts", {})) != 32:
+        raise AssertionError(
+            f"Benchmark contains {len(bench_data.get('charts', {}))} charts, expected 32"
         )
 
     return {

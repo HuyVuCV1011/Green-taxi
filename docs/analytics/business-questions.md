@@ -25,3 +25,37 @@
 Ratios phải được tính từ tổng tử số/tổng mẫu số, không cộng các ratio cấp dòng.
 `revenue_per_hour` dùng toàn bộ shift duration, gồm cả idle time, theo
 [semantic contract](semantic-contract.md).
+
+## Monitoring Dashboard Structure
+
+Dashboard `NYC Green Taxi - Driver Operations` là một **operational monitoring
+dashboard**, không phải một báo cáo narrative dài. Layout theo phong cách light
+enterprise dashboard: KPI strip ở đầu tab, visual chính ở giữa, ranking/detail
+table ở cuối luồng điều tra.
+
+1. **Operations Overview**
+   - KPI cards: total revenue, total trips, active drivers, active vehicles,
+     overall shift utilization.
+   - Monthly revenue/trip trend.
+   - Pickup borough ranking, top pickup zones và weekday profile.
+
+2. **Demand Patterns**
+   - Weekday x hour heatmap.
+   - Hourly demand profile.
+   - Zone concentration table với cumulative trip percentage.
+   - Top pickup zones by revenue.
+   - Pickup/dropoff borough volume và average trip distance by borough.
+
+3. **Driver & Fleet Performance**
+   - Shift KPIs: completed shifts, revenue per shift hour, trips per shift,
+     shift utilization.
+   - Driver performance matrix dùng `analytics.driver_performance_summary`.
+   - Driver review queue dựa trên rule `needs_review`, không hard-code tên tài
+     xế.
+   - Vehicle type performance và vehicle detail table.
+
+4. **Data Quality & Anomalies**
+   - DQ issue, quarantine, trip anomaly và shift anomaly KPI.
+   - DQ trend, severity/source breakdown và top data-quality rules.
+   - DQ, quarantine, trip anomaly và shift anomaly là các khái niệm riêng,
+     không cộng thành một tổng.

@@ -33,6 +33,8 @@ Unknown/inferred được tính mặc định để giữ reconciliation.
 | `active_vehicle_count` | Vehicle distinct có trip activity trong kỳ | `analytics.trip_pickup`; `COUNT(DISTINCT vehicle_key)` | Trip filter context; non-additive | Pickup; không dùng current status | Integer; fact activity; Certified |
 | `dq_issue_count` | Số DQ issues theo nhóm DQ | `analytics.dq_summary`; `SUM(issue_count)` | DQ event summary; additive | UTC event date; null to 0 | Integer; `dq.dq_issue`; Certified DQ only |
 | `quarantine_count` | Số records bị quarantine ERROR | `analytics.dq_summary`; `SUM(quarantine_count)` | DQ event summary; additive | UTC event date; null to 0 | Integer; `dq.quarantine_record`; Certified DQ only |
+| `idle_minutes_per_shift` | Phút rảnh trung bình mỗi ca theo driver summary | `analytics.driver_performance_summary`; `AVG(idle_minutes_per_shift)` | Driver summary; non-additive | Driver peer context; zero drivers -> NULL | Minute 0.00; review queue metric |
+| `review_driver_count` | Số driver thỏa rule cần xem xét | `analytics.driver_performance_summary`; `COUNT(*) FILTER (WHERE needs_review)` | Driver summary; additive over driver rows only | Không dùng ở trip/shift grain | Integer; peer review boundary |
 
 ## Superset implementation notes
 
@@ -43,3 +45,6 @@ Unknown/inferred được tính mặc định để giữ reconciliation.
   `analytics.trip_dropoff`; chỉ date/location role thay đổi.
 - Không expose `AVG(utilization_rate)` hay implicit `SUM(total_revenue)` trên
   dataset đã join row-level giữa trip và shift.
+- `analytics.driver_performance_summary` là dataset đã aggregate một dòng mỗi
+  driver; các metric `AVG(...)` trong dataset này chỉ dùng cho peer overview và
+  review queue, không thay thế metric shift-grain certified.

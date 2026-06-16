@@ -81,7 +81,7 @@ Dispatch Shift và Trip Assignment để trả lời 5 nhóm câu hỏi nghiệp
 | DQ/Audit/Quarantine | `ERROR` bị quarantine; `WARN`/anomaly được giữ lineage để phân tích |
 | NDS + DDS | NDS chuẩn hóa tích hợp và DDS star schema cho Driver Operations |
 | Idempotency | Seed, staging, NDS, DDS và Superset provisioning chạy lại an toàn |
-| BI-ready analytics | 4 certified datasets, 39 metric instances, 26 charts, read-only BI role và dashboard BQ01-BQ05 |
+| BI-ready analytics | 6 certified datasets, 51 metric instances, 32 charts, read-only BI role và monitoring dashboard BQ01-BQ05 |
 
 ---
 
@@ -298,7 +298,7 @@ points chính.
 - [x] Chạy full release với 19 TLC files và xác nhận reconciliation/idempotency.
 - [x] Khóa analytics semantic contract, certified metrics và analytics SQL views.
 - [x] Triển khai Superset local với metadata DB và warehouse role read-only.
-- [x] Provision 4 certified datasets, 39 metric instances, 26 charts và dashboard BQ01-BQ05 trên 3 tabs.
+- [x] Provision 6 certified datasets, 51 metric instances, 32 charts và monitoring dashboard BQ01-BQ05 trên 4 tabs.
 - [x] Chạy health, permission, query, reconciliation và browser smoke tests.
 
 ### Next (Milestone 6)

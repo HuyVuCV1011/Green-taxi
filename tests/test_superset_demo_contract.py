@@ -30,11 +30,18 @@ class SupersetDemoContractTests(unittest.TestCase):
             self.assertIn(schema, grants)
         self.assertNotIn("GRANT SELECT ON ALL TABLES IN SCHEMA dds", grants)
 
-    def test_four_certified_datasets_and_dashboard_are_provisioned(self) -> None:
+    def test_certified_datasets_and_monitoring_dashboard_are_provisioned(self) -> None:
         script = (ROOT / "scripts" / "provision_superset.py").read_text(
             encoding="utf-8"
         )
-        for dataset in ("trip_pickup", "trip_dropoff", "shift", "dq_summary"):
+        for dataset in (
+            "trip_pickup",
+            "trip_dropoff",
+            "shift",
+            "dq_summary",
+            "pareto_pickup_zone",
+            "driver_performance_summary",
+        ):
             self.assertIn(f'"{dataset}"', script)
         for metric in (
             "total_trips",
@@ -57,6 +64,12 @@ class SupersetDemoContractTests(unittest.TestCase):
         self.assertNotIn('"filterType": "filter_time"', script)
         self.assertIn("from werkzeug.security import generate_password_hash", script)
         self.assertIn("viewer.password = generate_password_hash(password)", script)
+        self.assertIn("driver_review_rule", script)
+        self.assertIn("db.session.delete(slc)", script)
+        self.assertNotIn('"type": "MARKDOWN"', script)
+        self.assertIn("Driver Performance Matrix", script)
+        self.assertIn("Average Trip Distance by Borough", script)
+        self.assertIn("#f4f6f8", script)
 
     def test_smoke_suite_checks_read_and_write_boundaries(self) -> None:
         smoke = (ROOT / "scripts" / "smoke_test_superset.py").read_text(
@@ -68,8 +81,8 @@ class SupersetDemoContractTests(unittest.TestCase):
         self.assertIn("dds.fact_driver_trip", smoke)
         self.assertIn("CREATE TABLE analytics._superset_write_probe", smoke)
         self.assertIn('"dq_summary"', smoke)
-        self.assertIn("Expected 26 dashboard charts", smoke)
-        self.assertIn("Expected 39 metric instances", smoke)
+        self.assertIn("Expected 32 dashboard charts", smoke)
+        self.assertIn("Expected 51 metric instances", smoke)
         self.assertIn("if native_filters:", smoke)
 
     def test_warehouse_has_dashboard_shared_memory(self) -> None:
