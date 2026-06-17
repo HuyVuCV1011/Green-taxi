@@ -60,6 +60,7 @@ http://localhost:8088/superset/dashboard/green-taxi-driver-operations/
 | `analytics.trip_pickup` | `pickup_datetime` | `pickup_*` | Trip, revenue, fare, tips, distance, duration, anomaly, active driver/vehicle |
 | `analytics.trip_dropoff` | `dropoff_datetime` | `dropoff_*` | Cùng metric trip, nhưng role dropoff tường minh |
 | `analytics.shift` | `shift_start` | `shift_start_*` | Shift count, trips/revenue per shift, revenue/hour, occupied/idle, utilization, avg_idle_minutes, anomaly |
+| `analytics.dq_summary` | `event_date_utc` | *None* | DQ issue count, quarantine count |
 | `analytics.pareto_pickup_zone` | *None* | `pickup_*` | Total trips, cumulative trips percentage, total revenue, cumulative revenue percentage |
 | `analytics.driver_performance_summary` | *None* | Driver | Driver count, completed shifts, revenue/hour, utilization, idle minutes/shift, trips/shift, review driver count |
 
@@ -69,9 +70,11 @@ Mỗi dataset và metric chứa certification metadata:
 - Contract: `docs/analytics/semantic-contract.md`
 - Metric source: `docs/analytics/metric-catalog.md`
 
-Bootstrap idempotent tạo hoặc cập nhật 6 datasets, 51 metric instances
+Bootstrap idempotent tạo hoặc cập nhật 6 Superset datasets, 51 metric instances
 (trip metrics được khai báo riêng trên pickup/dropoff), 32 charts và 1
-monitoring dashboard gồm 4 tabs.
+operational monitoring dashboard gồm 4 tabs. `analytics.shift_trip_aggregate`
+là view kỹ thuật chống fan-out để giữ semantic contract; view này không được
+provision thành Superset dataset độc lập.
 
 Native time filter chưa được provision trên image Superset 6.1.0. Frontend của
 phiên bản này gửi scalar Rison tới `/api/v1/time_range/`, trong khi backend từ
@@ -93,6 +96,11 @@ khi nâng image và xác nhận API tương thích bằng browser smoke test.
 5. Tab **Data Quality & Anomalies**: theo dõi DQ issues, quarantine, anomaly KPI,
    trend, severity/source breakdown và top rules. Không cộng DQ, quarantine,
    trip anomaly và shift anomaly thành một chỉ số chung.
+
+Dashboard này ưu tiên tính reproducible và semantic correctness hơn dashboard
+design tùy biến thủ công. Mọi chart/layout đang nằm trong
+`scripts/provision_superset.py`; chỉnh trực tiếp trên UI chỉ nên dùng để thử
+nghiệm rồi port lại vào bootstrap script.
 
 Số expected của full release:
 

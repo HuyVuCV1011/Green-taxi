@@ -67,7 +67,8 @@ Status: `COMPLETED`
 
 - Certified KPI definitions.
 - Superset metadata DB và read-only warehouse connection.
-- Ba Superset datasets và dashboard theo analytics contract.
+- 6 Superset datasets, 51 certified metric instances và dashboard theo
+  analytics contract.
 - Driver/shift peer comparison.
 - Business anomaly rules.
 - Health, permission, query và browser smoke tests.

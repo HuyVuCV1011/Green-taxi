@@ -81,7 +81,7 @@ Dispatch Shift và Trip Assignment để trả lời 5 nhóm câu hỏi nghiệp
 | DQ/Audit/Quarantine | `ERROR` bị quarantine; `WARN`/anomaly được giữ lineage để phân tích |
 | NDS + DDS | NDS chuẩn hóa tích hợp và DDS star schema cho Driver Operations |
 | Idempotency | Seed, staging, NDS, DDS và Superset provisioning chạy lại an toàn |
-| BI-ready analytics | 6 certified datasets, 51 metric instances, 32 charts, read-only BI role và monitoring dashboard BQ01-BQ05 |
+| BI-ready analytics | 6 certified Superset datasets, 51 metric instances, 32 charts, read-only BI role và operational monitoring dashboard BQ01-BQ05 trên 4 tabs |
 
 ---
 
@@ -211,6 +211,12 @@ Mỗi thành viên tự sinh credential Superset local; không chia sẻ hoặc 
 của lệnh lấy login. Vận hành và demo dashboard:
 [Superset Local Demo Runbook](docs/analytics/superset-local-demo-runbook.md).
 
+Dashboard hiện tại là bản **operational monitoring** được bootstrap tự động từ
+code, tập trung vào KPI strip, trend, heatmap, ranking/detail table và DQ/anomaly
+queue. Nếu cần chỉnh layout/chart thủ công trong Superset UI, hãy đưa thay đổi
+ngược lại vào `scripts/provision_superset.py` trước khi reset metadata để tránh
+mất chỉnh sửa local.
+
 <a id="docker-services"></a>
 
 ## Docker services
@@ -298,7 +304,7 @@ points chính.
 - [x] Chạy full release với 19 TLC files và xác nhận reconciliation/idempotency.
 - [x] Khóa analytics semantic contract, certified metrics và analytics SQL views.
 - [x] Triển khai Superset local với metadata DB và warehouse role read-only.
-- [x] Provision 6 certified datasets, 51 metric instances, 32 charts và monitoring dashboard BQ01-BQ05 trên 4 tabs.
+- [x] Provision 6 certified Superset datasets, 51 metric instances, 32 charts và operational monitoring dashboard BQ01-BQ05 trên 4 tabs.
 - [x] Chạy health, permission, query, reconciliation và browser smoke tests.
 
 ### Next (Milestone 6)

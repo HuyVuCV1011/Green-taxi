@@ -94,9 +94,12 @@ Status: `IMPLEMENTED AND SMOKE-TESTED`
 
 1. Superset metadata database và local web app.
 2. Warehouse login `superset_ro` chỉ đọc approved analytics views.
-3. Dataset `trip_pickup`, `trip_dropoff`, `shift` và `dq_summary`.
+3. Superset datasets `trip_pickup`, `trip_dropoff`, `shift`, `dq_summary`,
+   `pareto_pickup_zone` và `driver_performance_summary`.
 4. Certified metrics theo semantic contract.
-5. Dashboard operations, driver/shift, zone/time, vehicle, anomaly và DQ.
+5. Operational monitoring dashboard BQ01-BQ05 với 32 charts trên 4 tabs:
+   Operations Overview, Demand Patterns, Driver & Fleet Performance, Data
+   Quality & Anomalies.
 6. Health, API, permission, query và browser smoke tests.
 
 Measures:
@@ -109,7 +112,9 @@ Measures:
 - Average trip duration/distance.
 - DQ/anomaly counts.
 
-Dashboard dùng 3 business datasets và 1 DQ dataset theo analytics boundary.
+Dashboard dùng 5 business/summary datasets và 1 DQ dataset theo analytics
+boundary. `analytics.shift_trip_aggregate` là view kỹ thuật chống fan-out, không
+được provision thành Superset dataset độc lập.
 Chi tiết:
 [../analytics/superset-local-demo-runbook.md](../analytics/superset-local-demo-runbook.md).
 
