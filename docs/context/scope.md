@@ -45,6 +45,9 @@ hệ thống nghiệp vụ trong logical architecture.
 3. Tài xế và phương tiện nào đang hoạt động dưới mức thông thường?
 4. Thời gian có khách, thời gian nhàn rỗi và doanh thu trên giờ thay đổi ra sao?
 5. Những trường hợp nào cần được kiểm tra do bất thường nghiệp vụ hoặc dữ liệu?
+6. Có thể phân nhóm tài xế theo hiệu suất để hỗ trợ đào tạo hoặc điều phối lại?
+7. Những pattern pickup/dropoff theo khu vực và khung giờ nào lặp lại đủ mạnh để
+   hỗ trợ bố trí năng lực?
 
 Hệ thống không tự động điều phối tài xế trong thời gian thực. Nó cung cấp dữ
 liệu lịch sử và chỉ số để hỗ trợ lập kế hoạch vận hành.
@@ -70,6 +73,9 @@ Hai fact chính:
 - Late-arriving/inferred driver hoặc vehicle.
 - Deduplication và kiểm tra quan hệ thời gian.
 - Dashboard hiệu quả vận hành.
+- OLAP dạng ROLAP trên PostgreSQL/Superset cho phân tích đa chiều.
+- Data Mining ở mức hỗ trợ quyết định vận hành: driver segmentation và
+  route/demand association rules.
 - Phát hiện bất thường nghiệp vụ ở mức driver/shift.
 
 ## Ngoài phạm vi
@@ -80,6 +86,8 @@ Hai fact chính:
 - Marketing, customer segmentation và promotion.
 - Xử lý khiếu nại khách hàng.
 - Dự báo nhu cầu thời gian thực.
+- Tự động điều phối hoặc tự động chấm điểm nhân sự bằng mô hình mining.
+- Deep learning hoặc mô hình prediction phức tạp ngoài nhu cầu vận hành hiện tại.
 - Change Data Capture, streaming và đồng bộ gần thời gian thực.
 - MinIO/S3 trong scope triển khai chính.
 - High availability, cluster và vận hành production.
@@ -93,4 +101,6 @@ Hai fact chính:
 - Synthetic data tuân thủ các ràng buộc được công bố.
 - Có data-quality logs, rejected/quarantined records và reconciliation tests.
 - Dashboard trả lời được các quyết định vận hành đã nêu.
+- OLAP/Data Mining nếu triển khai phải gắn với quyết định vận hành, không chỉ
+  là phần trình diễn kỹ thuật.
 - Báo cáo phân biệt rõ dữ liệu TLC thật và dữ liệu synthetic.

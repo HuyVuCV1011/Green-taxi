@@ -20,6 +20,9 @@ contract và metric catalog. Mọi dependency reconciliation trong draft đã đ
 | `KPI01` | Total và fare revenue | Trip hoặc shift theo ownership | `total_revenue`, `fare_revenue` | Dataset default | DDS supported |
 | `KPI02` | Active driver count | `analytics.trip_pickup` | `active_driver_count` | Pickup | DDS fact activity |
 | `KPI03` | Active vehicle count | `analytics.trip_pickup` | `active_vehicle_count` | Pickup | DDS fact activity |
+| `OLAP01` | Slice/dice/drill-down/roll-up/pivot theo time, location, driver, vehicle | `analytics.olap_trip_cube`, `analytics.olap_shift_cube` | Existing certified measures where applicable | Dataset default | Implemented ROLAP |
+| `DM01` | Phân nhóm driver theo hiệu suất vận hành | Planned `analytics.driver_segments` | Exploratory clustering metrics | Driver hoặc driver-month | Planned Data Mining |
+| `DM02` | Khám phá luật kết hợp pickup/dropoff/time pattern | Planned `analytics.route_association_rules` | `support`, `confidence`, `lift` | Rule output | Planned Data Mining |
 
 ## Locked decisions
 
@@ -33,6 +36,10 @@ contract và metric catalog. Mọi dependency reconciliation trong draft đã đ
 - Unknown/inferred members được giữ mặc định để bảo toàn reconciliation.
 - Trip và shift anomaly là hai metric khác grain, không cộng thành một count.
 - Chi phí vận hành, payroll và net profit không được hỗ trợ vì không có dữ liệu.
+- OLAP extension dùng PostgreSQL ROLAP + Superset, không dùng MDX/MOLAP
+  trong scope hiện tại.
+- Data Mining extension chỉ dùng output để hỗ trợ quyết định vận hành; không tự
+  động điều phối hoặc đánh giá nhân sự.
 
 ## Fan-out prevention
 

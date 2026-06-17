@@ -29,8 +29,11 @@ Data Sources -> Staging -> ODS -> DQ/Audit -> NDS -> DDS -> BI/OLAP/Mining
   staging kèm audit metadata, row hash và row-count reconciliation.
 - NDS, DDS, DQ rules và full-release reconciliation đã hoàn tất.
 - Superset local demo đã triển khai với metadata PostgreSQL riêng, warehouse
-  role read-only, 6 certified datasets, 51 certified metric instances,
-  32 charts và operational monitoring dashboard BQ01-BQ05 trên 4 tabs.
+  role read-only, 8 datasets, 76 metric instances, 37 charts, operational
+  monitoring dashboard BQ01-BQ05 và OLAP demo trên 5 tabs.
+- OLAP đã triển khai bằng PostgreSQL ROLAP views + Superset. Data Mining đang
+  `PLANNED`, dùng K-Means driver segmentation và association rules cho pattern
+  pickup/dropoff theo thời gian/khu vực.
 - Báo cáo, slide và sơ đồ cũ trong `archive/` là tài liệu trước feedback, không
   phải thiết kế hiện hành.
 - Data release hiện hành bao phủ 01/2020-07/2021, đúng phạm vi đã chốt cho
@@ -39,5 +42,7 @@ Data Sources -> Staging -> ODS -> DQ/Audit -> NDS -> DDS -> BI/OLAP/Mining
 ## Việc cần làm tiếp theo
 
 1. Hoàn thiện báo cáo học thuật và slide.
-2. Chốt demo recording và contribution evidence.
-3. Giữ pipeline/Superset reproducible bằng onboarding, runbook và smoke tests.
+2. Implement Phase 5C Data Mining extension nếu còn thời gian sau OLAP.
+3. Chạy lại live Superset smoke/benchmark sau khi metadata DB được provision.
+4. Chốt demo recording và contribution evidence.
+5. Giữ pipeline/Superset reproducible bằng onboarding, runbook và smoke tests.

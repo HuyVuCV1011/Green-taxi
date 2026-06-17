@@ -56,6 +56,14 @@ DATASETS = {
         "main_dttm_col": None,
         "description": "One row per driver with peer percentiles and an explicit review rule.",
     },
+    "olap_trip_cube": {
+        "main_dttm_col": "pickup_datetime",
+        "description": "ROLAP trip cube view for slice, dice, drill-down, roll-up and pivot demos.",
+    },
+    "olap_shift_cube": {
+        "main_dttm_col": "shift_start",
+        "description": "ROLAP shift cube view for utilization, idle time and revenue/hour demos.",
+    },
 }
 
 TRIP_METRICS = {
@@ -179,6 +187,97 @@ DRIVER_PERFORMANCE_METRICS = {
     "review_driver_count": (
         "Số tài xế cần xem xét",
         "COUNT(*) FILTER (WHERE needs_review)",
+        ",d",
+    ),
+}
+
+OLAP_TRIP_METRICS = {
+    "total_trips": ("Tổng số chuyến", "COALESCE(SUM(total_trips), 0)", ",d"),
+    "total_revenue": ("Tổng doanh thu", "COALESCE(SUM(total_revenue), 0)", "$,.2f"),
+    "fare_revenue": ("Tổng cước gốc", "COALESCE(SUM(fare_revenue), 0)", "$,.2f"),
+    "total_tips": ("Tổng tiền tip", "COALESCE(SUM(total_tips), 0)", "$,.2f"),
+    "total_distance": ("Tổng quãng đường", "COALESCE(SUM(total_distance), 0)", ",.2f"),
+    "total_trip_minutes": (
+        "Tổng phút chuyến đi",
+        "COALESCE(SUM(total_trip_minutes), 0)",
+        ",.2f",
+    ),
+    "average_fare": (
+        "Cước trung bình",
+        "SUM(fare_revenue) / NULLIF(SUM(total_trips), 0)",
+        "$,.2f",
+    ),
+    "average_trip_distance": (
+        "Quãng đường trung bình",
+        "SUM(total_distance) / NULLIF(COUNT(trip_distance), 0)",
+        ",.2f",
+    ),
+    "average_trip_duration": (
+        "Thời lượng chuyến trung bình",
+        "SUM(total_trip_minutes) / NULLIF(COUNT(trip_duration_minutes), 0)",
+        ",.2f",
+    ),
+    "anomaly_trip_count": (
+        "Số chuyến bất thường",
+        "COALESCE(SUM(anomaly_trip_count), 0)",
+        ",d",
+    ),
+    "anomaly_rate": (
+        "Tỷ lệ chuyến bất thường",
+        "SUM(anomaly_trip_count)::numeric / NULLIF(SUM(total_trips), 0)",
+        ".2%",
+    ),
+    "active_driver_count": (
+        "Số tài xế hoạt động",
+        "COUNT(DISTINCT driver_key)",
+        ",d",
+    ),
+    "active_vehicle_count": (
+        "Số xe hoạt động",
+        "COUNT(DISTINCT vehicle_key)",
+        ",d",
+    ),
+}
+
+OLAP_SHIFT_METRICS = {
+    "completed_shifts": ("Số ca hoàn tất", "COALESCE(SUM(completed_shifts), 0)", ",d"),
+    "total_trips": ("Tổng số chuyến theo ca", "COALESCE(SUM(total_trips), 0)", ",d"),
+    "total_revenue": ("Tổng doanh thu theo ca", "COALESCE(SUM(total_revenue), 0)", "$,.2f"),
+    "total_tips": ("Tổng tiền tip theo ca", "COALESCE(SUM(total_tips), 0)", "$,.2f"),
+    "trips_per_shift": (
+        "Số chuyến trung bình mỗi ca",
+        "SUM(total_trips)::numeric / NULLIF(SUM(completed_shifts), 0)",
+        ",.2f",
+    ),
+    "revenue_per_shift": (
+        "Doanh thu trung bình mỗi ca",
+        "SUM(total_revenue) / NULLIF(SUM(completed_shifts), 0)",
+        "$,.2f",
+    ),
+    "revenue_per_hour": (
+        "Doanh thu mỗi giờ ca",
+        "SUM(total_revenue) * 60 / NULLIF(SUM(shift_duration_minutes), 0)",
+        "$,.2f",
+    ),
+    "occupied_minutes": (
+        "Tổng phút có khách",
+        "COALESCE(SUM(occupied_minutes), 0)",
+        ",.2f",
+    ),
+    "idle_minutes": ("Tổng phút rảnh", "COALESCE(SUM(idle_minutes), 0)", ",.2f"),
+    "shift_duration_minutes": (
+        "Tổng phút ca",
+        "COALESCE(SUM(shift_duration_minutes), 0)",
+        ",.2f",
+    ),
+    "utilization_rate": (
+        "Tỷ lệ sử dụng ca",
+        "SUM(occupied_minutes) / NULLIF(SUM(shift_duration_minutes), 0)",
+        ".2%",
+    ),
+    "anomaly_shift_count": (
+        "Số ca bất thường",
+        "COALESCE(SUM(anomaly_shift_count), 0)",
         ",d",
     ),
 }
@@ -345,6 +444,10 @@ def ensure_chart(
                     orderby_list.append(col_order)
             if orderby_list:
                 query_obj["orderby"] = orderby_list
+    elif viz_type == "pivot_table_v2":
+        query_obj["metrics"] = params.get("metrics", [])
+        query_obj["columns"] = params.get("groupbyColumns", [])
+        query_obj["series_columns"] = params.get("groupbyRows", [])
     elif viz_type in ("echarts_timeseries_line", "echarts_timeseries_bar"):
         query_obj["metrics"] = params.get("metrics", [])
         if "granularity_sqla" in params:
@@ -378,7 +481,7 @@ def dashboard_layout(charts_by_id: dict[str, Slice]) -> str:
         "TABS_ID": {
             "id": "TABS_ID",
             "type": "TABS",
-            "children": ["TAB-1", "TAB-2", "TAB-3", "TAB-4"],
+            "children": ["TAB-1", "TAB-2", "TAB-3", "TAB-4", "TAB-5"],
             "parents": ["ROOT_ID", "GRID_ID"],
         },
     }
@@ -404,12 +507,18 @@ def dashboard_layout(charts_by_id: dict[str, Slice]) -> str:
             ("TAB4-MAIN", ["c_t4_dq_trend", "c_t4_dq_severity"]),
             ("TAB4-SUPPORT", ["c_t4_dq_source", "c_t4_dq_rules"]),
         ],
+        "TAB-5": [
+            ("TAB5-FILTERS", ["c_t5_slice", "c_t5_dice"]),
+            ("TAB5-HIERARCHY", ["c_t5_drilldown", "c_t5_rollup"]),
+            ("TAB5-PIVOT", ["c_t5_pivot"]),
+        ],
     }
     tab_titles = {
         "TAB-1": "Operations Overview",
         "TAB-2": "Demand Patterns",
         "TAB-3": "Driver & Fleet Performance",
         "TAB-4": "Data Quality & Anomalies",
+        "TAB-5": "OLAP Demo",
     }
 
     kpi_keys = {
@@ -419,7 +528,7 @@ def dashboard_layout(charts_by_id: dict[str, Slice]) -> str:
         if row_name.endswith("KPI")
         for key in keys
     }
-    wide_keys = {"c_t1_trend", "c_t2_heatmap", "c_t3_driver_scatter", "c_t4_dq_trend"}
+    wide_keys = {"c_t1_trend", "c_t2_heatmap", "c_t3_driver_scatter", "c_t4_dq_trend", "c_t5_pivot"}
 
     for tab_id, rows in tab_rows.items():
         layout[tab_id] = {
@@ -534,6 +643,8 @@ def main() -> None:
         datasets["driver_performance_summary"],
         DRIVER_PERFORMANCE_METRICS,
     )
+    ensure_metrics(datasets["olap_trip_cube"], OLAP_TRIP_METRICS)
+    ensure_metrics(datasets["olap_shift_cube"], OLAP_SHIFT_METRICS)
     db.session.flush()
 
     charts_spec = {
@@ -672,6 +783,78 @@ def main() -> None:
             "order_by_cols": [json.dumps(["dq_issue_count", False])],
             "page_length": 15,
         }),
+
+        # Tab 5: OLAP Demo
+        "c_t5_slice": (datasets["olap_trip_cube"], "OLAP Slice - Monthly Pickup Borough Revenue", "echarts_timeseries_bar", {
+            "x_axis": "pickup_borough",
+            "groupby": [],
+            "metrics": ["total_revenue", "total_trips"],
+            "sort_series_type": "sum",
+            "order_desc": True,
+            "adhoc_filters": [
+                {
+                    "expressionType": "SIMPLE",
+                    "subject": "pickup_month",
+                    "operator": "==",
+                    "comparator": 1,
+                    "clause": "WHERE",
+                    "filterOptionName": "olap_slice_month",
+                }
+            ],
+        }),
+        "c_t5_dice": (datasets["olap_trip_cube"], "OLAP Dice - Month Borough Vehicle", "table", {
+            "query_mode": "aggregate",
+            "groupby": ["pickup_month", "pickup_borough", "vehicle_type"],
+            "metrics": ["total_trips", "total_revenue", "average_fare"],
+            "order_by_cols": [json.dumps(["total_revenue", False])],
+            "page_length": 15,
+            "adhoc_filters": [
+                {
+                    "expressionType": "SIMPLE",
+                    "subject": "pickup_month",
+                    "operator": "IS NOT NULL",
+                    "comparator": None,
+                    "clause": "WHERE",
+                    "filterOptionName": "olap_dice_month",
+                },
+                {
+                    "expressionType": "SIMPLE",
+                    "subject": "pickup_borough",
+                    "operator": "IS NOT NULL",
+                    "comparator": None,
+                    "clause": "WHERE",
+                    "filterOptionName": "olap_dice_borough",
+                },
+                {
+                    "expressionType": "SIMPLE",
+                    "subject": "vehicle_type",
+                    "operator": "IS NOT NULL",
+                    "comparator": None,
+                    "clause": "WHERE",
+                    "filterOptionName": "olap_dice_vehicle_type",
+                },
+            ],
+        }),
+        "c_t5_drilldown": (datasets["olap_trip_cube"], "OLAP Drill-down - Time Hierarchy", "table", {
+            "query_mode": "aggregate",
+            "groupby": ["pickup_year", "pickup_month", "pickup_day", "pickup_hour"],
+            "metrics": ["total_trips", "total_revenue", "average_trip_distance"],
+            "order_by_cols": [json.dumps(["pickup_year", True]), json.dumps(["pickup_month", True]), json.dumps(["pickup_day", True])],
+            "page_length": 20,
+        }),
+        "c_t5_rollup": (datasets["olap_shift_cube"], "OLAP Roll-up - Zone to Borough Utilization", "echarts_timeseries_bar", {
+            "x_axis": "shift_start_borough",
+            "groupby": [],
+            "metrics": ["completed_shifts", "utilization_rate", "revenue_per_hour"],
+            "sort_series_type": "sum",
+            "order_desc": True,
+        }),
+        "c_t5_pivot": (datasets["olap_trip_cube"], "OLAP Pivot - Borough by Hour Bucket", "pivot_table_v2", {
+            "groupbyRows": ["pickup_borough"],
+            "groupbyColumns": ["pickup_hour_bucket"],
+            "metrics": ["total_trips", "total_revenue"],
+            "row_limit": 10000,
+        }),
     }
 
     charts = {}
@@ -714,7 +897,7 @@ def main() -> None:
 
     dashboard.dashboard_title = "NYC Green Taxi - Driver Operations"
     dashboard.description = (
-        "Operational monitoring dashboard with four focused analysis tabs."
+        "Operational monitoring dashboard with OLAP demo views on PostgreSQL ROLAP."
     )
     dashboard.certified_by = CERTIFIED_BY
     dashboard.certification_details = CERTIFICATION_DETAILS

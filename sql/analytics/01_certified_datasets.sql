@@ -3,6 +3,8 @@
 CREATE SCHEMA IF NOT EXISTS analytics;
 
 DROP VIEW IF EXISTS analytics.shift_trip_aggregate CASCADE;
+DROP VIEW IF EXISTS analytics.olap_shift_cube CASCADE;
+DROP VIEW IF EXISTS analytics.olap_trip_cube CASCADE;
 DROP VIEW IF EXISTS analytics.trip_dropoff CASCADE;
 DROP VIEW IF EXISTS analytics.trip_pickup CASCADE;
 DROP VIEW IF EXISTS analytics.shift CASCADE;
@@ -229,6 +231,136 @@ SELECT
     COUNT(trip_id) FILTER (WHERE is_trip_anomaly) AS anomaly_trip_count
 FROM analytics.trip_pickup
 GROUP BY shift_id;
+
+-- Grain: one row per trip with OLAP-friendly dimension attributes and additive measures.
+-- Source boundary: approved analytics.trip_pickup view, not staging/NDS.
+CREATE OR REPLACE VIEW analytics.olap_trip_cube AS
+SELECT
+    trip_id,
+    shift_id,
+    pickup_datetime,
+    dropoff_datetime,
+    pickup_datetime::date AS pickup_date,
+    pickup_year,
+    EXTRACT(quarter FROM pickup_datetime)::integer AS pickup_quarter,
+    pickup_month,
+    EXTRACT(day FROM pickup_datetime)::integer AS pickup_day,
+    pickup_hour,
+    CASE
+        WHEN pickup_hour BETWEEN 0 AND 5 THEN '00-05 Overnight'
+        WHEN pickup_hour BETWEEN 6 AND 11 THEN '06-11 Morning'
+        WHEN pickup_hour BETWEEN 12 AND 17 THEN '12-17 Afternoon'
+        ELSE '18-23 Evening'
+    END AS pickup_hour_bucket,
+    pickup_day_of_week,
+    pickup_day_name,
+    dropoff_datetime::date AS dropoff_date,
+    EXTRACT(year FROM dropoff_datetime)::integer AS dropoff_year,
+    EXTRACT(quarter FROM dropoff_datetime)::integer AS dropoff_quarter,
+    EXTRACT(month FROM dropoff_datetime)::integer AS dropoff_month,
+    EXTRACT(day FROM dropoff_datetime)::integer AS dropoff_day,
+    dropoff_hour,
+    dropoff_day_of_week,
+    dropoff_day_name,
+    vendor_key,
+    vendor_id,
+    vendor_name,
+    driver_key,
+    driver_id,
+    driver_name,
+    driver_home_borough,
+    driver_employment_status,
+    vehicle_key,
+    vehicle_id,
+    vehicle_type,
+    vehicle_status,
+    pickup_location_key,
+    pickup_location_id,
+    pickup_borough,
+    pickup_zone,
+    pickup_service_zone,
+    dropoff_location_key,
+    dropoff_location_id,
+    dropoff_borough,
+    dropoff_zone,
+    dropoff_service_zone,
+    payment_type_desc,
+    ratecode_desc,
+    trip_type_desc,
+    assignment_method,
+    is_trip_anomaly,
+    passenger_count,
+    trip_distance,
+    trip_duration_minutes,
+    1::bigint AS total_trips,
+    COALESCE(total_amount, 0::numeric) AS total_revenue,
+    COALESCE(fare_amount, 0::numeric) AS fare_revenue,
+    COALESCE(tip_amount, 0::numeric) AS total_tips,
+    trip_distance AS total_distance,
+    trip_duration_minutes AS total_trip_minutes,
+    CASE WHEN is_trip_anomaly THEN 1 ELSE 0 END::bigint AS anomaly_trip_count,
+    batch_id
+FROM analytics.trip_pickup;
+
+-- Grain: one row per completed shift with OLAP-friendly dimension attributes and additive measures.
+-- Source boundary: approved analytics.shift view; no row-level join to trip fact.
+CREATE OR REPLACE VIEW analytics.olap_shift_cube AS
+SELECT
+    shift_id,
+    shift_start,
+    shift_end,
+    shift_start::date AS shift_start_date,
+    EXTRACT(year FROM shift_start)::integer AS shift_start_year,
+    EXTRACT(quarter FROM shift_start)::integer AS shift_start_quarter,
+    EXTRACT(month FROM shift_start)::integer AS shift_start_month,
+    EXTRACT(day FROM shift_start)::integer AS shift_start_day,
+    shift_start_hour,
+    CASE
+        WHEN shift_start_hour BETWEEN 0 AND 5 THEN '00-05 Overnight'
+        WHEN shift_start_hour BETWEEN 6 AND 11 THEN '06-11 Morning'
+        WHEN shift_start_hour BETWEEN 12 AND 17 THEN '12-17 Afternoon'
+        ELSE '18-23 Evening'
+    END AS shift_start_hour_bucket,
+    shift_start_day_of_week,
+    shift_start_day_name,
+    shift_end::date AS shift_end_date,
+    EXTRACT(year FROM shift_end)::integer AS shift_end_year,
+    EXTRACT(quarter FROM shift_end)::integer AS shift_end_quarter,
+    EXTRACT(month FROM shift_end)::integer AS shift_end_month,
+    EXTRACT(day FROM shift_end)::integer AS shift_end_day,
+    EXTRACT(hour FROM shift_end)::integer AS shift_end_hour,
+    vendor_key,
+    vendor_id,
+    vendor_name,
+    driver_key,
+    driver_id,
+    driver_name,
+    driver_home_borough,
+    driver_employment_status,
+    vehicle_key,
+    vehicle_id,
+    vehicle_type,
+    vehicle_status,
+    shift_start_location_id,
+    shift_start_borough,
+    shift_start_zone,
+    shift_start_service_zone,
+    shift_end_location_id,
+    shift_end_borough,
+    shift_end_zone,
+    shift_end_service_zone,
+    shift_status,
+    is_shift_anomaly,
+    1::bigint AS completed_shifts,
+    COALESCE(trip_count, 0)::bigint AS total_trips,
+    COALESCE(shift_duration_minutes, 0::numeric) AS shift_duration_minutes,
+    COALESCE(occupied_minutes, 0::numeric) AS occupied_minutes,
+    COALESCE(idle_minutes, 0::numeric) AS idle_minutes,
+    COALESCE(total_revenue, 0::numeric) AS total_revenue,
+    COALESCE(total_tips, 0::numeric) AS total_tips,
+    CASE WHEN is_shift_anomaly THEN 1 ELSE 0 END::bigint AS anomaly_shift_count,
+    batch_id
+FROM analytics.shift;
 
 -- Grain: one row per UTC date/batch/release/source/rule/severity/event type.
 CREATE OR REPLACE VIEW analytics.dq_summary AS

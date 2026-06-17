@@ -28,6 +28,8 @@ class AnalyticsContractTests(unittest.TestCase):
             "analytics.trip_dropoff",
             "analytics.shift",
             "analytics.shift_trip_aggregate",
+            "analytics.olap_trip_cube",
+            "analytics.olap_shift_cube",
             "analytics.dq_summary",
             "analytics.pareto_pickup_zone",
         ):
@@ -48,9 +50,34 @@ class AnalyticsContractTests(unittest.TestCase):
     def test_shift_aggregate_has_protected_grain(self) -> None:
         aggregate = self.sql.split(
             "CREATE OR REPLACE VIEW analytics.shift_trip_aggregate AS", 1
-        )[1].split("CREATE OR REPLACE VIEW analytics.dq_summary AS", 1)[0]
+        )[1].split("CREATE OR REPLACE VIEW analytics.olap_trip_cube AS", 1)[0]
         self.assertRegex(aggregate, r"GROUP BY\s+shift_id")
         self.assertNotIn("fact_driver_shift", aggregate)
+
+    def test_olap_views_use_approved_analytics_boundaries(self) -> None:
+        superset_script = (ROOT / "scripts" / "provision_superset.py").read_text(
+            encoding="utf-8"
+        )
+        olap_trip = self.sql.split(
+            "CREATE OR REPLACE VIEW analytics.olap_trip_cube AS", 1
+        )[1].split("CREATE OR REPLACE VIEW analytics.olap_shift_cube AS", 1)[0]
+        olap_shift = self.sql.split(
+            "CREATE OR REPLACE VIEW analytics.olap_shift_cube AS", 1
+        )[1].split("CREATE OR REPLACE VIEW analytics.dq_summary AS", 1)[0]
+        self.assertIn("FROM analytics.trip_pickup", olap_trip)
+        self.assertIn("FROM analytics.shift", olap_shift)
+        forbidden = ("staging.", "nds.", "fact_driver_trip", "fact_driver_shift")
+        for token in forbidden:
+            self.assertNotIn(token, olap_trip.lower())
+            self.assertNotIn(token, olap_shift.lower())
+        self.assertIn(
+            "SUM(occupied_minutes) / NULLIF(SUM(shift_duration_minutes), 0)",
+            superset_script,
+        )
+        self.assertIn(
+            "SUM(total_revenue) * 60 / NULLIF(SUM(shift_duration_minutes), 0)",
+            superset_script,
+        )
 
     def test_required_metrics_are_certified(self) -> None:
         required = {

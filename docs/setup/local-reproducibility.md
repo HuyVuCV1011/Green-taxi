@@ -146,8 +146,8 @@ python -m scripts.smoke_test_superset
 python -m unittest discover -s tests -v
 ```
 
-Smoke test xác nhận health, REST login, 6 datasets, 51 metric instances,
-32 charts, dashboard, analytics queries, native time filter lỗi không được
+Smoke test xác nhận health, REST login, 8 datasets, 76 metric instances,
+37 charts, dashboard, analytics queries, native time filter lỗi không được
 provision trên Superset 6.1.0 và BI login bị từ chối khi đọc DDS hoặc thử ghi
 dữ liệu.
 

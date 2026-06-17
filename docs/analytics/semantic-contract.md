@@ -23,6 +23,10 @@ Base commit: `720a60beeddddece58d3efde7d3810942f958140`
 - Business timestamps là local wall-clock time `America/New_York` và dùng
   `TIMESTAMP WITHOUT TIME ZONE`. Audit timestamps là UTC và dùng `TIMESTAMPTZ`.
   Đây là contract đã triển khai trong DDL/loader, không phải assumption.
+- Planned ROLAP views và Data Mining outputs phải nằm trong schema `analytics`
+  hoặc một schema kết quả được phê duyệt, chỉ đọc từ DDS/approved views và giữ
+  đúng grain. Chúng không được query trực tiếp `staging`/`nds` để phục vụ
+  dashboard.
 
 ## 2. Fact grain và metric ownership
 
@@ -147,3 +151,20 @@ Giới hạn còn lại: peak-hour business window chưa được business owner
 do đó `is_peak_hour` chỉ là thuộc tính DDS hiện có và không phải certified
 metric. Exact historical inferred flag không tồn tại trong DDS dimension; dùng
 DQ dataset để giám sát thay vì suy diễn.
+
+## 10. Analytical extensions
+
+Các extension OLAP đã được triển khai trong schema `analytics`; Data Mining vẫn
+ở trạng thái `PLANNED`:
+
+- `analytics.olap_trip_cube`: ROLAP dataset cho trip analysis với time,
+  pickup/dropoff location, driver, vehicle và vendor dimensions.
+- `analytics.olap_shift_cube`: ROLAP dataset cho shift analysis với time,
+  driver, vehicle, vendor, utilization và idle/revenue measures.
+- `analytics.driver_segments`: kết quả K-Means driver segmentation, grain dự
+  kiến là một dòng mỗi driver hoặc driver-month.
+- `analytics.route_association_rules`: kết quả association rules cho
+  pickup/dropoff/time patterns, gồm `support`, `confidence` và `lift`.
+
+Các extension này phải reconcile với metric catalog khi dùng measure hiện có và
+phải ghi rõ khi metric là exploratory thay vì certified.

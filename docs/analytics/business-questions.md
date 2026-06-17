@@ -9,6 +9,8 @@
 | BQ03 | Driver nào có revenue/hour thấp hoặc idle cao? | Peer comparison |
 | BQ04 | Vehicle nào hoạt động dưới mức thông thường? | Vehicle utilization |
 | BQ05 | Trường hợp nào cần kiểm tra? | DQ/anomaly queue |
+| BQ06 | Có thể phân nhóm driver theo hiệu suất để hỗ trợ điều phối/đào tạo không? | Driver segmentation |
+| BQ07 | Những pattern pickup/dropoff nào lặp lại theo khung giờ/khu vực? | Route association rules |
 
 ## Measures
 
@@ -32,7 +34,7 @@ Dashboard `NYC Green Taxi - Driver Operations` là một **operational monitorin
 dashboard**, không phải một báo cáo narrative dài. Layout theo phong cách light
 enterprise dashboard: KPI strip ở đầu tab, visual chính ở giữa, ranking/detail
 table ở cuối luồng điều tra. Trạng thái hiện tại được provision tự động trong
-Superset với 6 certified datasets, 51 metric instances, 32 charts và 4 tabs.
+Superset với 8 datasets, 76 metric instances, 37 charts và 5 tabs.
 
 1. **Operations Overview**
    - KPI cards: total revenue, total trips, active drivers, active vehicles,
@@ -74,3 +76,21 @@ Superset với 6 certified datasets, 51 metric instances, 32 charts và 4 tabs.
   fact.
 - `analytics.shift_trip_aggregate` chỉ là view kỹ thuật chống fan-out, không
   provision thành Superset dataset.
+
+## Planned OLAP and Data Mining extension
+
+Các dashboard hiện tại trả lời BQ01-BQ05 ở dạng operational monitoring và đã có
+thêm tab OLAP demo.
+
+- **ROLAP layer**: `analytics.olap_trip_cube` và
+  `analytics.olap_shift_cube` demo slice, dice, drill-down, roll-up và pivot
+  trực tiếp trên Superset. Chi tiết nằm ở [olap-plan.md](olap-plan.md).
+
+Phần mở rộng Data Mining vẫn ở trạng thái planned:
+
+- **Data Mining**: triển khai driver segmentation bằng K-Means và route/demand
+  association rules bằng Apriori hoặc FP-Growth. Chi tiết nằm ở
+  [data-mining-plan.md](data-mining-plan.md).
+
+Hai phần này phải phục vụ quyết định vận hành, không dùng để thay thế semantic
+contract hoặc certified metric catalog hiện có.

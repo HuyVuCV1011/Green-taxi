@@ -41,6 +41,8 @@ class SupersetDemoContractTests(unittest.TestCase):
             "dq_summary",
             "pareto_pickup_zone",
             "driver_performance_summary",
+            "olap_trip_cube",
+            "olap_shift_cube",
         ):
             self.assertIn(f'"{dataset}"', script)
         for metric in (
@@ -69,6 +71,12 @@ class SupersetDemoContractTests(unittest.TestCase):
         self.assertNotIn('"type": "MARKDOWN"', script)
         self.assertIn("Driver Performance Matrix", script)
         self.assertIn("Average Trip Distance by Borough", script)
+        self.assertIn("OLAP Slice - Monthly Pickup Borough Revenue", script)
+        self.assertIn("OLAP Dice - Month Borough Vehicle", script)
+        self.assertIn("OLAP Drill-down - Time Hierarchy", script)
+        self.assertIn("OLAP Roll-up - Zone to Borough Utilization", script)
+        self.assertIn("OLAP Pivot - Borough by Hour Bucket", script)
+        self.assertIn('"pivot_table_v2"', script)
         self.assertIn("#f4f6f8", script)
 
     def test_smoke_suite_checks_read_and_write_boundaries(self) -> None:
@@ -81,8 +89,10 @@ class SupersetDemoContractTests(unittest.TestCase):
         self.assertIn("dds.fact_driver_trip", smoke)
         self.assertIn("CREATE TABLE analytics._superset_write_probe", smoke)
         self.assertIn('"dq_summary"', smoke)
-        self.assertIn("Expected 32 dashboard charts", smoke)
-        self.assertIn("Expected 51 metric instances", smoke)
+        self.assertIn("Expected 37 dashboard charts", smoke)
+        self.assertIn("Expected 76 metric instances", smoke)
+        self.assertIn("Benchmark artifact is stale", smoke)
+        self.assertIn('"benchmark_is_current"', smoke)
         self.assertIn("if native_filters:", smoke)
 
     def test_warehouse_has_dashboard_shared_memory(self) -> None:

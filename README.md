@@ -16,6 +16,8 @@
 **[Architecture](docs/architecture/system-architecture.md)** ·
 **[Contracts](docs/contracts/source-data-contracts.md)** ·
 **[Metrics](docs/analytics/metric-catalog.md)** ·
+**[OLAP](docs/analytics/olap-plan.md)** ·
+**[Data Mining](docs/analytics/data-mining-plan.md)** ·
 **[Superset Demo](docs/analytics/superset-local-demo-runbook.md)** ·
 **[Evidence](docs/evidence/integration-review.md)**
 
@@ -58,6 +60,7 @@ Dispatch Shift và Trip Assignment để trả lời 5 nhóm câu hỏi nghiệp
 | Mức sử dụng phương tiện | Tần suất khai thác, trạng thái xe và phân bổ vendor |
 | Khu vực/thời gian | Pickup/dropoff zone, giờ cao điểm và phân bố hoạt động |
 | Chất lượng dữ liệu | DQ issue, quarantine, anomaly và reconciliation |
+| OLAP và mining | ROLAP slice/dice/drill-down, driver segmentation và route pattern mining |
 
 | Thuộc tính | Giá trị |
 |---|---|
@@ -67,6 +70,7 @@ Dispatch Shift và Trip Assignment để trả lời 5 nhóm câu hỏi nghiệp
 | Warehouse target | PostgreSQL `Staging -> DQ/Audit -> NDS -> DDS` |
 | Processing mode | Historical monthly batch; không dùng ODS, streaming hoặc CDC |
 | BI layer | Approved analytics views + Apache Superset local demo |
+| Planned analytics extension | PostgreSQL ROLAP views, K-Means driver segmentation, association rules |
 
 ---
 
@@ -81,7 +85,8 @@ Dispatch Shift và Trip Assignment để trả lời 5 nhóm câu hỏi nghiệp
 | DQ/Audit/Quarantine | `ERROR` bị quarantine; `WARN`/anomaly được giữ lineage để phân tích |
 | NDS + DDS | NDS chuẩn hóa tích hợp và DDS star schema cho Driver Operations |
 | Idempotency | Seed, staging, NDS, DDS và Superset provisioning chạy lại an toàn |
-| BI-ready analytics | 6 certified Superset datasets, 51 metric instances, 32 charts, read-only BI role và operational monitoring dashboard BQ01-BQ05 trên 4 tabs |
+| BI-ready analytics | 8 Superset datasets, 76 metric instances, 37 charts, read-only BI role, operational monitoring BQ01-BQ05 và OLAP demo tab |
+| Planned mining | Driver segmentation và route association rules phục vụ quyết định vận hành |
 
 ---
 
@@ -282,6 +287,8 @@ points chính.
 *   **[DQ/ETL spec](docs/warehouse/data-quality-etl-spec.md):** Rule execution, quarantine, inferred member và idempotency.
 *   **[Semantic contract](docs/analytics/semantic-contract.md):** Grain, roles, joins và analytics boundary.
 *   **[Metric catalog](docs/analytics/metric-catalog.md):** Công thức metric chuẩn cho Superset/SQL.
+*   **[OLAP plan](docs/analytics/olap-plan.md):** Kế hoạch ROLAP trên PostgreSQL + Superset cho slice, dice, drill-down, roll-up và pivot.
+*   **[Data Mining plan](docs/analytics/data-mining-plan.md):** Kế hoạch K-Means driver segmentation và association rules cho pattern tuyến/khu vực.
 *   **[Superset runbook](docs/analytics/superset-local-demo-runbook.md):** Dựng metadata DB, role read-only, dataset, metric, dashboard và smoke test.
 
 ---
@@ -304,10 +311,12 @@ points chính.
 - [x] Chạy full release với 19 TLC files và xác nhận reconciliation/idempotency.
 - [x] Khóa analytics semantic contract, certified metrics và analytics SQL views.
 - [x] Triển khai Superset local với metadata DB và warehouse role read-only.
-- [x] Provision 6 certified Superset datasets, 51 metric instances, 32 charts và operational monitoring dashboard BQ01-BQ05 trên 4 tabs.
+- [x] Provision 8 Superset datasets, 76 metric instances, 37 charts, operational monitoring dashboard BQ01-BQ05 và OLAP demo trên 5 tabs.
+- [x] Triển khai OLAP extension bằng PostgreSQL ROLAP views và Superset charts.
 - [x] Chạy health, permission, query, reconciliation và browser smoke tests.
 
 ### Next (Milestone 6)
+- [ ] Triển khai Data Mining extension gồm driver segmentation và route association rules nếu còn thời gian sau OLAP.
 - [ ] Hoàn thiện báo cáo học thuật, slide báo cáo và tài liệu hướng dẫn tái lập kết quả.
 
 ---

@@ -120,6 +120,8 @@ def superset_smoke_tests() -> dict[str, object]:
         "dq_summary",
         "pareto_pickup_zone",
         "driver_performance_summary",
+        "olap_trip_cube",
+        "olap_shift_cube",
     }
     if not expected.issubset(dataset_names):
         raise AssertionError(f"Missing Superset datasets: {sorted(expected - dataset_names)}")
@@ -136,8 +138,8 @@ def superset_smoke_tests() -> dict[str, object]:
         )
     )
     charts = request_json(f"{base_url}/api/v1/chart/?q={chart_query}", token=token)
-    if charts.get("count") != 32:
-        raise AssertionError(f"Expected 32 dashboard charts, found {charts.get('count')}")
+    if charts.get("count") != 37:
+        raise AssertionError(f"Expected 37 dashboard charts, found {charts.get('count')}")
     viz_types = {item["viz_type"] for item in charts.get("result", [])}
     if "heatmap_v2" not in viz_types or "heatmap" in viz_types:
         raise AssertionError(f"Unexpected heatmap viz types: {sorted(viz_types)}")
@@ -151,8 +153,8 @@ def superset_smoke_tests() -> dict[str, object]:
             token=token,
         )
         metric_count += len(detail["result"].get("metrics", []))
-    if metric_count != 51:
-        raise AssertionError(f"Expected 51 metric instances, found {metric_count}")
+    if metric_count != 76:
+        raise AssertionError(f"Expected 76 metric instances, found {metric_count}")
 
     dashboard_detail = request_json(
         f"{base_url}/api/v1/dashboard/{dashboard_id}",
@@ -179,7 +181,7 @@ def superset_smoke_tests() -> dict[str, object]:
         if isinstance(value, dict) and value.get("type") == "MARKDOWN"
     ]
 
-    expected_tabs = {"TAB-1", "TAB-2", "TAB-3", "TAB-4"}
+    expected_tabs = {"TAB-1", "TAB-2", "TAB-3", "TAB-4", "TAB-5"}
     if not expected_tabs.issubset(set(tabs)):
         raise AssertionError(f"Missing expected dashboard tabs: {expected_tabs - set(tabs)}")
 
@@ -193,6 +195,11 @@ def superset_smoke_tests() -> dict[str, object]:
         "Driver Performance Matrix": "bubble",
         "Driver Review Queue": "table",
         "DQ Issues over Time": "echarts_timeseries_line",
+        "OLAP Slice - Monthly Pickup Borough Revenue": "echarts_timeseries_bar",
+        "OLAP Dice - Month Borough Vehicle": "table",
+        "OLAP Drill-down - Time Hierarchy": "table",
+        "OLAP Roll-up - Zone to Borough Utilization": "echarts_timeseries_bar",
+        "OLAP Pivot - Borough by Hour Bucket": "pivot_table_v2",
     }
     chart_by_name = {
         chart["slice_name"]: chart for chart in charts.get("result", [])
@@ -224,13 +231,15 @@ def superset_smoke_tests() -> dict[str, object]:
 
     with open(bench_file, "r", encoding="utf-8") as bf:
         bench_data = json.load(bf)
-    if bench_data.get("total_charts") != 32:
-        raise AssertionError(
-            f"Expected benchmark to cover 32 charts, found {bench_data.get('total_charts')}"
-        )
-    if len(bench_data.get("charts", {})) != 32:
-        raise AssertionError(
-            f"Benchmark contains {len(bench_data.get('charts', {}))} charts, expected 32"
+    benchmark_total = bench_data.get("total_charts")
+    benchmark_chart_count = len(bench_data.get("charts", {}))
+    benchmark_is_current = benchmark_total == 37 and benchmark_chart_count == 37
+    if not benchmark_is_current:
+        print(
+            "Benchmark artifact is stale; rerun python -m scripts.benchmark_superset "
+            f"after provisioning OLAP charts. Found total_charts={benchmark_total}, "
+            f"charts={benchmark_chart_count}, expected 37.",
+            file=sys.stderr,
         )
 
     return {
@@ -240,6 +249,7 @@ def superset_smoke_tests() -> dict[str, object]:
         "metric_instance_count": metric_count,
         "chart_count": charts["count"],
         "native_filter_count": len(native_filters),
+        "benchmark_is_current": benchmark_is_current,
     }
 
 

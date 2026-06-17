@@ -48,3 +48,20 @@ Unknown/inferred được tính mặc định để giữ reconciliation.
 - `analytics.driver_performance_summary` là dataset đã aggregate một dòng mỗi
   driver; các metric `AVG(...)` trong dataset này chỉ dùng cho peer overview và
   review queue, không thay thế metric shift-grain certified.
+
+## Planned exploratory metrics
+
+Các metric dưới đây phục vụ OLAP/Data Mining extension và chưa certified cho đến
+khi có SQL/view implementation cùng reconciliation:
+
+| Metric | Planned source | Purpose |
+|---|---|---|
+| `tips_per_trip` | Driver segmentation dataset | Đo chất lượng/khả năng tạo tip theo driver |
+| `idle_minutes_per_shift` by segment | `analytics.driver_segments` | So sánh nhóm driver sau clustering |
+| `cluster_size` | `analytics.driver_segments` | Số driver trong từng segment |
+| `rule_support` | `analytics.route_association_rules` | Tần suất pattern tuyến/khu vực |
+| `rule_confidence` | `analytics.route_association_rules` | Xác suất consequent khi antecedent xuất hiện |
+| `rule_lift` | `analytics.route_association_rules` | Độ hữu ích so với tần suất nền |
+
+Exploratory metrics phải được gắn nhãn rõ trong Superset để không bị nhầm với
+certified KPI vận hành.

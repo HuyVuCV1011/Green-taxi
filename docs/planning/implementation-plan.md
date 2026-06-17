@@ -97,7 +97,7 @@ Status: `IMPLEMENTED AND SMOKE-TESTED`
 3. Superset datasets `trip_pickup`, `trip_dropoff`, `shift`, `dq_summary`,
    `pareto_pickup_zone` và `driver_performance_summary`.
 4. Certified metrics theo semantic contract.
-5. Operational monitoring dashboard BQ01-BQ05 với 32 charts trên 4 tabs:
+5. Operational monitoring dashboard BQ01-BQ05 với OLAP demo, 37 charts trên 5 tabs:
    Operations Overview, Demand Patterns, Driver & Fleet Performance, Data
    Quality & Anomalies.
 6. Health, API, permission, query và browser smoke tests.
@@ -118,9 +118,37 @@ boundary. `analytics.shift_trip_aggregate` là view kỹ thuật chống fan-out
 Chi tiết:
 [../analytics/superset-local-demo-runbook.md](../analytics/superset-local-demo-runbook.md).
 
+## Phase 5B - OLAP extension
+
+Status: `IMPLEMENTED; PENDING LIVE SUPERSET SMOKE AFTER PROVISION`
+
+- Tạo PostgreSQL ROLAP views `analytics.olap_trip_cube` và
+  `analytics.olap_shift_cube`.
+- Giữ đúng fact grain, không join trực tiếp trip fact và shift fact ở row level.
+- Bổ sung Superset datasets/charts để demo slice, dice, drill-down, roll-up và
+  pivot.
+- Reconcile các measure OLAP với certified metric catalog.
+
+Chi tiết: [../analytics/olap-plan.md](../analytics/olap-plan.md).
+
+## Phase 5C - Data Mining extension
+
+Status: `PLANNED`
+
+- Tạo dataset chuẩn cho driver-level hoặc driver-month features.
+- Chạy K-Means driver segmentation, đánh giá bằng centroid/silhouette và đặt
+  nhãn theo ý nghĩa nghiệp vụ.
+- Khai thác route/demand association rules bằng Apriori hoặc FP-Growth, đánh
+  giá bằng support, confidence và lift.
+- Xuất kết quả thành analytics tables/views để Superset trình bày.
+
+Chi tiết: [../analytics/data-mining-plan.md](../analytics/data-mining-plan.md).
+
 ## Phase 6 - Delivery
 
 - Báo cáo kiến trúc, source simulation, ETL, DQ, NDS/DDS và kết quả.
+- Bổ sung phần OLAP ROLAP; bổ sung Data Mining nếu Phase 5C được implement
+  trước ngày nộp.
 - Slide trình bày.
 - Demo script chạy sample và full pipeline.
 - Data dictionary và source-to-target mapping.
@@ -136,3 +164,5 @@ Chi tiết:
 - Seed, ingestion và warehouse reload đều idempotent.
 - Tests và reconciliation pass.
 - Dashboard trả lời đúng năm quyết định trong scope.
+- Nếu triển khai Phase 5B/5C, OLAP và Data Mining phải trả lời được quyết định
+  vận hành cụ thể, không chỉ trình diễn thuật toán.

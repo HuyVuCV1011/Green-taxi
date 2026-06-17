@@ -70,9 +70,9 @@ Mỗi dataset và metric chứa certification metadata:
 - Contract: `docs/analytics/semantic-contract.md`
 - Metric source: `docs/analytics/metric-catalog.md`
 
-Bootstrap idempotent tạo hoặc cập nhật 6 Superset datasets, 51 metric instances
-(trip metrics được khai báo riêng trên pickup/dropoff), 32 charts và 1
-operational monitoring dashboard gồm 4 tabs. `analytics.shift_trip_aggregate`
+Bootstrap idempotent tạo hoặc cập nhật 8 Superset datasets, 76 metric instances
+(trip metrics được khai báo riêng trên pickup/dropoff), 37 charts và 1
+operational monitoring dashboard gồm 5 tabs. `analytics.shift_trip_aggregate`
 là view kỹ thuật chống fan-out để giữ semantic contract; view này không được
 provision thành Superset dataset độc lập.
 
@@ -96,6 +96,8 @@ khi nâng image và xác nhận API tương thích bằng browser smoke test.
 5. Tab **Data Quality & Anomalies**: theo dõi DQ issues, quarantine, anomaly KPI,
    trend, severity/source breakdown và top rules. Không cộng DQ, quarantine,
    trip anomaly và shift anomaly thành một chỉ số chung.
+6. Tab **OLAP Demo**: dùng ROLAP views để minh họa slice, dice, drill-down,
+   roll-up và pivot trên Superset.
 
 Dashboard này ưu tiên tính reproducible và semantic correctness hơn dashboard
 design tùy biến thủ công. Mọi chart/layout đang nằm trong
@@ -124,7 +126,7 @@ Smoke suite xác nhận:
 
 - `/health` trả `OK`;
 - admin REST login thành công;
-- dashboard, 6 datasets, 51 metric instances và 32 charts tồn tại;
+- dashboard, 8 datasets, 76 metric instances và 37 charts tồn tại;
 - dashboard không provision native time filter bị lỗi trên Superset 6.1.0;
 - `superset_ro` query được approved analytics views;
 - pickup/dropoff count khớp;
@@ -190,7 +192,7 @@ nếu có dashboard edits local cần giữ.
 
 ## 9. Performance Benchmark
 
-Quy trình benchmark tự động đo đạc thời gian tải của 32 charts thuộc dashboard qua REST API v1.
+Quy trình benchmark tự động đo đạc thời gian tải của các charts thuộc dashboard qua REST API v1.
 
 ### 9.1. Lệnh thực hiện
 
@@ -205,9 +207,12 @@ Kết quả đo đạc chi tiết của từng lượt chạy được xuất ra
 
 ### 9.2. Tóm tắt kết quả đo đạc thực tế
 
-- **Tổng số charts kiểm thử**: 32 charts.
+- **Tổng số charts kiểm thử hiện có trong artifact**: 32 charts, trước khi thêm
+  tab OLAP.
 - **Trung bình các giá trị P95 của 32 charts**: `0.615` giây trong lần đo local
   ngày 16/06/2026. Đây không phải end-to-end dashboard P95.
+- Sau khi provision OLAP, cần chạy lại `python -m scripts.benchmark_superset`
+  để cập nhật artifact benchmark lên 37 charts.
 - **Charts chậm nhất (P95)**: `Active Drivers` (`1.833` giây) và
   `Active Vehicles` (`1.722` giây), do `COUNT(DISTINCT ...)` trên hơn
   2.3 triệu trip rows.

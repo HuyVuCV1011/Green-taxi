@@ -67,13 +67,34 @@ Status: `COMPLETED`
 
 - Certified KPI definitions.
 - Superset metadata DB và read-only warehouse connection.
-- 6 Superset datasets, 51 certified metric instances và dashboard theo
+- 8 Superset datasets, 76 metric instances và dashboard theo
   analytics contract.
 - Driver/shift peer comparison.
 - Business anomaly rules.
 - Health, permission, query và browser smoke tests.
 
-Deliverable: dashboard answering BQ01-BQ05.
+Deliverable: dashboard answering BQ01-BQ05 with OLAP demo tab.
+
+## Milestone 5B - OLAP extension
+
+Status: `IMPLEMENTED; PENDING LIVE SUPERSET SMOKE AFTER PROVISION`
+
+- PostgreSQL ROLAP views cho trip và shift.
+- Superset datasets/charts thể hiện slice, dice, drill-down, roll-up và pivot.
+- Reconciliation với certified metrics.
+
+Deliverable: OLAP demo trên Superset phục vụ phân tích đa chiều vận hành.
+
+## Milestone 5C - Data Mining extension
+
+Status: `PLANNED`
+
+- Driver feature dataset.
+- K-Means driver segmentation.
+- Route/demand association rules.
+- Superset views/charts cho segment và top rules.
+
+Deliverable: Data Mining outputs hỗ trợ điều phối/đào tạo dựa trên dữ liệu lịch sử.
 
 ## Milestone 6 - Submission
 
@@ -91,4 +112,6 @@ Deliverable: dashboard answering BQ01-BQ05.
 | Data release, source seeding and ingestion | Member A | Member B |
 | DQ, NDS and SQL | Member B | Member C |
 | DDS, dashboard and analytics | Member C | Member A |
+| OLAP ROLAP extension | Member C | Member B |
+| Data Mining extension | Member B | Member C |
 | Report/slide integration | Team lead | All |

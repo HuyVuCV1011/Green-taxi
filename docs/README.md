@@ -22,6 +22,8 @@ lịch sử phát triển.
 | Business questions | [analytics/business-questions.md](analytics/business-questions.md) |
 | Semantic model | [analytics/semantic-contract.md](analytics/semantic-contract.md) |
 | Metric formulas | [analytics/metric-catalog.md](analytics/metric-catalog.md) |
+| OLAP plan | [analytics/olap-plan.md](analytics/olap-plan.md) |
+| Data Mining plan | [analytics/data-mining-plan.md](analytics/data-mining-plan.md) |
 | Superset operation | [analytics/superset-local-demo-runbook.md](analytics/superset-local-demo-runbook.md) |
 | Full-release evidence | [evidence/full-release-reconciliation.md](evidence/full-release-reconciliation.md) và [evidence/integration-review.md](evidence/integration-review.md) |
 
@@ -35,7 +37,7 @@ historical/archive.
 |---|---|
 | Thành viên mới | `setup/local-reproducibility` -> `architecture/system-architecture` -> `contracts/source-data-contracts` -> `analytics/superset-local-demo-runbook` |
 | Data engineer | `architecture/system-architecture` -> `contracts/source-data-contracts` -> `contracts/source-to-target-mapping` -> `warehouse/physical-model` -> `warehouse/data-quality-etl-spec` -> `evidence/full-release-reconciliation` |
-| BI engineer | `context/scope` -> `analytics/business-questions` -> `analytics/semantic-contract` -> `analytics/metric-catalog` -> `analytics/superset-local-demo-runbook` |
+| BI/Analytics engineer | `context/scope` -> `analytics/business-questions` -> `analytics/semantic-contract` -> `analytics/metric-catalog` -> `analytics/olap-plan` -> `analytics/data-mining-plan` -> `analytics/superset-local-demo-runbook` |
 | Reviewer/giảng viên | `README.md` ở root -> `context/project-context` -> `context/scope` -> `architecture/system-architecture` -> `evidence/integration-review` -> `analytics/superset-local-demo-runbook` |
 
 ## Current Structure
@@ -48,7 +50,7 @@ docs/
 |-- architecture/   # System architecture
 |-- contracts/      # Source inventory, contracts, DQ overview, S2T mapping
 |-- warehouse/      # Physical model, staging, DQ/ETL, NDS/DDS, DDS dictionary
-|-- analytics/      # Business questions, semantic model, metrics, Superset
+|-- analytics/      # Business questions, semantic model, metrics, OLAP, Data Mining, Superset
 |-- evidence/       # Validation and integration evidence
 |-- planning/       # Implementation plan and work breakdown
 |-- decisions/      # Accepted Architecture Decision Records
@@ -75,7 +77,7 @@ chi tiết mới vào README nếu nội dung đó thuộc setup/runbook.
 | Architecture | [architecture/system-architecture.md](architecture/system-architecture.md), [decisions/](decisions/) |
 | Sources/contracts | [contracts/data-sources.md](contracts/data-sources.md), [contracts/source-data-contracts.md](contracts/source-data-contracts.md), [contracts/source-to-target-mapping.md](contracts/source-to-target-mapping.md) |
 | Warehouse/DQ | [contracts/data-quality-overview.md](contracts/data-quality-overview.md), [warehouse/physical-model.md](warehouse/physical-model.md), [warehouse/staging-load.md](warehouse/staging-load.md), [warehouse/data-quality-etl-spec.md](warehouse/data-quality-etl-spec.md), [warehouse/nds-dds-implementation.md](warehouse/nds-dds-implementation.md), [warehouse/dds-data-dictionary.md](warehouse/dds-data-dictionary.md) |
-| Analytics | [analytics/business-questions.md](analytics/business-questions.md), [analytics/semantic-contract.md](analytics/semantic-contract.md), [analytics/metric-catalog.md](analytics/metric-catalog.md), [analytics/requirements-traceability.md](analytics/requirements-traceability.md), [analytics/superset-local-demo-runbook.md](analytics/superset-local-demo-runbook.md) |
+| Analytics | [analytics/business-questions.md](analytics/business-questions.md), [analytics/semantic-contract.md](analytics/semantic-contract.md), [analytics/metric-catalog.md](analytics/metric-catalog.md), [analytics/requirements-traceability.md](analytics/requirements-traceability.md), [analytics/olap-plan.md](analytics/olap-plan.md), [analytics/data-mining-plan.md](analytics/data-mining-plan.md), [analytics/superset-local-demo-runbook.md](analytics/superset-local-demo-runbook.md) |
 
 ## Evidence And Planning
 
