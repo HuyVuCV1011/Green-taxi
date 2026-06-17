@@ -12,6 +12,34 @@ DROP VIEW IF EXISTS analytics.dq_summary CASCADE;
 DROP VIEW IF EXISTS analytics.pareto_pickup_zone CASCADE;
 DROP VIEW IF EXISTS analytics.driver_performance_summary CASCADE;
 
+-- Physical table for K-Means driver segments
+CREATE TABLE IF NOT EXISTS analytics.driver_segments (
+    driver_key VARCHAR(50) PRIMARY KEY,
+    driver_id VARCHAR(50),
+    driver_name VARCHAR(100),
+    completed_shifts INTEGER,
+    trips_per_shift NUMERIC(10, 2),
+    revenue_per_hour NUMERIC(10, 2),
+    utilization_rate NUMERIC(5, 4),
+    idle_minutes_per_shift NUMERIC(10, 2),
+    average_trip_distance NUMERIC(10, 2),
+    tips_per_trip NUMERIC(10, 2),
+    cluster_id INTEGER,
+    segment_label VARCHAR(50)
+);
+
+-- Physical table for Route Association Rules
+CREATE TABLE IF NOT EXISTS analytics.route_association_rules (
+    rule_id SERIAL PRIMARY KEY,
+    antecedent VARCHAR(500),
+    consequent VARCHAR(500),
+    support NUMERIC(8, 6),
+    confidence NUMERIC(8, 6),
+    lift NUMERIC(12, 6),
+    antecedent_support NUMERIC(8, 6),
+    consequent_support NUMERIC(8, 6)
+);
+
 -- Grain: one row per trip. Default temporal/location role: pickup.
 CREATE OR REPLACE VIEW analytics.trip_pickup AS
 SELECT

@@ -64,6 +64,36 @@ DATASETS = {
         "main_dttm_col": "shift_start",
         "description": "ROLAP shift cube view for utilization, idle time and revenue/hour demos.",
     },
+    "driver_segments": {
+        "main_dttm_col": None,
+        "description": "One row per driver segment from K-Means clustering.",
+    },
+    "route_association_rules": {
+        "main_dttm_col": None,
+        "description": "One row per route association rule from Apriori.",
+    },
+}
+
+DRIVER_SEGMENTS_METRICS = {
+    "driver_count": ("Số tài xế", "COUNT(driver_key)", ",d"),
+    "completed_shifts": ("Số ca hoàn tất", "SUM(completed_shifts)", ",d"),
+    "revenue_per_hour": ("Doanh thu mỗi giờ ca", "AVG(revenue_per_hour)", "$,.2f"),
+    "utilization_rate": ("Tỷ lệ sử dụng ca", "AVG(utilization_rate)", ".2%"),
+    "idle_minutes_per_shift": (
+        "Phút rảnh trung bình mỗi ca",
+        "AVG(idle_minutes_per_shift)",
+        ",.2f",
+    ),
+    "trips_per_shift": ("Số chuyến trung bình mỗi ca", "AVG(trips_per_shift)", ",.2f"),
+    "average_trip_distance": ("Quãng đường trung bình", "AVG(average_trip_distance)", ",.2f"),
+    "tips_per_trip": ("Tiền tip trung bình chuyến", "AVG(tips_per_trip)", "$,.2f"),
+}
+
+ROUTE_ASSOCIATION_RULES_METRICS = {
+    "rule_count": ("Số lượng luật", "COUNT(rule_id)", ",d"),
+    "rule_support": ("Độ hỗ trợ (Support)", "MAX(support)", ".4%"),
+    "rule_confidence": ("Độ tin cậy (Confidence)", "MAX(confidence)", ".2%"),
+    "rule_lift": ("Độ nâng (Lift)", "MAX(lift)", ",.4f"),
 }
 
 TRIP_METRICS = {
@@ -481,7 +511,7 @@ def dashboard_layout(charts_by_id: dict[str, Slice]) -> str:
         "TABS_ID": {
             "id": "TABS_ID",
             "type": "TABS",
-            "children": ["TAB-1", "TAB-2", "TAB-3", "TAB-4", "TAB-5"],
+            "children": ["TAB-1", "TAB-2", "TAB-3", "TAB-4", "TAB-5", "TAB-6"],
             "parents": ["ROOT_ID", "GRID_ID"],
         },
     }
@@ -512,6 +542,11 @@ def dashboard_layout(charts_by_id: dict[str, Slice]) -> str:
             ("TAB5-HIERARCHY", ["c_t5_drilldown", "c_t5_rollup"]),
             ("TAB5-PIVOT", ["c_t5_pivot"]),
         ],
+        "TAB-6": [
+            ("TAB6-KPI", ["c_dm_kpi_drivers", "c_dm_kpi_rules"]),
+            ("TAB6-DRIVER", ["c_dm_driver_scatter", "c_dm_driver_table"]),
+            ("TAB6-RULES", ["c_dm_rules_table"]),
+        ],
     }
     tab_titles = {
         "TAB-1": "Operations Overview",
@@ -519,6 +554,7 @@ def dashboard_layout(charts_by_id: dict[str, Slice]) -> str:
         "TAB-3": "Driver & Fleet Performance",
         "TAB-4": "Data Quality & Anomalies",
         "TAB-5": "OLAP Demo",
+        "TAB-6": "Data Mining Insights",
     }
 
     kpi_keys = {
@@ -528,7 +564,7 @@ def dashboard_layout(charts_by_id: dict[str, Slice]) -> str:
         if row_name.endswith("KPI")
         for key in keys
     }
-    wide_keys = {"c_t1_trend", "c_t2_heatmap", "c_t3_driver_scatter", "c_t4_dq_trend", "c_t5_pivot"}
+    wide_keys = {"c_t1_trend", "c_t2_heatmap", "c_t3_driver_scatter", "c_t4_dq_trend", "c_t5_pivot", "c_dm_driver_scatter", "c_dm_rules_table"}
 
     for tab_id, rows in tab_rows.items():
         layout[tab_id] = {
@@ -645,6 +681,8 @@ def main() -> None:
     )
     ensure_metrics(datasets["olap_trip_cube"], OLAP_TRIP_METRICS)
     ensure_metrics(datasets["olap_shift_cube"], OLAP_SHIFT_METRICS)
+    ensure_metrics(datasets["driver_segments"], DRIVER_SEGMENTS_METRICS)
+    ensure_metrics(datasets["route_association_rules"], ROUTE_ASSOCIATION_RULES_METRICS)
     db.session.flush()
 
     charts_spec = {
@@ -855,6 +893,32 @@ def main() -> None:
             "metrics": ["total_trips", "total_revenue"],
             "row_limit": 10000,
         }),
+
+        # Tab 6: Data Mining Insights
+        "c_dm_kpi_drivers": (datasets["driver_segments"], "Total Segmented Drivers", "big_number_total", {"metric": "driver_count", "y_axis_format": "SMART_NUMBER"}),
+        "c_dm_kpi_rules": (datasets["route_association_rules"], "Total Rules Found", "big_number_total", {"metric": "rule_count", "y_axis_format": "SMART_NUMBER"}),
+        "c_dm_driver_scatter": (datasets["driver_segments"], "Driver Segments Analysis", "bubble", {
+            "series": "segment_label",
+            "entity": "driver_name",
+            "x": "utilization_rate",
+            "y": "revenue_per_hour",
+            "size": "completed_shifts",
+            "row_limit": 1000,
+        }),
+        "c_dm_driver_table": (datasets["driver_segments"], "Driver Segments Profile", "table", {
+            "query_mode": "aggregate",
+            "groupby": ["segment_label"],
+            "metrics": ["driver_count", "completed_shifts", "revenue_per_hour", "utilization_rate", "idle_minutes_per_shift", "average_trip_distance", "tips_per_trip"],
+            "order_by_cols": [json.dumps(["revenue_per_hour", False])],
+        }),
+        "c_dm_rules_table": (datasets["route_association_rules"], "Top Route & Demand Association Rules", "table", {
+            "query_mode": "aggregate",
+            "groupby": ["antecedent", "consequent"],
+            "metrics": ["rule_support", "rule_confidence", "rule_lift"],
+            "order_by_cols": [json.dumps(["rule_lift", False])],
+            "page_length": 15,
+            "row_limit": 100,
+        }),
     }
 
     charts = {}
@@ -897,7 +961,7 @@ def main() -> None:
 
     dashboard.dashboard_title = "NYC Green Taxi - Driver Operations"
     dashboard.description = (
-        "Operational monitoring dashboard with OLAP demo views on PostgreSQL ROLAP."
+        "Operational monitoring dashboard with OLAP and Data Mining insights on PostgreSQL."
     )
     dashboard.certified_by = CERTIFIED_BY
     dashboard.certification_details = CERTIFICATION_DETAILS

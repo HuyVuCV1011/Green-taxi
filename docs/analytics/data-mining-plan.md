@@ -1,6 +1,6 @@
 # Data Mining Plan
 
-Status: `PLANNED`
+Status: `IMPLEMENTED`
 
 ## Business purpose
 
@@ -97,8 +97,28 @@ Business deployment:
 
 ## Acceptance criteria
 
-- Có notebook hoặc script reproducible cho từng bài toán.
-- Có bảng/view kết quả trong `analytics` hoặc schema kết quả được phê duyệt.
-- Có giải thích feature, thuật toán, tham số, metric đánh giá và giới hạn.
-- Kết quả hiển thị được trong Superset mà không query trực tiếp staging/NDS.
+- Có notebook hoặc script reproducible cho từng bài toán. (Đã có script `scripts/run_data_mining.py` và module `src/analytics/data_mining.py`)
+- Có bảng/view kết quả trong `analytics` hoặc schema kết quả được phê duyệt. (Bảng `analytics.driver_segments` và `analytics.route_association_rules`)
+- Có giải thích feature, thuật toán, tham số, metric đánh giá và giới hạn. (Xem chi tiết bên dưới)
+- Kết quả hiển thị được trong Superset mà không query trực tiếp staging/NDS. (Tab 6: Data Mining Insights trên Superset dashboard)
 - Kết luận gắn với quyết định vận hành cụ thể.
+
+## Implementation details
+
+### DM01 - Driver Segmentation (K-Means)
+- **Features used**: `revenue_per_hour`, `utilization_rate`, `trips_per_shift`, `average_trip_distance`, `tips_per_trip`, `idle_minutes_per_shift`, `completed_shifts`.
+- **Scaling**: StandardScaler được sử dụng để chuẩn hóa các thuộc tính trước khi clustering.
+- **Algorithm**: K-Means với \(k = 3\) cụm.
+- **Dynamic Labeling**: Thay vì hard-code nhãn, centroids thực tế của các cụm được so sánh trực tiếp sau khi huấn luyện:
+  - Cụm có `revenue_per_hour` trung bình cao nhất được gán nhãn `High productivity`.
+  - Cụm có `idle_minutes_per_shift` trung bình cao nhất trong các cụm còn lại được gán nhãn `High idle`.
+  - Cụm cuối cùng được gán nhãn `Average stable`.
+- **Database output**: Bảng `analytics.driver_segments` lưu thông tin tài xế kèm nhãn phân cụm nghiệp vụ.
+
+### DM02 - Route/Demand Association Rules (Apriori)
+- **Algorithm**: Thuật toán Apriori tự code bằng Python thuần để tránh thêm các dependencies bên ngoài.
+- **Parameters**: `min_support = 0.005`, `min_confidence = 0.2`, `min_lift = 1.1`.
+- **Item formatting**: Để đảm bảo tính nhân quả và giá trị vận hành thực tế, các luật được lọc sao cho:
+  - Antecedent chỉ chứa các điều kiện đón và thời gian (`pickup_borough`, `pickup_zone`, `hour_bucket`, `day_name`, `day_type`, `vendor`).
+  - Consequent chỉ chứa thông tin đến (`dropoff_borough`, `dropoff_zone`).
+- **Database output**: Bảng `analytics.route_association_rules` chứa 100 luật hàng đầu sắp xếp theo chỉ số Lift giảm dần.

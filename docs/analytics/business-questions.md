@@ -34,7 +34,7 @@ Dashboard `NYC Green Taxi - Driver Operations` là một **operational monitorin
 dashboard**, không phải một báo cáo narrative dài. Layout theo phong cách light
 enterprise dashboard: KPI strip ở đầu tab, visual chính ở giữa, ranking/detail
 table ở cuối luồng điều tra. Trạng thái hiện tại được provision tự động trong
-Superset với 8 datasets, 76 metric instances, 37 charts và 5 tabs.
+Superset với 10 datasets, 88 metric instances, 42 charts và 6 tabs.
 
 1. **Operations Overview**
    - KPI cards: total revenue, total trips, active drivers, active vehicles,
@@ -79,14 +79,12 @@ Superset với 8 datasets, 76 metric instances, 37 charts và 5 tabs.
 
 ## Planned OLAP and Data Mining extension
 
-Các dashboard hiện tại trả lời BQ01-BQ05 ở dạng operational monitoring và đã có
-thêm tab OLAP demo.
+Các dashboard hiện tại trả lời BQ01-BQ05 ở dạng operational monitoring, có tab
+OLAP demo và tab Data Mining Insights.
 
 - **ROLAP layer**: `analytics.olap_trip_cube` và
   `analytics.olap_shift_cube` demo slice, dice, drill-down, roll-up và pivot
   trực tiếp trên Superset. Chi tiết nằm ở [olap-plan.md](olap-plan.md).
-
-Phần mở rộng Data Mining vẫn ở trạng thái planned:
 
 - **Data Mining**: triển khai driver segmentation bằng K-Means và route/demand
   association rules bằng Apriori hoặc FP-Growth. Chi tiết nằm ở

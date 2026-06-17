@@ -70,7 +70,7 @@ Dispatch Shift và Trip Assignment để trả lời 5 nhóm câu hỏi nghiệp
 | Warehouse target | PostgreSQL `Staging -> DQ/Audit -> NDS -> DDS` |
 | Processing mode | Historical monthly batch; không dùng ODS, streaming hoặc CDC |
 | BI layer | Approved analytics views + Apache Superset local demo |
-| Planned analytics extension | PostgreSQL ROLAP views, K-Means driver segmentation, association rules |
+| Analytics extension | PostgreSQL ROLAP views, K-Means driver segmentation, association rules |
 
 ---
 
@@ -85,8 +85,8 @@ Dispatch Shift và Trip Assignment để trả lời 5 nhóm câu hỏi nghiệp
 | DQ/Audit/Quarantine | `ERROR` bị quarantine; `WARN`/anomaly được giữ lineage để phân tích |
 | NDS + DDS | NDS chuẩn hóa tích hợp và DDS star schema cho Driver Operations |
 | Idempotency | Seed, staging, NDS, DDS và Superset provisioning chạy lại an toàn |
-| BI-ready analytics | 8 Superset datasets, 76 metric instances, 37 charts, read-only BI role, operational monitoring BQ01-BQ05 và OLAP demo tab |
-| Planned mining | Driver segmentation và route association rules phục vụ quyết định vận hành |
+| BI-ready analytics | 10 Superset datasets, 88 metric instances, 42 charts, read-only BI role, operational monitoring, OLAP demo và Data Mining insights |
+| Data Mining | Driver segmentation và route association rules phục vụ quyết định vận hành |
 
 ---
 
@@ -311,12 +311,12 @@ points chính.
 - [x] Chạy full release với 19 TLC files và xác nhận reconciliation/idempotency.
 - [x] Khóa analytics semantic contract, certified metrics và analytics SQL views.
 - [x] Triển khai Superset local với metadata DB và warehouse role read-only.
-- [x] Provision 8 Superset datasets, 76 metric instances, 37 charts, operational monitoring dashboard BQ01-BQ05 và OLAP demo trên 5 tabs.
+- [x] Provision 10 Superset datasets, 88 metric instances, 42 charts, operational monitoring dashboard BQ01-BQ05, OLAP demo và Data Mining insights trên 6 tabs.
 - [x] Triển khai OLAP extension bằng PostgreSQL ROLAP views và Superset charts.
+- [x] Triển khai Data Mining extension gồm K-Means driver segmentation và Apriori route association rules.
 - [x] Chạy health, permission, query, reconciliation và browser smoke tests.
 
 ### Next (Milestone 6)
-- [ ] Triển khai Data Mining extension gồm driver segmentation và route association rules nếu còn thời gian sau OLAP.
 - [ ] Hoàn thiện báo cáo học thuật, slide báo cáo và tài liệu hướng dẫn tái lập kết quả.
 
 ---

@@ -67,13 +67,13 @@ Status: `COMPLETED`
 
 - Certified KPI definitions.
 - Superset metadata DB và read-only warehouse connection.
-- 8 Superset datasets, 76 metric instances và dashboard theo
+- 10 Superset datasets, 88 metric instances và dashboard theo
   analytics contract.
 - Driver/shift peer comparison.
 - Business anomaly rules.
 - Health, permission, query và browser smoke tests.
 
-Deliverable: dashboard answering BQ01-BQ05 with OLAP demo tab.
+Deliverable: dashboard answering BQ01-BQ05 with OLAP demo and Data Mining insights.
 
 ## Milestone 5B - OLAP extension
 
@@ -87,7 +87,7 @@ Deliverable: OLAP demo trên Superset phục vụ phân tích đa chiều vận 
 
 ## Milestone 5C - Data Mining extension
 
-Status: `PLANNED`
+Status: `IMPLEMENTED; PENDING LIVE SUPERSET BENCHMARK REFRESH`
 
 - Driver feature dataset.
 - K-Means driver segmentation.

@@ -18,6 +18,7 @@ DEFAULT_STEPS = [
     "load_nds",
     "load_dds",
     "reconciliation",
+    "data_mining",
     "mark_dds_ready",
 ]
 
@@ -174,6 +175,7 @@ class PipelineRunner:
             "load_nds": _load_nds,
             "load_dds": _load_dds,
             "reconciliation": _reconciliation,
+            "data_mining": _data_mining,
             "mark_dds_ready": _mark_dds_ready,
         }
 
@@ -324,3 +326,21 @@ def _mark_dds_ready(runner: PipelineRunner, batch_id: str) -> dict[str, int]:
     # Contract-only marker. Readiness is represented by the orchestration result,
     # not by adding new warehouse schema objects.
     return {"rows_read": 0, "loaded": 1, "rejected": 0}
+
+
+def _data_mining(runner: PipelineRunner, batch_id: str) -> dict[str, int]:
+    from src.analytics.data_mining import execute_data_mining
+    from src.warehouse.dds_loader import DDSLoader
+
+    analytics_sql_path = Path(__file__).resolve().parents[2] / "sql" / "analytics" / "01_certified_datasets.sql"
+    loader = DDSLoader(release_id=runner.release_id)
+    try:
+        conn = loader.connect_warehouse()
+        with conn.cursor() as cur:
+            cur.execute(analytics_sql_path.read_text(encoding="utf-8"))
+        conn.commit()
+        counts = execute_data_mining(conn)
+        conn.commit()
+        return counts
+    finally:
+        loader.close_all()

@@ -70,9 +70,9 @@ Mỗi dataset và metric chứa certification metadata:
 - Contract: `docs/analytics/semantic-contract.md`
 - Metric source: `docs/analytics/metric-catalog.md`
 
-Bootstrap idempotent tạo hoặc cập nhật 8 Superset datasets, 76 metric instances
-(trip metrics được khai báo riêng trên pickup/dropoff), 37 charts và 1
-operational monitoring dashboard gồm 5 tabs. `analytics.shift_trip_aggregate`
+Bootstrap idempotent tạo hoặc cập nhật 10 Superset datasets, 88 metric instances
+(trip metrics được khai báo riêng trên pickup/dropoff), 42 charts và 1
+operational monitoring dashboard gồm 6 tabs. `analytics.shift_trip_aggregate`
 là view kỹ thuật chống fan-out để giữ semantic contract; view này không được
 provision thành Superset dataset độc lập.
 
@@ -98,6 +98,8 @@ khi nâng image và xác nhận API tương thích bằng browser smoke test.
    trip anomaly và shift anomaly thành một chỉ số chung.
 6. Tab **OLAP Demo**: dùng ROLAP views để minh họa slice, dice, drill-down,
    roll-up và pivot trên Superset.
+7. Tab **Data Mining Insights**: xem driver segments, segment profile và top
+   route association rules theo lift.
 
 Dashboard này ưu tiên tính reproducible và semantic correctness hơn dashboard
 design tùy biến thủ công. Mọi chart/layout đang nằm trong
@@ -126,7 +128,7 @@ Smoke suite xác nhận:
 
 - `/health` trả `OK`;
 - admin REST login thành công;
-- dashboard, 8 datasets, 76 metric instances và 37 charts tồn tại;
+- dashboard, 10 datasets, 88 metric instances và 42 charts tồn tại;
 - dashboard không provision native time filter bị lỗi trên Superset 6.1.0;
 - `superset_ro` query được approved analytics views;
 - pickup/dropoff count khớp;
@@ -211,8 +213,8 @@ Kết quả đo đạc chi tiết của từng lượt chạy được xuất ra
   tab OLAP.
 - **Trung bình các giá trị P95 của 32 charts**: `0.615` giây trong lần đo local
   ngày 16/06/2026. Đây không phải end-to-end dashboard P95.
-- Sau khi provision OLAP, cần chạy lại `python -m scripts.benchmark_superset`
-  để cập nhật artifact benchmark lên 37 charts.
+- Sau khi provision Data Mining, cần chạy lại `python -m scripts.benchmark_superset`
+  để cập nhật artifact benchmark lên 42 charts.
 - **Charts chậm nhất (P95)**: `Active Drivers` (`1.833` giây) và
   `Active Vehicles` (`1.722` giây), do `COUNT(DISTINCT ...)` trên hơn
   2.3 triệu trip rows.

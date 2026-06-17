@@ -43,6 +43,8 @@ class SupersetDemoContractTests(unittest.TestCase):
             "driver_performance_summary",
             "olap_trip_cube",
             "olap_shift_cube",
+            "driver_segments",
+            "route_association_rules",
         ):
             self.assertIn(f'"{dataset}"', script)
         for metric in (
@@ -76,6 +78,11 @@ class SupersetDemoContractTests(unittest.TestCase):
         self.assertIn("OLAP Drill-down - Time Hierarchy", script)
         self.assertIn("OLAP Roll-up - Zone to Borough Utilization", script)
         self.assertIn("OLAP Pivot - Borough by Hour Bucket", script)
+        self.assertIn("Total Segmented Drivers", script)
+        self.assertIn("Total Rules Found", script)
+        self.assertIn("Driver Segments Analysis", script)
+        self.assertIn("Driver Segments Profile", script)
+        self.assertIn("Top Route & Demand Association Rules", script)
         self.assertIn('"pivot_table_v2"', script)
         self.assertIn("#f4f6f8", script)
 
@@ -89,8 +96,8 @@ class SupersetDemoContractTests(unittest.TestCase):
         self.assertIn("dds.fact_driver_trip", smoke)
         self.assertIn("CREATE TABLE analytics._superset_write_probe", smoke)
         self.assertIn('"dq_summary"', smoke)
-        self.assertIn("Expected 37 dashboard charts", smoke)
-        self.assertIn("Expected 76 metric instances", smoke)
+        self.assertIn("Expected 42 dashboard charts", smoke)
+        self.assertIn("Expected 88 metric instances", smoke)
         self.assertIn("Benchmark artifact is stale", smoke)
         self.assertIn('"benchmark_is_current"', smoke)
         self.assertIn("if native_filters:", smoke)

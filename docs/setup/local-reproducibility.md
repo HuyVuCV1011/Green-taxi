@@ -110,6 +110,7 @@ python scripts/load_staging.py --release-id green-taxi-full-v1 --source all
 python scripts/load_nds.py --release-id green-taxi-full-v1
 python scripts/load_dds.py --release-id green-taxi-full-v1
 python scripts/validate_warehouse_pipeline.py --release-id green-taxi-full-v1
+python -m scripts.run_data_mining --release-id green-taxi-full-v1
 ```
 
 Expected full-release evidence:
@@ -146,8 +147,8 @@ python -m scripts.smoke_test_superset
 python -m unittest discover -s tests -v
 ```
 
-Smoke test xác nhận health, REST login, 8 datasets, 76 metric instances,
-37 charts, dashboard, analytics queries, native time filter lỗi không được
+Smoke test xác nhận health, REST login, 10 datasets, 88 metric instances,
+42 charts, dashboard, analytics queries, native time filter lỗi không được
 provision trên Superset 6.1.0 và BI login bị từ chối khi đọc DDS hoặc thử ghi
 dữ liệu.
 

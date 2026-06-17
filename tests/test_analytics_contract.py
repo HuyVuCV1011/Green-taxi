@@ -35,6 +35,13 @@ class AnalyticsContractTests(unittest.TestCase):
         ):
             self.assertIn(f"CREATE OR REPLACE VIEW {view_name}", self.sql)
 
+    def test_data_mining_tables_are_declared(self) -> None:
+        for table_name in (
+            "analytics.driver_segments",
+            "analytics.route_association_rules",
+        ):
+            self.assertIn(f"CREATE TABLE IF NOT EXISTS {table_name}", self.sql)
+
     def test_new_time_dimensions_are_exposed(self) -> None:
         self.assertIn("pickup_hour", self.sql.lower())
         self.assertIn("pickup_day_of_week", self.sql.lower())

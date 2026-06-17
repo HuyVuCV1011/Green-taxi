@@ -154,8 +154,7 @@ DQ dataset để giám sát thay vì suy diễn.
 
 ## 10. Analytical extensions
 
-Các extension OLAP đã được triển khai trong schema `analytics`; Data Mining vẫn
-ở trạng thái `PLANNED`:
+Các extension OLAP và Data Mining đã được triển khai trong schema `analytics`:
 
 - `analytics.olap_trip_cube`: ROLAP dataset cho trip analysis với time,
   pickup/dropoff location, driver, vehicle và vendor dimensions.

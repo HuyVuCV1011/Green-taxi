@@ -5,4 +5,5 @@ steps:
   - load_nds
   - load_dds
   - reconciliation
+  - data_mining
   - mark_dds_ready

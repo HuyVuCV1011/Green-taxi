@@ -97,7 +97,8 @@ Status: `IMPLEMENTED AND SMOKE-TESTED`
 3. Superset datasets `trip_pickup`, `trip_dropoff`, `shift`, `dq_summary`,
    `pareto_pickup_zone` và `driver_performance_summary`.
 4. Certified metrics theo semantic contract.
-5. Operational monitoring dashboard BQ01-BQ05 với OLAP demo, 37 charts trên 5 tabs:
+5. Operational monitoring dashboard BQ01-BQ05 với OLAP demo và Data Mining
+   insights, 42 charts trên 6 tabs:
    Operations Overview, Demand Patterns, Driver & Fleet Performance, Data
    Quality & Anomalies.
 6. Health, API, permission, query và browser smoke tests.
@@ -133,7 +134,7 @@ Chi tiết: [../analytics/olap-plan.md](../analytics/olap-plan.md).
 
 ## Phase 5C - Data Mining extension
 
-Status: `PLANNED`
+Status: `IMPLEMENTED; PENDING LIVE SUPERSET BENCHMARK REFRESH`
 
 - Tạo dataset chuẩn cho driver-level hoặc driver-month features.
 - Chạy K-Means driver segmentation, đánh giá bằng centroid/silhouette và đặt
@@ -147,8 +148,7 @@ Chi tiết: [../analytics/data-mining-plan.md](../analytics/data-mining-plan.md)
 ## Phase 6 - Delivery
 
 - Báo cáo kiến trúc, source simulation, ETL, DQ, NDS/DDS và kết quả.
-- Bổ sung phần OLAP ROLAP; bổ sung Data Mining nếu Phase 5C được implement
-  trước ngày nộp.
+- Bổ sung phần OLAP ROLAP và Data Mining vào báo cáo/slide.
 - Slide trình bày.
 - Demo script chạy sample và full pipeline.
 - Data dictionary và source-to-target mapping.
