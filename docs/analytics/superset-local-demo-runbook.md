@@ -209,14 +209,14 @@ Kết quả đo đạc chi tiết của từng lượt chạy được xuất ra
 
 ### 9.2. Tóm tắt kết quả đo đạc thực tế
 
-- **Tổng số charts kiểm thử hiện có trong artifact**: 32 charts, trước khi thêm
-  tab OLAP.
-- **Trung bình các giá trị P95 của 32 charts**: `0.615` giây trong lần đo local
-  ngày 16/06/2026. Đây không phải end-to-end dashboard P95.
-- Sau khi provision Data Mining, cần chạy lại `python -m scripts.benchmark_superset`
-  để cập nhật artifact benchmark lên 42 charts.
-- **Charts chậm nhất (P95)**: `Active Drivers` (`1.833` giây) và
-  `Active Vehicles` (`1.722` giây), do `COUNT(DISTINCT ...)` trên hơn
-  2.3 triệu trip rows.
+- **Dashboard hiện tại sau provision**: 10 datasets, 88 metric instances,
+  42 charts và 6 tabs.
+- **Artifact benchmark hiện có**: đã refresh ngày 18/06/2026 với đủ 42 charts.
+- **Trung bình các giá trị P95 của 42 charts**: `0.660` giây trong lần đo local.
+  Đây không phải end-to-end dashboard P95.
+- **Chart chậm nhất (P95)**: `OLAP Drill-down - Time Hierarchy` (`3.469` giây).
+- **Các KPI distinct chậm nhất kế tiếp**: `Active Vehicles` (`1.770` giây) và
+  `Active Drivers` (`1.756` giây), do `COUNT(DISTINCT ...)` trên hơn 2.3 triệu
+  trip rows.
 - **Các charts còn lại**: P95 khoảng `0.15` đến `0.90` giây trong môi trường đo.
   Kết quả phụ thuộc máy local, cache và tải đồng thời.

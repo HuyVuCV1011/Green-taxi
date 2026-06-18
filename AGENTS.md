@@ -104,8 +104,9 @@ archive/       Nội dung cũ chỉ dùng tham khảo
 - Nếu bổ sung `src/quality/`, `src/analytics/` hoặc `src/common/`, chỉ tạo khi có
   logic dùng lại thật sự và cập nhật `src/README.md` cùng tests liên quan.
 - `sql/warehouse/`, `sql/source_mysql_hr/`, `sql/source_postgres_dispatch/` và
-  `sql/analytics/` là các thư mục SQL có artifact thực thi hiện tại; `sql/ddl/`,
-  `sql/transformations/` và `sql/tests/` là placeholder reserved cho phần mở rộng.
+  `sql/analytics/` là các thư mục SQL có artifact thực thi hiện tại. Không giữ
+  thư mục placeholder rỗng; chỉ tạo thư mục SQL mới khi có artifact và README
+  hoặc test tương ứng.
 - Không nhúng logic nghiệp vụ quan trọng chỉ trong notebook hoặc BI tool nếu có
   thể biểu diễn và kiểm thử ở SQL/Python.
 

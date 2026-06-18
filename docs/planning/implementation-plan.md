@@ -98,9 +98,9 @@ Status: `IMPLEMENTED AND SMOKE-TESTED`
    `pareto_pickup_zone` và `driver_performance_summary`.
 4. Certified metrics theo semantic contract.
 5. Operational monitoring dashboard BQ01-BQ05 với OLAP demo và Data Mining
-   insights, 42 charts trên 6 tabs:
-   Operations Overview, Demand Patterns, Driver & Fleet Performance, Data
-   Quality & Anomalies.
+   insights, 42 charts trên 6 tabs: Operations Overview, Demand Patterns,
+   Driver & Fleet Performance, Data Quality & Anomalies, OLAP Demo và Data
+   Mining Insights.
 6. Health, API, permission, query và browser smoke tests.
 
 Measures:
@@ -139,7 +139,7 @@ Status: `IMPLEMENTED; PENDING LIVE SUPERSET BENCHMARK REFRESH`
 - Tạo dataset chuẩn cho driver-level hoặc driver-month features.
 - Chạy K-Means driver segmentation, đánh giá bằng centroid/silhouette và đặt
   nhãn theo ý nghĩa nghiệp vụ.
-- Khai thác route/demand association rules bằng Apriori hoặc FP-Growth, đánh
+- Khai thác route/demand association rules bằng Apriori, đánh
   giá bằng support, confidence và lift.
 - Xuất kết quả thành analytics tables/views để Superset trình bày.
 

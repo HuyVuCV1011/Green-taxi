@@ -23,7 +23,7 @@ Base commit: `720a60beeddddece58d3efde7d3810942f958140`
 - Business timestamps là local wall-clock time `America/New_York` và dùng
   `TIMESTAMP WITHOUT TIME ZONE`. Audit timestamps là UTC và dùng `TIMESTAMPTZ`.
   Đây là contract đã triển khai trong DDL/loader, không phải assumption.
-- Planned ROLAP views và Data Mining outputs phải nằm trong schema `analytics`
+- ROLAP views và Data Mining outputs phải nằm trong schema `analytics`
   hoặc một schema kết quả được phê duyệt, chỉ đọc từ DDS/approved views và giữ
   đúng grain. Chúng không được query trực tiếp `staging`/`nds` để phục vụ
   dashboard.
@@ -160,8 +160,8 @@ Các extension OLAP và Data Mining đã được triển khai trong schema `ana
   pickup/dropoff location, driver, vehicle và vendor dimensions.
 - `analytics.olap_shift_cube`: ROLAP dataset cho shift analysis với time,
   driver, vehicle, vendor, utilization và idle/revenue measures.
-- `analytics.driver_segments`: kết quả K-Means driver segmentation, grain dự
-  kiến là một dòng mỗi driver hoặc driver-month.
+- `analytics.driver_segments`: kết quả K-Means driver segmentation, grain là
+  một dòng mỗi driver hoặc driver-month theo feature set được xuất.
 - `analytics.route_association_rules`: kết quả association rules cho
   pickup/dropoff/time patterns, gồm `support`, `confidence` và `lift`.
 

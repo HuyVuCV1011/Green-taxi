@@ -49,11 +49,12 @@ Unknown/inferred được tính mặc định để giữ reconciliation.
   driver; các metric `AVG(...)` trong dataset này chỉ dùng cho peer overview và
   review queue, không thay thế metric shift-grain certified.
 
-## Implemented and Planned exploratory metrics
+## Implemented exploratory metrics
 
-Các metric dưới đây phục vụ OLAP/Data Mining extension. Các metrics liên quan đến Data Mining đã được triển khai (IMPLEMENTED) sau khi tích hợp K-Means và Apriori:
+Các metric dưới đây phục vụ OLAP/Data Mining extension. Các metrics liên quan
+đến Data Mining đã được triển khai sau khi tích hợp K-Means và Apriori:
 
-| Metric | Planned source | Purpose |
+| Metric | Source | Purpose |
 |---|---|---|
 | `tips_per_trip` | Driver segmentation dataset | Đo chất lượng/khả năng tạo tip theo driver |
 | `idle_minutes_per_shift` by segment | `analytics.driver_segments` | So sánh nhóm driver sau clustering |

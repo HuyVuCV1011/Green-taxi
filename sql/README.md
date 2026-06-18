@@ -2,12 +2,9 @@
 
 ```text
 sql/
-|-- ddl/             # Placeholder reserved; DDL thực thi hiện nằm trong warehouse/
 |-- warehouse/       # PostgreSQL warehouse schemas, audit, staging, DQ, NDS, DDS
 |-- source_mysql_hr/ # MySQL Driver HR source DDL
 |-- source_postgres_dispatch/ # PostgreSQL Dispatch/Assignment source DDL
-|-- transformations/ # Placeholder reserved cho SQL chuyển đổi tách riêng
-|-- tests/           # Placeholder reserved cho SQL assertions
 `-- analytics/       # Query phục vụ dashboard/report
 ```
 
@@ -21,3 +18,7 @@ python scripts\apply_warehouse_ddl.py --mode docker
 ```
 
 Xem chi tiết trong `docs/warehouse/physical-model.md`.
+
+SQL assertions hiện được kiểm tra qua Python contract tests trong `tests/`
+thay vì một thư mục `sql/tests/` rỗng. Khi bổ sung SQL test thực thi riêng, tạo
+thư mục đó cùng README mô tả command chạy và expected result.

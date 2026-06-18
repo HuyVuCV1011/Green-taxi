@@ -475,9 +475,11 @@ def ensure_chart(
             if orderby_list:
                 query_obj["orderby"] = orderby_list
     elif viz_type == "pivot_table_v2":
+        row_columns = params.get("groupbyRows", [])
+        column_columns = params.get("groupbyColumns", [])
         query_obj["metrics"] = params.get("metrics", [])
-        query_obj["columns"] = params.get("groupbyColumns", [])
-        query_obj["series_columns"] = params.get("groupbyRows", [])
+        query_obj["columns"] = row_columns + column_columns
+        query_obj["series_columns"] = row_columns
     elif viz_type in ("echarts_timeseries_line", "echarts_timeseries_bar"):
         query_obj["metrics"] = params.get("metrics", [])
         if "granularity_sqla" in params:

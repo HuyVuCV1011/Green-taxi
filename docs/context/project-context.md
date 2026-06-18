@@ -31,6 +31,7 @@ Data Sources -> Staging -> ODS -> DQ/Audit -> NDS -> DDS -> BI/OLAP/Mining
 - Superset local demo đã triển khai với metadata PostgreSQL riêng, warehouse
   role read-only, 10 datasets, 88 metric instances, 42 charts, operational
   monitoring dashboard BQ01-BQ05, OLAP demo và Data Mining insights trên 6 tabs.
+  Benchmark artifact đã được refresh đủ 42 charts ngày 18/06/2026.
 - OLAP đã triển khai bằng PostgreSQL ROLAP views + Superset. Data Mining đã
   triển khai bằng K-Means driver segmentation và association rules cho pattern
   pickup/dropoff theo thời gian/khu vực.
@@ -42,6 +43,6 @@ Data Sources -> Staging -> ODS -> DQ/Audit -> NDS -> DDS -> BI/OLAP/Mining
 ## Việc cần làm tiếp theo
 
 1. Hoàn thiện báo cáo học thuật và slide.
-2. Chạy lại live Superset benchmark sau khi metadata DB được provision.
+2. Kiểm tra bằng mắt 6 tabs Superset sau mỗi lần đổi chart/layout.
 3. Chốt demo recording và contribution evidence.
 4. Giữ pipeline/Superset reproducible bằng onboarding, runbook và smoke tests.

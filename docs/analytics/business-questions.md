@@ -77,7 +77,7 @@ Superset với 10 datasets, 88 metric instances, 42 charts và 6 tabs.
 - `analytics.shift_trip_aggregate` chỉ là view kỹ thuật chống fan-out, không
   provision thành Superset dataset.
 
-## Planned OLAP and Data Mining extension
+## Implemented OLAP and Data Mining extension
 
 Các dashboard hiện tại trả lời BQ01-BQ05 ở dạng operational monitoring, có tab
 OLAP demo và tab Data Mining Insights.
@@ -87,7 +87,7 @@ OLAP demo và tab Data Mining Insights.
   trực tiếp trên Superset. Chi tiết nằm ở [olap-plan.md](olap-plan.md).
 
 - **Data Mining**: triển khai driver segmentation bằng K-Means và route/demand
-  association rules bằng Apriori hoặc FP-Growth. Chi tiết nằm ở
+  association rules bằng Apriori. Chi tiết nằm ở
   [data-mining-plan.md](data-mining-plan.md).
 
 Hai phần này phải phục vụ quyết định vận hành, không dùng để thay thế semantic

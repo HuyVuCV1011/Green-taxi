@@ -11,7 +11,7 @@ Status: Accepted
 - PostgreSQL warehouse riêng cho Staging, DQ/Audit, NDS và DDS.
 - TLC trips và lookup được ingest từ file batch CSV/Parquet.
 - SQL cho transformation và reconciliation.
-- Power BI hoặc Apache Superset cho dashboard.
+- Apache Superset cho dashboard local trên approved PostgreSQL analytics views.
 - GitHub cho code/docs; raw data không lưu trong Git.
 - Google Drive cho canonical full-data release của nhóm.
 - Docker Compose cho môi trường local có thể tái tạo.
@@ -32,3 +32,5 @@ trong khi các công nghệ đó tăng chi phí triển khai nhưng chưa có us
 - Thành viên phải tải cùng data release trước khi chạy full environment.
 - Sample tests vẫn phải chạy được mà không cần tất cả containers.
 - Downstream DQ/NDS/DDS không phụ thuộc trực tiếp vào source connector.
+- Scope hiện tại dùng PostgreSQL ROLAP + Superset; không dùng Power BI, MDX
+  hoặc MOLAP cube vật lý.

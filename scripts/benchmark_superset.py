@@ -108,6 +108,7 @@ def main() -> int:
 
     # 4. Perform Benchmark
     results = {}
+    failed_charts = []
     total_charts = len(charts)
 
     print("\nStarting benchmark execution (2 warm-ups + 20 runs per chart)...")
@@ -172,8 +173,16 @@ def main() -> int:
             print(f"{idx:<4} | {disp_name:<45} | {min_t:<8.3f} | {avg_t:<8.3f} | {p95_t:<8.3f}")
         else:
             print(f"{idx:<4} | {chart_name[:45]:<45} | Failed to complete 20 runs.")
+            failed_charts.append(chart_name)
 
     # 5. Summarize and Write Output
+    if failed_charts:
+        print("\nBenchmark failed; some charts did not complete all runs:", file=sys.stderr)
+        for chart_name in failed_charts:
+            print(f"  - {chart_name}", file=sys.stderr)
+        print("Existing benchmark artifact was left unchanged.", file=sys.stderr)
+        return 1
+
     if results:
         overall_p95 = sum(r["p95"] for r in results.values()) / len(results)
         max_p95_chart = max(results.keys(), key=lambda k: results[k]["p95"])

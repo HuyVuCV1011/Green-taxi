@@ -2,7 +2,7 @@
 
 Date: 2026-06-14
 
-Status: `PASS - PIPELINE AND SUPERSET LOCAL DEMO VALIDATED`
+Status: `PASS - PIPELINE AND SUPERSET LOCAL DEMO VALIDATED; DOCS UPDATED FOR OLAP/DATA MINING`
 
 Superset runtime evidence hiện hành:
 [../analytics/superset-local-demo-runbook.md](../analytics/superset-local-demo-runbook.md).
@@ -80,23 +80,27 @@ business-state deltas were zero and successful batch history was retained.
   `psycopg2-binary==2.9.11`.
 - BI login chỉ có quyền trên approved `analytics` views; quyền đọc DDS trực tiếp
   và quyền ghi đều bị smoke test từ chối.
-- Sáu datasets, 51 certified metric instances, 32 charts và monitoring dashboard BQ01-BQ05 trên 4 tabs được provision tự động và idempotent.
+- Superset hiện được bootstrap với 10 datasets, 88 metric instances, 42 charts
+  và dashboard BQ01-BQ05, OLAP demo, Data Mining insights trên 6 tabs.
 - Mỗi chart đều được cấu hình tự động sinh `query_context` giúp REST API v1 truy vấn trực tiếp thành công.
-- Benchmark local ghi nhận trung bình các giá trị P95 của 32 charts là
-  `0.615` giây; đây không phải end-to-end dashboard P95. Dữ liệu chi tiết nằm
-  tại `deliverables/benchmark/superset_benchmark_results.json`.
+- Artifact benchmark hiện có tại
+  `deliverables/benchmark/superset_benchmark_results.json` đã được refresh đủ
+  42 charts ngày 18/06/2026, với trung bình các giá trị P95 là `0.660` giây.
+  Chart chậm nhất là `OLAP Drill-down - Time Hierarchy` với P95 `3.469` giây.
 
 ## Validation and security
 
 - Python compile: pass cho Superset setup/provision/smoke scripts.
-- Unit tests: 136 pass.
+- Unit tests: 138 pass trong lần review ngày 18/06/2026.
 - Main Docker Compose config: pass; four services healthy.
 - Full clean warehouse validation: 14/14 checks pass.
 - Superset Compose config: pass.
 - Superset app và metadata DB: healthy.
 - Superset runtime/API login/dashboard/dataset smoke tests: pass.
+- Superset benchmark artifact: refreshed đủ 42 charts.
 - Read-only analytics query và write-denial tests: pass.
-- Browser walkthrough: 4 tabs render hoàn chỉnh, không có Data/Network error
-  hoặc loading treo.
+- Browser walkthrough cũ chỉ bao phủ dashboard trước extension, không có
+  Data/Network error hoặc loading treo. Cần kiểm tra lại bằng mắt đủ 6 tabs sau
+  khi Superset local được start lại.
 - `.env`, `.env.superset`, raw/full data, database files và volumes remain ignored.
 - No secret, database dump, full data or metadata database was added to Git.

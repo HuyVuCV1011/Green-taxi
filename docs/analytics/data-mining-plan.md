@@ -54,7 +54,7 @@ Business deployment:
 | Item | Decision |
 |---|---|
 | Business question | Những pattern pickup/dropoff theo thời gian nào lặp lại đủ mạnh để hỗ trợ bố trí xe? |
-| Method | Association rules, ưu tiên Apriori hoặc FP-Growth |
+| Method | Association rules bằng Apriori |
 | Learning type | Unsupervised |
 | Input grain | Một basket theo trip hoặc zone-hour bucket |
 | Output | `analytics.route_association_rules` hoặc bảng kết quả tương đương |
