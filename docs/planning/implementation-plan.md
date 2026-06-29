@@ -121,7 +121,7 @@ Chi tiết:
 
 ## Phase 5B - OLAP extension
 
-Status: `IMPLEMENTED; PENDING LIVE SUPERSET SMOKE AFTER PROVISION`
+Status: `IMPLEMENTED AND SMOKE-TESTED`
 
 - Tạo PostgreSQL ROLAP views `analytics.olap_trip_cube` và
   `analytics.olap_shift_cube`.
@@ -129,12 +129,13 @@ Status: `IMPLEMENTED; PENDING LIVE SUPERSET SMOKE AFTER PROVISION`
 - Bổ sung Superset datasets/charts để demo slice, dice, drill-down, roll-up và
   pivot.
 - Reconcile các measure OLAP với certified metric catalog.
+- Smoke tests xác nhận dashboard/datasets/charts sau provisioning.
 
 Chi tiết: [../analytics/olap-plan.md](../analytics/olap-plan.md).
 
 ## Phase 5C - Data Mining extension
 
-Status: `IMPLEMENTED; PENDING LIVE SUPERSET BENCHMARK REFRESH`
+Status: `IMPLEMENTED AND BENCHMARKED`
 
 - Tạo dataset chuẩn cho driver-level hoặc driver-month features.
 - Chạy K-Means driver segmentation, đánh giá bằng centroid/silhouette và đặt
@@ -142,6 +143,8 @@ Status: `IMPLEMENTED; PENDING LIVE SUPERSET BENCHMARK REFRESH`
 - Khai thác route/demand association rules bằng Apriori, đánh
   giá bằng support, confidence và lift.
 - Xuất kết quả thành analytics tables/views để Superset trình bày.
+- Benchmark artifact đã refresh đủ 42 charts sau khi Data Mining Insights được
+  provision vào dashboard.
 
 Chi tiết: [../analytics/data-mining-plan.md](../analytics/data-mining-plan.md).
 

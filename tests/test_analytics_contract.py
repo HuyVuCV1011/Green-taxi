@@ -46,8 +46,11 @@ class AnalyticsContractTests(unittest.TestCase):
         self.assertIn("pickup_hour", self.sql.lower())
         self.assertIn("pickup_day_of_week", self.sql.lower())
         self.assertIn("pickup_day_name", self.sql.lower())
+        self.assertIn("pickup_weekday_label", self.sql.lower())
+        self.assertIn("dropoff_weekday_label", self.sql.lower())
         self.assertIn("shift_start_hour", self.sql.lower())
         self.assertIn("shift_start_day_name", self.sql.lower())
+        self.assertIn("shift_start_weekday_label", self.sql.lower())
 
     def test_sql_is_read_only_and_explicit(self) -> None:
         self.assertNotRegex(self.sql.upper(), r"\bSELECT\s+\*")

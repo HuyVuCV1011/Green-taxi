@@ -133,6 +133,28 @@ backup/reload policy. `DDS Ready` chỉ hợp lệ với run thực `SUCCEEDED` 
 `mark_dds_ready` cũng `SUCCEEDED`. Dry-run trả status `DRY_RUN` và exit code
 `0`, nhưng không thực thi handler hoặc ghi dữ liệu.
 
+## Analytics extensions
+
+Sau khi DDS và analytics views đã sẵn sàng, chạy Data Mining outputs:
+
+```powershell
+python scripts/run_data_mining.py
+```
+
+Script ghi `analytics.driver_segments` và
+`analytics.route_association_rules`, sau đó Superset provisioning sẽ hiển thị
+các kết quả này trong tab **Data Mining Insights**.
+
+Benchmark Superset sau khi đổi chart/layout:
+
+```powershell
+python -m scripts.benchmark_superset
+```
+
+Kết quả được ghi vào
+`deliverables/benchmark/superset_benchmark_results.json`. Chỉ refresh benchmark
+khi Superset local đã được provision với dashboard mới nhất.
+
 ## Superset local demo
 
 Luồng setup end-to-end chỉ được duy trì tại

@@ -83,14 +83,40 @@ chối request đó và làm filter hiển thị `Network error`. Dashboard vì 
 chart vẫn được khai báo trong chart contract. Chỉ bật lại native time filter sau
 khi nâng image và xác nhận API tương thích bằng browser smoke test.
 
-## 4. Dashboard demo flow
+## 4. Dashboard review and improvement log
+
+Đánh giá hiện tại: dashboard đã bao phủ BQ01-BQ05, OLAP và Data Mining trên 6
+tabs, dùng đúng certified datasets và không phá semantic grain. Các điểm cần ưu
+tiên khi cải thiện là khả năng đọc nhanh theo câu hỏi nghiệp vụ, thứ tự thời
+gian trên chart category, và hiệu năng của các chart distinct-count/OLAP nặng.
+
+Đã cải thiện trong provisioning script:
+
+- Thêm `CHART_DESCRIPTIONS` để mỗi chart ghi rõ BQ/OLAP/DM mà chart phục vụ.
+- Dùng các nhãn `*_weekday_label` có tiền tố thứ tự trong analytics views cho
+  weekday bar chart và weekday-hour heatmap, tránh Superset sắp xếp thứ theo
+  chữ cái hoặc theo metric.
+- Giữ nguyên số lượng chart/dataset/metric để dashboard vẫn tương thích smoke
+  tests và benchmark artifact hiện có.
+
+Backlog cải thiện an toàn:
+
+- Bật native time filter sau khi nâng Superset image và browser smoke test xác
+  nhận không còn lỗi `/api/v1/time_range/`.
+- Nếu demo chạy chậm trên máy yếu, cân nhắc materialized summary cho
+  `Active Drivers`, `Active Vehicles` và `OLAP Drill-down - Time Hierarchy`.
+- Nếu cần đi sâu BQ01 hơn, bổ sung thêm view hoặc chart zone-hour theo top pickup
+  zones rồi refresh benchmark đủ 42+ charts sau khi provision.
+
+## 5. Dashboard demo flow
 
 1. Mở dashboard và chỉ badge certified/published.
 2. Tab **Operations Overview**: đọc KPI strip, monthly trend, pickup borough,
-   top zone và weekday profile để nắm trạng thái toàn hệ thống trong một màn.
-3. Tab **Demand Patterns**: dùng heatmap weekday/hour, hourly profile, zone
-   concentration và pickup/dropoff borough charts để theo dõi nhu cầu theo thời
-   gian và địa lý.
+   top zone và ordered weekday profile để nắm trạng thái toàn hệ thống trong
+   một màn.
+3. Tab **Demand Patterns**: dùng heatmap weekday/hour đã có thứ tự ngày, hourly
+   profile, zone concentration và pickup/dropoff borough charts để theo dõi nhu
+   cầu theo thời gian và địa lý.
 4. Tab **Driver & Fleet Performance**: dùng driver matrix, driver review queue,
    vehicle type và vehicle detail để ưu tiên điều phối/đào tạo.
 5. Tab **Data Quality & Anomalies**: theo dõi DQ issues, quarantine, anomaly KPI,
@@ -116,7 +142,7 @@ Số expected của full release:
 | Active drivers | `795` |
 | Shift utilization | khoảng `69,26%` |
 
-## 5. Acceptance tests
+## 6. Acceptance tests
 
 ```powershell
 docker compose --env-file .env.superset -f docker-compose.superset.yml ps --all
@@ -135,7 +161,7 @@ Smoke suite xác nhận:
 - truy cập trực tiếp DDS bị từ chối;
 - `CREATE TABLE` và `INSERT` qua BI login bị từ chối.
 
-## 6. Daily operation
+## 7. Daily operation
 
 Start:
 
@@ -156,7 +182,7 @@ Reapply semantic metadata sau khi đổi metric/chart code:
 docker compose --env-file .env.superset -f docker-compose.superset.yml up -d --force-recreate superset_init superset_app
 ```
 
-## 7. Reset and backup
+## 8. Reset and backup
 
 Reset toàn bộ Superset metadata local:
 
@@ -184,7 +210,7 @@ trình xóa metadata volume và bootstrap lại để admin password, metadata D
 password, warehouse role password và Superset secret key đồng bộ. Backup trước
 nếu có dashboard edits local cần giữ.
 
-## 8. Known boundaries
+## 9. Known boundaries
 
 - Đây là local synchronous demo: không có Redis, Celery, alerts hoặc reports.
 - `TALISMAN_ENABLED=False` chỉ phù hợp local HTTP demo.
@@ -192,11 +218,11 @@ nếu có dashboard edits local cần giữ.
 - Dashboard chỉ dùng approved analytics views. Tab 4 kết hợp business anomaly
   từ trip/shift với DQ summary, nhưng không join DQ events vào business facts.
 
-## 9. Performance Benchmark
+## 10. Performance Benchmark
 
 Quy trình benchmark tự động đo đạc thời gian tải của các charts thuộc dashboard qua REST API v1.
 
-### 9.1. Lệnh thực hiện
+### 10.1. Lệnh thực hiện
 
 Chạy script benchmark (chạy tối thiểu 20 lần cho mỗi chart sau 2 lần warm-up):
 
@@ -207,7 +233,7 @@ python -m scripts.benchmark_superset
 Kết quả đo đạc chi tiết của từng lượt chạy được xuất ra file JSON:
 [superset_benchmark_results.json](../../deliverables/benchmark/superset_benchmark_results.json)
 
-### 9.2. Tóm tắt kết quả đo đạc thực tế
+### 10.2. Tóm tắt kết quả đo đạc thực tế
 
 - **Dashboard hiện tại sau provision**: 10 datasets, 88 metric instances,
   42 charts và 6 tabs.

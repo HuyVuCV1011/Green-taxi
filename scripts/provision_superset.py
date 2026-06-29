@@ -96,6 +96,51 @@ ROUTE_ASSOCIATION_RULES_METRICS = {
     "rule_lift": ("Độ nâng (Lift)", "MAX(lift)", ",.4f"),
 }
 
+CHART_DESCRIPTIONS = {
+    "c_t1_kpi_rev": "Executive KPI for total Green Taxi payment amount in the selected analytical context.",
+    "c_t1_kpi_trips": "Executive KPI for accepted trip activity; reconciles to DDS trip count.",
+    "c_t1_kpi_drv": "Executive KPI for drivers with fact activity, not current HR headcount.",
+    "c_t1_kpi_veh": "Executive KPI for vehicles with fact activity, not fleet master status.",
+    "c_t1_kpi_util": "Executive KPI for ratio-of-sums shift utilization across completed shifts.",
+    "c_t1_trend": "BQ01 overview trend showing monthly demand and revenue movement.",
+    "c_t1_borough": "BQ01 pickup borough ranking for capacity planning.",
+    "c_t1_zones": "BQ01 top pickup zones by trip volume.",
+    "c_t1_weekday": "BQ01 weekday profile using ordered weekday labels from the analytics view.",
+    "c_t2_heatmap": "BQ01 demand heatmap by ordered weekday label and pickup hour.",
+    "c_t2_hourly": "BQ01 hourly demand profile for shift staffing windows.",
+    "c_t2_zone_trips": "BQ01 Pareto-style pickup zone concentration table.",
+    "c_t2_zone_revenue": "BQ01 pickup zones ranked by total revenue.",
+    "c_t2_pickup_borough": "BQ01 pickup-side borough volume comparison.",
+    "c_t2_dropoff_borough": "BQ01 dropoff-side borough volume comparison through the explicit dropoff dataset.",
+    "c_t2_distance_borough": "BQ01 average trip distance by pickup borough.",
+    "c_t3_kpi_shifts": "BQ02 completed shift count.",
+    "c_t3_kpi_rev_hour": "BQ02 revenue per scheduled shift hour using the certified denominator.",
+    "c_t3_kpi_trips_shift": "BQ02 trips per completed shift.",
+    "c_t3_kpi_util": "BQ02 shift utilization using ratio-of-sums.",
+    "c_t3_driver_scatter": "BQ03 peer matrix comparing driver utilization, revenue/hour and completed shifts.",
+    "c_t3_driver_ranking": "BQ03 review queue driven by the certified needs_review rule.",
+    "c_t3_vehicle_type": "BQ04 vehicle-type comparison for utilization and trips per shift.",
+    "c_t3_vehicle_table": "BQ04 vehicle detail table sorted for under-utilization review.",
+    "c_t4_kpi_dq": "BQ05 data-quality issue KPI at the DQ boundary.",
+    "c_t4_kpi_quarantine": "BQ05 quarantined record KPI; not added to DQ issue count.",
+    "c_t4_kpi_trip_anomaly": "BQ05 trip-grain business anomaly KPI.",
+    "c_t4_kpi_shift_anomaly": "BQ05 shift-grain business anomaly KPI.",
+    "c_t4_dq_trend": "BQ05 daily DQ and quarantine monitoring trend.",
+    "c_t4_dq_severity": "BQ05 DQ severity breakdown.",
+    "c_t4_dq_source": "BQ05 DQ issue distribution by source system and severity.",
+    "c_t4_dq_rules": "BQ05 top DQ rules for investigation.",
+    "c_t5_slice": "OLAP01 slice example using a fixed pickup month.",
+    "c_t5_dice": "OLAP01 dice example across month, borough and vehicle type.",
+    "c_t5_drilldown": "OLAP01 drill-down example across pickup year, month, day and hour.",
+    "c_t5_rollup": "OLAP01 roll-up example from shift zone context to borough.",
+    "c_t5_pivot": "OLAP01 pivot example for borough by pickup hour bucket.",
+    "c_dm_kpi_drivers": "DM01 number of drivers included in segmentation output.",
+    "c_dm_kpi_rules": "DM02 number of route and demand association rules found.",
+    "c_dm_driver_scatter": "DM01 driver segmentation scatter for coaching and dispatch support.",
+    "c_dm_driver_table": "DM01 segment profile table for operational interpretation.",
+    "c_dm_rules_table": "DM02 top route and demand association rules ranked by lift.",
+}
+
 TRIP_METRICS = {
     "total_trips": ("Tổng số chuyến", "COUNT(trip_id)", ",d"),
     "total_revenue": ("Tổng doanh thu", "COALESCE(SUM(total_amount), 0)", "$,.2f"),
@@ -413,6 +458,7 @@ def ensure_chart(
     dataset: SqlaTable,
     name: str,
     viz_type: str,
+    description: str | None = None,
     **params: object,
 ) -> Slice:
     chart = db.session.query(Slice).filter_by(slice_name=name).one_or_none()
@@ -424,7 +470,7 @@ def ensure_chart(
     chart.datasource_name = f"analytics.{dataset.table_name}"
     chart.viz_type = viz_type
     chart.params = chart_params(dataset, viz_type, **params)
-    chart.description = f"Green Taxi certified chart using analytics.{dataset.table_name}."
+    chart.description = description or f"Green Taxi certified chart using analytics.{dataset.table_name}."
     chart.certified_by = CERTIFIED_BY
     chart.certification_details = CERTIFICATION_DETAILS
     chart.owners = [admin]
@@ -710,14 +756,14 @@ def main() -> None:
             "orientation": "horizontal", "row_limit": 10, "sort_series_type": "sum", "order_desc": True,
         }),
         "c_t1_weekday": (datasets["trip_pickup"], "Trips by Weekday", "echarts_timeseries_bar", {
-            "x_axis": "pickup_day_name", "groupby": [], "metrics": ["total_trips"],
-            "sort_series_type": "sum", "order_desc": False,
+            "x_axis": "pickup_weekday_label", "groupby": [], "metrics": ["total_trips"],
+            "sort_series_type": "name", "order_desc": False,
         }),
 
         # Tab 2: Demand Patterns
         "c_t2_heatmap": (datasets["trip_pickup"], "Demand by Weekday & Hour", "heatmap_v2", {
             "x_axis": "pickup_hour",
-            "groupby": "pickup_day_name",
+            "groupby": "pickup_weekday_label",
             "metric": "total_trips",
             "linear_color_scheme": "schemeGreen",
         }),
@@ -925,7 +971,14 @@ def main() -> None:
 
     charts = {}
     for key, (dataset, name, viz_type, params) in charts_spec.items():
-        charts[key] = ensure_chart(admin, dataset, name, viz_type, **params)
+        charts[key] = ensure_chart(
+            admin,
+            dataset,
+            name,
+            viz_type,
+            description=CHART_DESCRIPTIONS.get(key),
+            **params,
+        )
     db.session.flush()
 
     # Retrieve existing slices of this dashboard and remove those not in our list

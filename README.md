@@ -217,10 +217,12 @@ của lệnh lấy login. Vận hành và demo dashboard:
 [Superset Local Demo Runbook](docs/analytics/superset-local-demo-runbook.md).
 
 Dashboard hiện tại là bản **operational monitoring** được bootstrap tự động từ
-code, tập trung vào KPI strip, trend, heatmap, ranking/detail table và DQ/anomaly
-queue. Nếu cần chỉnh layout/chart thủ công trong Superset UI, hãy đưa thay đổi
-ngược lại vào `scripts/provision_superset.py` trước khi reset metadata để tránh
-mất chỉnh sửa local.
+code, tập trung vào KPI strip, trend, ordered weekday/hour heatmap,
+ranking/detail table và DQ/anomaly queue. Mỗi chart có mô tả gắn với
+BQ/OLAP/Data Mining tương ứng trong Superset metadata. Nếu cần chỉnh layout/chart
+thủ công trong Superset UI, hãy đưa thay đổi ngược lại vào
+`scripts/provision_superset.py` trước khi reset metadata để tránh mất chỉnh sửa
+local.
 
 <a id="docker-services"></a>
 

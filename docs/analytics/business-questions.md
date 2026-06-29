@@ -40,10 +40,10 @@ Superset với 10 datasets, 88 metric instances, 42 charts và 6 tabs.
    - KPI cards: total revenue, total trips, active drivers, active vehicles,
      overall shift utilization.
    - Monthly revenue/trip trend.
-   - Pickup borough ranking, top pickup zones và weekday profile.
+   - Pickup borough ranking, top pickup zones và ordered weekday profile.
 
 2. **Demand Patterns**
-   - Weekday x hour heatmap.
+   - Ordered weekday x hour heatmap để tránh đọc sai thứ tự ngày trong tuần.
    - Hourly demand profile.
    - Zone concentration table với cumulative trip percentage.
    - Top pickup zones by revenue.
@@ -67,6 +67,9 @@ Superset với 10 datasets, 88 metric instances, 42 charts và 6 tabs.
 
 - `analytics.trip_pickup` và `analytics.trip_dropoff` tách riêng pickup/dropoff
   date-location role để tránh ambiguity trong BI tool.
+- `pickup_weekday_label`, `dropoff_weekday_label` và
+  `shift_start_weekday_label` dùng nhãn có tiền tố thứ tự để các chart weekday
+  hiển thị theo thứ tự vận hành thay vì thứ tự chữ cái.
 - `analytics.shift` giữ shift-grain metrics; không join trực tiếp trip và shift
   ở row level.
 - `analytics.pareto_pickup_zone` và `analytics.driver_performance_summary` là

@@ -77,22 +77,24 @@ Deliverable: dashboard answering BQ01-BQ05 with OLAP demo and Data Mining insigh
 
 ## Milestone 5B - OLAP extension
 
-Status: `IMPLEMENTED; PENDING LIVE SUPERSET SMOKE AFTER PROVISION`
+Status: `IMPLEMENTED AND SMOKE-TESTED`
 
 - PostgreSQL ROLAP views cho trip và shift.
 - Superset datasets/charts thể hiện slice, dice, drill-down, roll-up và pivot.
 - Reconciliation với certified metrics.
+- Superset smoke test và benchmark artifact đã bao phủ đủ dashboard 6 tabs.
 
 Deliverable: OLAP demo trên Superset phục vụ phân tích đa chiều vận hành.
 
 ## Milestone 5C - Data Mining extension
 
-Status: `IMPLEMENTED; PENDING LIVE SUPERSET BENCHMARK REFRESH`
+Status: `IMPLEMENTED AND BENCHMARKED`
 
 - Driver feature dataset.
 - K-Means driver segmentation.
 - Route/demand association rules.
 - Superset views/charts cho segment và top rules.
+- Benchmark artifact đã refresh đủ 42 charts sau khi thêm Data Mining tab.
 
 Deliverable: Data Mining outputs hỗ trợ điều phối/đào tạo dựa trên dữ liệu lịch sử.
 
