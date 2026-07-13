@@ -48,13 +48,30 @@ DATASETS = {
         "main_dttm_col": "event_date_utc",
         "description": "One row per UTC date/batch/release/source/rule/severity/event type.",
     },
+    "dq_batch_summary": {
+        "main_dttm_col": "batch_completed_at",
+        "description": "One row per ETL batch; exposes batch status, row reconciliation and latest-batch context.",
+    },
     "pareto_pickup_zone": {
         "main_dttm_col": None,
         "description": "One row per pickup zone; pre-calculated cumulative contribution metrics.",
     },
+    "top_pickup_zone_hour": {
+        "main_dttm_col": None,
+        "description": "One row per top-12 pickup zone and pickup hour for a complete 12 by 24 demand heatmap.",
+    },
     "driver_performance_summary": {
         "main_dttm_col": None,
         "description": "One row per driver with peer percentiles and an explicit review rule.",
+    },
+    "driver_performance_monthly": {
+        "main_dttm_col": "reporting_month",
+        "description": "One row per driver and reporting month; ratios use additive shift components.",
+    },
+    "vehicle_performance_monthly": {
+        "main_dttm_col": "reporting_month",
+        "description": "One row per vehicle and reporting month; peer-review flag is a provisional triage signal.",
+        "certified": False,
     },
     "olap_trip_cube": {
         "main_dttm_col": "pickup_datetime",
@@ -67,18 +84,20 @@ DATASETS = {
     "driver_segments": {
         "main_dttm_col": None,
         "description": "One row per driver segment from K-Means clustering.",
+        "certified": False,
     },
     "route_association_rules": {
         "main_dttm_col": None,
         "description": "One row per route association rule from Apriori.",
+        "certified": False,
     },
 }
 
 DRIVER_SEGMENTS_METRICS = {
     "driver_count": ("Số tài xế", "COUNT(driver_key)", ",d"),
     "completed_shifts": ("Số ca hoàn tất", "SUM(completed_shifts)", ",d"),
-    "revenue_per_hour": ("Doanh thu mỗi giờ ca", "AVG(revenue_per_hour)", "$,.2f"),
-    "utilization_rate": ("Tỷ lệ sử dụng ca", "AVG(utilization_rate)", ".2%"),
+    "avg_driver_revenue_per_hour": ("Doanh thu mỗi giờ ca (thăm dò)", "AVG(revenue_per_hour)", "$,.2f"),
+    "avg_driver_utilization_rate": ("Tỷ lệ sử dụng ca (thăm dò)", "AVG(utilization_rate)", ".2%"),
     "idle_minutes_per_shift": (
         "Phút rảnh trung bình mỗi ca",
         "AVG(idle_minutes_per_shift)",
@@ -90,10 +109,36 @@ DRIVER_SEGMENTS_METRICS = {
 }
 
 ROUTE_ASSOCIATION_RULES_METRICS = {
-    "rule_count": ("Số lượng luật", "COUNT(rule_id)", ",d"),
+    "published_rule_count": ("Số luật đã công bố", "COUNT(rule_id)", ",d"),
     "rule_support": ("Độ hỗ trợ (Support)", "MAX(support)", ".4%"),
     "rule_confidence": ("Độ tin cậy (Confidence)", "MAX(confidence)", ".2%"),
     "rule_lift": ("Độ nâng (Lift)", "MAX(lift)", ",.4f"),
+}
+
+DQ_BATCH_METRICS = {
+    "run_recency_rank": ("Thứ tự lần chạy", "MIN(batch_recency_rank)", ",d"),
+    "dq_issue_count": ("Tổng số lỗi DQ", "COALESCE(SUM(dq_issue_count), 0)", ",d"),
+    "quarantine_count": ("Số dòng bị cách ly", "COALESCE(SUM(quarantine_count), 0)", ",d"),
+    "rows_loaded": ("Số dòng đã nạp", "COALESCE(SUM(row_count_loaded), 0)", ",d"),
+    "batch_count": ("Số batch", "COUNT(batch_id)", ",d"),
+}
+
+DRIVER_MONTHLY_METRICS = {
+    "completed_shifts": ("Số ca hoàn tất", "SUM(completed_shifts)", ",d"),
+    "revenue_per_hour": ("Doanh thu mỗi giờ ca", "SUM(total_revenue) * 60 / NULLIF(SUM(shift_duration_minutes), 0)", "$,.2f"),
+    "utilization_rate": ("Tỷ lệ sử dụng ca", "SUM(occupied_minutes) / NULLIF(SUM(shift_duration_minutes), 0)", ".2%"),
+    "idle_minutes_per_shift": ("Phút rảnh trung bình mỗi ca", "SUM(idle_minutes) / NULLIF(SUM(completed_shifts), 0)", ",.2f"),
+    "trips_per_shift": ("Số chuyến trung bình mỗi ca", "SUM(total_trips)::numeric / NULLIF(SUM(completed_shifts), 0)", ",.2f"),
+    "revenue_per_hour_percentile": ("Phân vị doanh thu mỗi giờ", "AVG(revenue_per_hour_percentile)", ".1%"),
+    "review_driver_count": ("Số tài xế cần xem xét", "COUNT(*) FILTER (WHERE needs_review)", ",d"),
+}
+
+VEHICLE_MONTHLY_METRICS = {
+    "completed_shifts": ("Số ca hoàn tất", "SUM(completed_shifts)", ",d"),
+    "revenue_per_hour": ("Doanh thu mỗi giờ ca", "SUM(total_revenue) * 60 / NULLIF(SUM(shift_duration_minutes), 0)", "$,.2f"),
+    "utilization_rate": ("Tỷ lệ sử dụng ca", "SUM(occupied_minutes) / NULLIF(SUM(shift_duration_minutes), 0)", ".2%"),
+    "utilization_percentile": ("Phân vị sử dụng xe", "AVG(utilization_percentile)", ".1%"),
+    "review_vehicle_count": ("Số xe cần xem xét", "COUNT(*) FILTER (WHERE is_review_candidate)", ",d"),
 }
 
 CHART_DESCRIPTIONS = {
@@ -102,43 +147,128 @@ CHART_DESCRIPTIONS = {
     "c_t1_kpi_drv": "Executive KPI for drivers with fact activity, not current HR headcount.",
     "c_t1_kpi_veh": "Executive KPI for vehicles with fact activity, not fleet master status.",
     "c_t1_kpi_util": "Executive KPI for ratio-of-sums shift utilization across completed shifts.",
-    "c_t1_trend": "BQ01 overview trend showing monthly demand and revenue movement.",
+    "c_t1_trend": "BQ01 monthly revenue trend. Trip volume is intentionally separated to avoid a mixed-unit axis.",
+    "c_t1_trip_trend": "BQ01 monthly observed-trip trend aligned with, but visually separated from, total payment revenue.",
     "c_t1_borough": "BQ01 pickup borough ranking for capacity planning.",
-    "c_t1_zones": "BQ01 top pickup zones by trip volume.",
-    "c_t1_weekday": "BQ01 weekday profile using ordered weekday labels from the analytics view.",
     "c_t2_heatmap": "BQ01 demand heatmap by ordered weekday label and pickup hour.",
+    "c_t2_zone_hour": "BQ01 primary output: observed trips by pickup zone and pickup hour; served demand is not unmet demand.",
     "c_t2_hourly": "BQ01 hourly demand profile for shift staffing windows.",
     "c_t2_zone_trips": "BQ01 Pareto-style pickup zone concentration table.",
-    "c_t2_zone_revenue": "BQ01 pickup zones ranked by total revenue.",
-    "c_t2_pickup_borough": "BQ01 pickup-side borough volume comparison.",
-    "c_t2_dropoff_borough": "BQ01 dropoff-side borough volume comparison through the explicit dropoff dataset.",
-    "c_t2_distance_borough": "BQ01 average trip distance by pickup borough.",
-    "c_t3_kpi_shifts": "BQ02 completed shift count.",
-    "c_t3_kpi_rev_hour": "BQ02 revenue per scheduled shift hour using the certified denominator.",
-    "c_t3_kpi_trips_shift": "BQ02 trips per completed shift.",
-    "c_t3_kpi_util": "BQ02 shift utilization using ratio-of-sums.",
-    "c_t3_driver_scatter": "BQ03 peer matrix comparing driver utilization, revenue/hour and completed shifts.",
-    "c_t3_driver_ranking": "BQ03 review queue driven by the certified needs_review rule.",
-    "c_t3_vehicle_type": "BQ04 vehicle-type comparison for utilization and trips per shift.",
-    "c_t3_vehicle_table": "BQ04 vehicle detail table sorted for under-utilization review.",
-    "c_t4_kpi_dq": "BQ05 data-quality issue KPI at the DQ boundary.",
-    "c_t4_kpi_quarantine": "BQ05 quarantined record KPI; not added to DQ issue count.",
-    "c_t4_kpi_trip_anomaly": "BQ05 trip-grain business anomaly KPI.",
-    "c_t4_kpi_shift_anomaly": "BQ05 shift-grain business anomaly KPI.",
-    "c_t4_dq_trend": "BQ05 daily DQ and quarantine monitoring trend.",
-    "c_t4_dq_severity": "BQ05 DQ severity breakdown.",
-    "c_t4_dq_source": "BQ05 DQ issue distribution by source system and severity.",
-    "c_t4_dq_rules": "BQ05 top DQ rules for investigation.",
-    "c_t5_slice": "OLAP01 slice example using a fixed pickup month.",
+    "c_t2_zone_revenue": "BQ01 zone value profile comparing observed-trip volume with revenue per trip; it replaces a redundant second ranking.",
+    "c_t3_kpi_shifts": "BQ02 completed shifts for the latest available reporting month.",
+    "c_t3_kpi_rev_hour": "BQ02 revenue per scheduled shift hour for the latest reporting month using a ratio of additive components.",
+    "c_t3_kpi_util": "BQ03 drivers meeting the explicit latest-month peer-review rule.",
+    "c_t3_driver_scatter": "BQ03 latest-month peer matrix using three action statuses: needs review, peer range and below minimum sample.",
+    "c_t3_driver_ranking": "BQ03 latest-month review queue driven by the certified needs_review rule.",
+    "c_t3_shift_review": "BQ02 latest-month shift action queue ranked from lowest utilization upward.",
+    "c_t3_vehicle_review": "BQ04 latest-month provisional vehicle peer-review queue; threshold needs business-owner validation.",
+    "c_t4_kpi_dq": "BQ05 DQ issue-event count for the latest successful NDS run, including a valid zero state.",
+    "c_t4_kpi_quarantine": "BQ05 quarantined-row count for the latest successful NDS run.",
+    "c_t4_kpi_loaded": "BQ05 loaded-row reconciliation for the latest successful NDS run.",
+    "c_t4_dq_trend": "BQ05 successful NDS run health table, including row reconciliation and valid zero-event runs.",
+    "c_t4_dq_rules": "BQ05 historical DQ findings by rule and source; issue events are not unique affected records.",
+    "c_t5_slice": "OLAP01 single-member slice for Manhattan in July 2021, displayed as an hourly profile.",
     "c_t5_dice": "OLAP01 dice example across month, borough and vehicle type.",
-    "c_t5_drilldown": "OLAP01 drill-down example across pickup year, month, day and hour.",
-    "c_t5_rollup": "OLAP01 roll-up example from shift zone context to borough.",
+    "c_t5_drilldown": "OLAP01 drill detail for the July 2021 Manhattan member at day-by-hour grain.",
+    "c_t5_rollup": "OLAP01 location hierarchy roll-up from pickup zone to borough for 2021.",
     "c_t5_pivot": "OLAP01 pivot example for borough by pickup hour bucket.",
-    "c_dm_kpi_drivers": "DM01 number of drivers included in segmentation output.",
-    "c_dm_kpi_rules": "DM02 number of route and demand association rules found.",
+    "c_dm_model_run": "DM01 published model-run metadata, training window, features, K, silhouette and driver coverage.",
     "c_dm_driver_scatter": "DM01 driver segmentation scatter for coaching and dispatch support.",
     "c_dm_driver_table": "DM01 segment profile table for operational interpretation.",
-    "c_dm_rules_table": "DM02 top route and demand association rules ranked by lift.",
+    "c_dm_rules_run": "DM02 published association-rule run metadata, thresholds, basket count and publication cap.",
+    "c_dm_rules_table": "DM02 published route and demand association rules ranked by lift.",
+}
+
+# Dashboard-facing language is intentionally consistent. The underlying metric
+# identifiers stay stable for API and contract compatibility.
+METRIC_LABEL_OVERRIDES = {
+    "total_trips": "Observed trips",
+    "total_revenue": "Total payment revenue",
+    "fare_revenue": "Fare revenue",
+    "total_tips": "Tips",
+    "total_distance": "Trip distance",
+    "total_trip_minutes": "Trip minutes",
+    "average_fare": "Average fare",
+    "average_trip_distance": "Average trip distance",
+    "average_trip_duration": "Average trip duration",
+    "anomaly_trip_count": "Trip anomaly cases",
+    "anomaly_rate": "Trip anomaly rate",
+    "active_driver_count": "Drivers with trip activity",
+    "active_vehicle_count": "Vehicles with trip activity",
+    "completed_shifts": "Completed shifts",
+    "trips_per_shift": "Trips / shift",
+    "revenue_per_shift": "Revenue / shift",
+    "revenue_per_hour": "Revenue / scheduled shift hour",
+    "occupied_minutes": "Occupied minutes",
+    "idle_minutes": "Idle minutes",
+    "avg_idle_minutes": "Idle minutes / shift",
+    "idle_minutes_per_shift": "Idle minutes / shift",
+    "shift_duration_minutes": "Scheduled shift minutes",
+    "utilization_rate": "Shift utilization",
+    "anomaly_shift_count": "Shift anomaly cases",
+    "dq_issue_count": "DQ issue events",
+    "quarantine_count": "Quarantined rows",
+    "rows_loaded": "Rows loaded",
+    "batch_count": "Successful NDS runs",
+    "run_recency_rank": "Run recency",
+    "cum_trips_pct": "Cumulative trip share",
+    "revenue_per_trip": "Revenue / trip",
+    "cum_revenue_pct": "Cumulative revenue share",
+    "driver_count": "Drivers covered",
+    "review_driver_count": "Drivers needing review",
+    "review_vehicle_count": "Vehicles needing review",
+    "revenue_per_hour_percentile": "Revenue/hour percentile",
+    "utilization_percentile": "Peer utilization percentile",
+    "priority_rank": "Priority rank",
+    "avg_driver_revenue_per_hour": "Avg. driver revenue / shift hour",
+    "avg_driver_utilization_rate": "Avg. driver shift utilization",
+    "published_rule_count": "Published rules",
+    "rule_support": "Support",
+    "rule_confidence": "Confidence",
+    "rule_lift": "Lift",
+}
+
+COLUMN_LABEL_OVERRIDES = {
+    "pickup_zone": "Pickup zone",
+    "pickup_borough": "Pickup borough",
+    "pickup_hour": "Pickup hour",
+    "pickup_weekday_label": "Pickup weekday",
+    "driver_id": "Driver ID",
+    "driver_name": "Driver name",
+    "review_reason": "Review reason",
+    "review_status": "Review status",
+    "revenue_per_hour_percentile": "Revenue/hour percentile",
+    "reporting_month": "Reporting month",
+    "monthly_utilization_rank": "Priority rank",
+    "shift_id": "Shift ID",
+    "shift_start": "Shift start",
+    "vehicle_id": "Vehicle ID",
+    "vehicle_type": "Vehicle type",
+    "utilization_percentile": "Peer utilization percentile",
+    "rule_code": "DQ rule",
+    "source_system_code": "Source system",
+    "source_entity": "Source entity",
+    "severity": "Severity",
+    "batch_completed_at": "Run completed (UTC)",
+    "pickup_year": "Year",
+    "pickup_month": "Month",
+    "pickup_day": "Day",
+    "pickup_hour_bucket": "Hour band",
+    "model_run_at": "Model run (UTC)",
+    "training_start": "Training start",
+    "training_end": "Training end",
+    "feature_set": "Feature set",
+    "model_k": "K",
+    "silhouette_score": "Silhouette score",
+    "segment_label": "Driver segment",
+    "antecedent": "If",
+    "consequent": "Then",
+    "basket_count": "Baskets",
+    "rules_generated": "Rules generated",
+    "rules_published": "Rules published",
+    "min_support": "Minimum support",
+    "min_confidence": "Minimum confidence",
+    "min_lift": "Minimum lift",
 }
 
 TRIP_METRICS = {
@@ -229,6 +359,11 @@ SHIFT_METRICS = {
         "SUM(occupied_minutes) / NULLIF(SUM(shift_duration_minutes), 0)",
         ".2%",
     ),
+    "priority_rank": (
+        "Thứ tự ưu tiên",
+        "MIN(monthly_utilization_rank)",
+        ",d",
+    ),
     "anomaly_shift_count": (
         "Số ca bất thường",
         "COUNT(*) FILTER (WHERE is_shift_anomaly)",
@@ -245,7 +380,13 @@ PARETO_METRICS = {
     "total_trips": ("Tổng số chuyến", "SUM(trips)", ",d"),
     "cum_trips_pct": ("Tỷ lệ tích lũy chuyến", "MAX(cum_trips_pct)", ".2%"),
     "total_revenue": ("Tổng doanh thu", "SUM(revenue)", "$,.2f"),
+    "revenue_per_trip": ("Doanh thu mỗi chuyến", "SUM(revenue) / NULLIF(SUM(trips), 0)", "$,.2f"),
     "cum_revenue_pct": ("Tỷ lệ tích lũy doanh thu", "MAX(cum_revenue_pct)", ".2%"),
+}
+
+ZONE_HOUR_METRICS = {
+    "total_trips": ("Observed trips", "SUM(observed_trips)", ",d"),
+    "total_revenue": ("Total payment revenue", "SUM(total_revenue)", "$,.2f"),
 }
 
 DRIVER_PERFORMANCE_METRICS = {
@@ -358,7 +499,14 @@ OLAP_SHIFT_METRICS = {
 }
 
 
-def certification_extra() -> str:
+def certification_extra(certified: bool = True) -> str:
+    if not certified:
+        return json.dumps(
+            {
+                "semantic_status": "exploratory",
+                "details": "Exploratory output: validate model provenance and operational thresholds before action.",
+            }
+        )
     return json.dumps(
         {
             "certification": {
@@ -416,13 +564,23 @@ def ensure_dataset(database: Database, table_name: str, spec: dict[str, str]) ->
         db.session.flush()
     dataset.main_dttm_col = spec["main_dttm_col"]
     dataset.description = spec["description"]
-    dataset.extra = certification_extra()
+    dataset.extra = certification_extra(spec.get("certified", True))
     dataset.fetch_metadata()
+    for column in dataset.columns:
+        column.verbose_name = COLUMN_LABEL_OVERRIDES.get(
+            column.column_name,
+            column.verbose_name,
+        )
     db.session.flush()
     return dataset
 
 
-def ensure_metrics(dataset: SqlaTable, definitions: dict[str, tuple[str, str, str]]) -> None:
+def ensure_metrics(
+    dataset: SqlaTable,
+    definitions: dict[str, tuple[str, str, str]],
+    *,
+    certified: bool = True,
+) -> None:
     existing = {metric.metric_name: metric for metric in dataset.metrics}
     for metric_name, metric in existing.items():
         if metric_name not in definitions:
@@ -432,11 +590,12 @@ def ensure_metrics(dataset: SqlaTable, definitions: dict[str, tuple[str, str, st
         if metric is None:
             metric = SqlMetric(metric_name=metric_name, table=dataset)
             db.session.add(metric)
-        metric.verbose_name = verbose_name
+        metric.verbose_name = METRIC_LABEL_OVERRIDES.get(metric_name, verbose_name)
         metric.expression = expression
-        metric.description = f"Metric ID: {metric_name}. {CERTIFICATION_DETAILS}"
+        status = CERTIFICATION_DETAILS if certified else "Exploratory metric; not a certified KPI."
+        metric.description = f"Metric ID: {metric_name}. {status}"
         metric.d3format = d3format
-        metric.extra = certification_extra()
+        metric.extra = certification_extra(certified)
 
 
 def chart_params(dataset: SqlaTable, viz_type: str, **kwargs: object) -> str:
@@ -446,7 +605,7 @@ def chart_params(dataset: SqlaTable, viz_type: str, **kwargs: object) -> str:
         "adhoc_filters": [],
         "time_range": "No filter",
         "row_limit": 10000,
-        "show_legend": True,
+        "show_legend": False,
         "truncate_metric": True,
     }
     params.update(kwargs)
@@ -471,8 +630,13 @@ def ensure_chart(
     chart.viz_type = viz_type
     chart.params = chart_params(dataset, viz_type, **params)
     chart.description = description or f"Green Taxi certified chart using analytics.{dataset.table_name}."
-    chart.certified_by = CERTIFIED_BY
-    chart.certification_details = CERTIFICATION_DETAILS
+    exploratory = dataset.table_name in {"driver_segments", "route_association_rules", "vehicle_performance_monthly"}
+    chart.certified_by = None if exploratory else CERTIFIED_BY
+    chart.certification_details = (
+        "Exploratory chart; validate model run and provisional thresholds before action."
+        if exploratory
+        else CERTIFICATION_DETAILS
+    )
     chart.owners = [admin]
 
     # Generate query_context dynamically to enable REST API v1 chart data retrieval
@@ -567,42 +731,52 @@ def dashboard_layout(charts_by_id: dict[str, Slice]) -> str:
     tab_rows = {
         "TAB-1": [
             ("TAB1-KPI", ["c_t1_kpi_rev", "c_t1_kpi_trips", "c_t1_kpi_drv", "c_t1_kpi_veh", "c_t1_kpi_util"]),
-            ("TAB1-MAIN", ["c_t1_trend", "c_t1_borough"]),
-            ("TAB1-SUPPORT", ["c_t1_zones", "c_t1_weekday"]),
+            ("TAB1-TRENDS", ["c_t1_trend", "c_t1_trip_trend"]),
+            ("TAB1-MARKET", ["c_t1_borough"]),
         ],
         "TAB-2": [
-            ("TAB2-MAIN", ["c_t2_heatmap", "c_t2_hourly"]),
+            ("TAB2-HERO", ["c_t2_zone_hour"]),
+            ("TAB2-TIME", ["c_t2_heatmap", "c_t2_hourly"]),
             ("TAB2-ZONES", ["c_t2_zone_trips", "c_t2_zone_revenue"]),
-            ("TAB2-GEO", ["c_t2_pickup_borough", "c_t2_dropoff_borough", "c_t2_distance_borough"]),
         ],
         "TAB-3": [
-            ("TAB3-KPI", ["c_t3_kpi_shifts", "c_t3_kpi_rev_hour", "c_t3_kpi_trips_shift", "c_t3_kpi_util"]),
-            ("TAB3-DRIVER", ["c_t3_driver_scatter", "c_t3_driver_ranking"]),
-            ("TAB3-FLEET", ["c_t3_vehicle_type", "c_t3_vehicle_table"]),
+            ("TAB3-KPI", ["c_t3_kpi_shifts", "c_t3_kpi_rev_hour", "c_t3_kpi_util"]),
+            ("TAB3-DRIVER", ["c_t3_driver_ranking"]),
+            ("TAB3-PEERS", ["c_t3_driver_scatter", "c_t3_vehicle_review"]),
+            ("TAB3-SHIFTS", ["c_t3_shift_review"]),
         ],
         "TAB-4": [
-            ("TAB4-KPI", ["c_t4_kpi_dq", "c_t4_kpi_quarantine", "c_t4_kpi_trip_anomaly", "c_t4_kpi_shift_anomaly"]),
-            ("TAB4-MAIN", ["c_t4_dq_trend", "c_t4_dq_severity"]),
-            ("TAB4-SUPPORT", ["c_t4_dq_source", "c_t4_dq_rules"]),
+            ("TAB4-KPI", ["c_t4_kpi_dq", "c_t4_kpi_quarantine", "c_t4_kpi_loaded"]),
+            ("TAB4-MAIN", ["c_t4_dq_trend"]),
+            ("TAB4-INVESTIGATE", ["c_t4_dq_rules"]),
         ],
         "TAB-5": [
-            ("TAB5-FILTERS", ["c_t5_slice", "c_t5_dice"]),
-            ("TAB5-HIERARCHY", ["c_t5_drilldown", "c_t5_rollup"]),
             ("TAB5-PIVOT", ["c_t5_pivot"]),
+            ("TAB5-HIERARCHY", ["c_t5_slice", "c_t5_rollup"]),
+            ("TAB5-EXPLORERS", ["c_t5_dice", "c_t5_drilldown"]),
         ],
         "TAB-6": [
-            ("TAB6-KPI", ["c_dm_kpi_drivers", "c_dm_kpi_rules"]),
+            ("TAB6-MODEL", ["c_dm_model_run"]),
+            ("TAB6-RULE-MODEL", ["c_dm_rules_run"]),
             ("TAB6-DRIVER", ["c_dm_driver_scatter", "c_dm_driver_table"]),
             ("TAB6-RULES", ["c_dm_rules_table"]),
         ],
     }
     tab_titles = {
-        "TAB-1": "Operations Overview",
-        "TAB-2": "Demand Patterns",
-        "TAB-3": "Driver & Fleet Performance",
-        "TAB-4": "Data Quality & Anomalies",
-        "TAB-5": "OLAP Demo",
-        "TAB-6": "Data Mining Insights",
+        "TAB-1": "Executive pulse",
+        "TAB-2": "Demand patterns",
+        "TAB-3": "Workforce actions",
+        "TAB-4": "Trust & data health",
+        "TAB-5": "OLAP lab",
+        "TAB-6": "Exploratory models",
+    }
+    tab_context = {
+        "TAB-1": "## Executive pulse\n**Certified historical view · 01 Jan 2020–31 Jul 2021 · America/New_York.** Revenue and trip volume use aligned small multiples, never a shared mixed-unit axis.",
+        "TAB-2": "## Demand patterns\nObserved trips measure served activity, not unmet demand. Read the zone × hour pattern first, then use concentration and value views to prioritize investigation.",
+        "TAB-3": "## Workforce action center\nAll action views use the latest available reporting month. Peer flags are triage signals; validate sample size and the underlying shift before action.",
+        "TAB-4": "## Trust & data health\nLatest successful NDS run is selected dynamically from audit metadata, including valid zero-event runs. Historical rule findings remain available below; empty anomaly queues are intentionally suppressed.",
+        "TAB-5": "## OLAP analysis lab\nFive explicit operations on the approved cube: slice, dice, drill-down, roll-up and pivot. Every visual uses one unit per axis and names its selected members.",
+        "TAB-6": "## Exploratory models — not certified KPIs\nK-Means and Apriori outputs require a published model run, training window and thresholds before operational use.",
     }
 
     kpi_keys = {
@@ -612,15 +786,23 @@ def dashboard_layout(charts_by_id: dict[str, Slice]) -> str:
         if row_name.endswith("KPI")
         for key in keys
     }
-    wide_keys = {"c_t1_trend", "c_t2_heatmap", "c_t3_driver_scatter", "c_t4_dq_trend", "c_t5_pivot", "c_dm_driver_scatter", "c_dm_rules_table"}
+    wide_keys = {"c_t1_trend", "c_t1_trip_trend", "c_t2_zone_hour", "c_t3_driver_ranking", "c_t3_shift_review", "c_t4_dq_trend", "c_t5_pivot", "c_dm_rules_table"}
+    compact_keys = {"c_t1_borough", "c_t4_dq_trend", "c_t4_dq_rules", "c_dm_model_run", "c_dm_rules_run"}
 
     for tab_id, rows in tab_rows.items():
         layout[tab_id] = {
             "id": tab_id,
             "type": "TAB",
-            "children": [row_id for row_id, _ in rows],
+            "children": [f"MARKDOWN-{tab_id}"] + [row_id for row_id, _ in rows],
             "parents": ["ROOT_ID", "GRID_ID", "TABS_ID"],
             "meta": {"text": tab_titles[tab_id]},
+        }
+        layout[f"MARKDOWN-{tab_id}"] = {
+            "id": f"MARKDOWN-{tab_id}",
+            "type": "MARKDOWN",
+            "children": [],
+            "parents": ["ROOT_ID", "GRID_ID", "TABS_ID", tab_id],
+            "meta": {"code": tab_context[tab_id], "height": 12, "width": 12},
         }
         for row_id, keys in rows:
             chart_ids = [
@@ -637,10 +819,27 @@ def dashboard_layout(charts_by_id: dict[str, Slice]) -> str:
                 if key not in charts_by_id:
                     continue
                 chart = charts_by_id[key]
-                width = 12 // max(1, len(chart_ids))
-                height = 24 if key in kpi_keys else 58
+                position = keys.index(key)
+                two_column_widths = {
+                    "TAB2-TIME": [7, 5],
+                    "TAB2-ZONES": [7, 5],
+                    "TAB3-PEERS": [4, 8],
+                    "TAB5-EXPLORERS": [5, 7],
+                    "TAB6-DRIVER": [8, 4],
+                }
+                row_widths = {
+                    1: [12],
+                    2: two_column_widths.get(row_id, [6, 6]),
+                    3: [4, 4, 4],
+                    4: [3, 3, 3, 3],
+                    5: [3, 3, 2, 2, 2],
+                }
+                width = row_widths.get(len(chart_ids), [12 // len(chart_ids)] * len(chart_ids))[position]
+                height = 16 if key in kpi_keys else 42
                 if key in wide_keys:
-                    height = 64
+                    height = 46
+                if key in compact_keys:
+                    height = 26
                 layout[f"CHART-{chart.id}"] = {
                     "id": f"CHART-{chart.id}",
                     "type": "CHART",
@@ -722,99 +921,143 @@ def main() -> None:
     ensure_metrics(datasets["trip_dropoff"], TRIP_METRICS)
     ensure_metrics(datasets["shift"], SHIFT_METRICS)
     ensure_metrics(datasets["dq_summary"], DQ_METRICS)
+    ensure_metrics(datasets["dq_batch_summary"], DQ_BATCH_METRICS)
     ensure_metrics(datasets["pareto_pickup_zone"], PARETO_METRICS)
+    ensure_metrics(datasets["top_pickup_zone_hour"], ZONE_HOUR_METRICS)
     ensure_metrics(
         datasets["driver_performance_summary"],
         DRIVER_PERFORMANCE_METRICS,
     )
+    ensure_metrics(datasets["driver_performance_monthly"], DRIVER_MONTHLY_METRICS)
+    ensure_metrics(
+        datasets["vehicle_performance_monthly"], VEHICLE_MONTHLY_METRICS, certified=False
+    )
     ensure_metrics(datasets["olap_trip_cube"], OLAP_TRIP_METRICS)
     ensure_metrics(datasets["olap_shift_cube"], OLAP_SHIFT_METRICS)
-    ensure_metrics(datasets["driver_segments"], DRIVER_SEGMENTS_METRICS)
-    ensure_metrics(datasets["route_association_rules"], ROUTE_ASSOCIATION_RULES_METRICS)
+    ensure_metrics(datasets["driver_segments"], DRIVER_SEGMENTS_METRICS, certified=False)
+    ensure_metrics(
+        datasets["route_association_rules"], ROUTE_ASSOCIATION_RULES_METRICS, certified=False
+    )
     db.session.flush()
 
     charts_spec = {
         # Tab 1: Operations Overview
-        "c_t1_kpi_rev": (datasets["trip_pickup"], "Total Revenue", "big_number_total", {"metric": "total_revenue", "y_axis_format": "$,.2f"}),
-        "c_t1_kpi_trips": (datasets["trip_pickup"], "Total Trips", "big_number_total", {"metric": "total_trips", "y_axis_format": "SMART_NUMBER"}),
-        "c_t1_kpi_drv": (datasets["trip_pickup"], "Active Drivers", "big_number_total", {"metric": "active_driver_count", "y_axis_format": "SMART_NUMBER"}),
-        "c_t1_kpi_veh": (datasets["trip_pickup"], "Active Vehicles", "big_number_total", {"metric": "active_vehicle_count", "y_axis_format": "SMART_NUMBER"}),
-        "c_t1_kpi_util": (datasets["shift"], "Overall Shift Utilization", "big_number_total", {"metric": "utilization_rate", "y_axis_format": ".2%"}),
-        "c_t1_trend": (datasets["trip_pickup"], "Monthly Revenue & Trip Volume", "echarts_timeseries_line", {
+        "c_t1_kpi_rev": (datasets["trip_pickup"], "Total payment revenue", "big_number_total", {"metric": "total_revenue", "y_axis_format": "$,.3s"}),
+        "c_t1_kpi_trips": (datasets["trip_pickup"], "Observed trips", "big_number_total", {"metric": "total_trips", "y_axis_format": "SMART_NUMBER"}),
+        "c_t1_kpi_drv": (datasets["trip_pickup"], "Drivers with trip activity", "big_number_total", {"metric": "active_driver_count", "y_axis_format": "SMART_NUMBER"}),
+        "c_t1_kpi_veh": (datasets["trip_pickup"], "Vehicles with trip activity", "big_number_total", {"metric": "active_vehicle_count", "y_axis_format": "SMART_NUMBER"}),
+        "c_t1_kpi_util": (datasets["shift"], "Shift utilization", "big_number_total", {"metric": "utilization_rate", "y_axis_format": ".2%"}),
+        "c_t1_trend": (datasets["trip_pickup"], "Monthly total payment revenue", "echarts_timeseries_line", {
             "granularity_sqla": "pickup_datetime",
             "time_grain_sqla": "P1M",
-            "metrics": ["total_revenue", "total_trips"],
+            "metrics": ["total_revenue"],
             "x_axis_time_format": "smart_date",
             "y_axis_format": "SMART_NUMBER",
+            "show_legend": False,
         }),
-        "c_t1_borough": (datasets["trip_pickup"], "Trips by Pickup Borough", "echarts_timeseries_bar", {
+        "c_t1_trip_trend": (datasets["trip_pickup"], "Monthly observed trips", "echarts_timeseries_line", {
+            "granularity_sqla": "pickup_datetime",
+            "time_grain_sqla": "P1M",
+            "metrics": ["total_trips"],
+            "x_axis_time_format": "smart_date",
+            "y_axis_format": "SMART_NUMBER",
+            "show_legend": False,
+        }),
+        "c_t1_borough": (datasets["trip_pickup"], "Observed trips by pickup borough", "echarts_timeseries_bar", {
             "x_axis": "pickup_borough", "groupby": [], "metrics": ["total_trips"],
             "orientation": "horizontal", "sort_series_type": "sum", "order_desc": True,
-        }),
-        "c_t1_zones": (datasets["trip_pickup"], "Top Pickup Zones", "echarts_timeseries_bar", {
-            "x_axis": "pickup_zone", "groupby": [], "metrics": ["total_trips"],
-            "orientation": "horizontal", "row_limit": 10, "sort_series_type": "sum", "order_desc": True,
-        }),
-        "c_t1_weekday": (datasets["trip_pickup"], "Trips by Weekday", "echarts_timeseries_bar", {
-            "x_axis": "pickup_weekday_label", "groupby": [], "metrics": ["total_trips"],
-            "sort_series_type": "name", "order_desc": False,
+            "show_legend": False,
         }),
 
         # Tab 2: Demand Patterns
-        "c_t2_heatmap": (datasets["trip_pickup"], "Demand by Weekday & Hour", "heatmap_v2", {
+        "c_t2_zone_hour": (datasets["top_pickup_zone_hour"], "Observed trips by pickup zone and hour", "heatmap_v2", {
+            "x_axis": "pickup_hour",
+            "groupby": "pickup_zone_label",
+            "metric": "total_trips",
+            "row_limit": 1000,
+            "linear_color_scheme": "schemeGreen",
+            "show_legend": False,
+        }),
+        "c_t2_heatmap": (datasets["trip_pickup"], "Observed trips by weekday and hour", "heatmap_v2", {
             "x_axis": "pickup_hour",
             "groupby": "pickup_weekday_label",
             "metric": "total_trips",
             "linear_color_scheme": "schemeGreen",
+            "show_legend": False,
         }),
-        "c_t2_hourly": (datasets["trip_pickup"], "Hourly Demand Profile", "echarts_timeseries_line", {
+        "c_t2_hourly": (datasets["trip_pickup"], "Observed trips by pickup hour", "echarts_timeseries_line", {
             "x_axis": "pickup_hour", "groupby": [], "metrics": ["total_trips"],
+            "show_legend": False,
         }),
-        "c_t2_zone_trips": (datasets["pareto_pickup_zone"], "Zone Concentration by Trips", "table", {
+        "c_t2_zone_trips": (datasets["pareto_pickup_zone"], "Pickup-zone concentration", "table", {
             "query_mode": "aggregate",
             "groupby": ["pickup_zone", "pickup_borough"],
             "metrics": ["total_trips", "cum_trips_pct"],
             "order_by_cols": [json.dumps(["total_trips", False])],
-            "row_limit": 15,
+            "timeseries_limit_metric": "total_trips",
+            "order_desc": True,
+            "row_limit": 500,
             "page_length": 15,
         }),
-        "c_t2_zone_revenue": (datasets["trip_pickup"], "Top Pickup Zones by Revenue", "echarts_timeseries_bar", {
-            "x_axis": "pickup_zone", "groupby": [], "metrics": ["total_revenue"],
-            "orientation": "horizontal", "row_limit": 15, "sort_series_type": "sum", "order_desc": True,
-        }),
-        "c_t2_pickup_borough": (datasets["trip_pickup"], "Pickup Borough Volume", "echarts_timeseries_bar", {
-            "x_axis": "pickup_borough", "groupby": [], "metrics": ["total_trips"],
-            "sort_series_type": "sum", "order_desc": True,
-        }),
-        "c_t2_dropoff_borough": (datasets["trip_dropoff"], "Dropoff Borough Volume", "echarts_timeseries_bar", {
-            "x_axis": "dropoff_borough", "groupby": [], "metrics": ["total_trips"],
-            "sort_series_type": "sum", "order_desc": True,
-        }),
-        "c_t2_distance_borough": (datasets["trip_pickup"], "Average Trip Distance by Borough", "echarts_timeseries_bar", {
-            "x_axis": "pickup_borough", "groupby": [], "metrics": ["average_trip_distance"],
-            "sort_series_type": "sum", "order_desc": True,
+        "c_t2_zone_revenue": (datasets["pareto_pickup_zone"], "Zone value profile — volume vs revenue per trip", "bubble", {
+            "series": "pickup_borough",
+            "entity": "pickup_zone",
+            "x": "total_trips",
+            "y": "revenue_per_trip",
+            "size": "total_revenue",
+            "row_limit": 300,
+            "show_legend": True,
         }),
 
-        # Tab 3: Driver & Fleet Performance
-        "c_t3_kpi_shifts": (datasets["shift"], "Completed Shifts", "big_number_total", {"metric": "completed_shifts", "y_axis_format": "SMART_NUMBER"}),
-        "c_t3_kpi_rev_hour": (datasets["shift"], "Revenue per Shift Hour", "big_number_total", {"metric": "revenue_per_hour", "y_axis_format": "$,.2f"}),
-        "c_t3_kpi_trips_shift": (datasets["shift"], "Trips per Shift", "big_number_total", {"metric": "trips_per_shift", "y_axis_format": ",.2f"}),
-        "c_t3_kpi_util": (datasets["shift"], "Performance Shift Utilization", "big_number_total", {"metric": "utilization_rate", "y_axis_format": ".2%"}),
-        "c_t3_driver_scatter": (datasets["driver_performance_summary"], "Driver Performance Matrix", "bubble", {
-            "series": "driver_name",
-            "entity": "driver_name",
+        # Tab 3: latest-month workforce action center
+        "c_t3_kpi_shifts": (datasets["driver_performance_monthly"], "Completed shifts — latest month", "big_number_total", {
+            "metric": "completed_shifts",
+            "y_axis_format": "SMART_NUMBER",
+            "adhoc_filters": [{"expressionType": "SIMPLE", "subject": "is_latest_reporting_month", "operator": "==", "comparator": True, "clause": "WHERE", "filterOptionName": "latest_driver_month_shifts"}],
+        }),
+        "c_t3_kpi_rev_hour": (datasets["driver_performance_monthly"], "Revenue / scheduled shift hour — latest month", "big_number_total", {
+            "metric": "revenue_per_hour",
+            "y_axis_format": "$,.2f",
+            "adhoc_filters": [{"expressionType": "SIMPLE", "subject": "is_latest_reporting_month", "operator": "==", "comparator": True, "clause": "WHERE", "filterOptionName": "latest_driver_month_revenue"}],
+        }),
+        "c_t3_kpi_util": (datasets["driver_performance_monthly"], "Drivers needing review — latest month", "big_number_total", {
+            "metric": "review_driver_count",
+            "y_axis_format": "SMART_NUMBER",
+            "adhoc_filters": [{"expressionType": "SIMPLE", "subject": "is_latest_reporting_month", "operator": "==", "comparator": True, "clause": "WHERE", "filterOptionName": "latest_driver_month_review_count"}],
+        }),
+        "c_t3_driver_scatter": (datasets["driver_performance_monthly"], "Driver peer matrix — latest month", "bubble", {
+            "series": "review_status",
+            "entity": "driver_id",
             "x": "utilization_rate",
             "y": "revenue_per_hour",
             "size": "completed_shifts",
             "row_limit": 1000,
+            "show_legend": True,
+            "label_colors": json.dumps({
+                "Peer range": "#107C10",
+                "Needs review": "#D13438",
+                "Below minimum sample": "#8A8886",
+            }),
+            "adhoc_filters": [{"expressionType": "SIMPLE", "subject": "is_latest_reporting_month", "operator": "==", "comparator": True, "clause": "WHERE", "filterOptionName": "latest_driver_month_scatter"}],
         }),
-        "c_t3_driver_ranking": (datasets["driver_performance_summary"], "Driver Review Queue", "table", {
+        "c_t3_driver_ranking": (datasets["driver_performance_monthly"], "Driver review queue — latest month", "table", {
             "query_mode": "aggregate",
-            "groupby": ["driver_name", "review_reason"],
-            "metrics": ["completed_shifts", "revenue_per_hour", "utilization_rate", "idle_minutes_per_shift"],
-            "order_by_cols": [json.dumps(["revenue_per_hour", True])],
+            "show_cell_bars": False,
+            "groupby": ["driver_id", "driver_name", "review_reason"],
+            "metrics": ["revenue_per_hour_percentile", "completed_shifts", "revenue_per_hour", "utilization_rate", "idle_minutes_per_shift"],
+            "timeseries_limit_metric": "revenue_per_hour_percentile",
+            "order_desc": False,
             "page_length": 15,
+            "table_timestamp_format": "%b %Y",
             "adhoc_filters": [
+                {
+                    "expressionType": "SIMPLE",
+                    "subject": "is_latest_reporting_month",
+                    "operator": "==",
+                    "comparator": True,
+                    "clause": "WHERE",
+                    "filterOptionName": "latest_driver_month_queue",
+                },
                 {
                     "expressionType": "SIMPLE",
                     "subject": "needs_review",
@@ -825,70 +1068,82 @@ def main() -> None:
                 }
             ],
         }),
-        "c_t3_vehicle_type": (datasets["shift"], "Vehicle Type Performance", "echarts_timeseries_bar", {
-            "x_axis": "vehicle_type",
-            "groupby": [],
-            "metrics": ["utilization_rate", "trips_per_shift"],
-            "sort_series_type": "sum",
-            "order_desc": True,
-        }),
-        "c_t3_vehicle_table": (datasets["shift"], "Vehicle Performance Detail", "table", {
+        "c_t3_shift_review": (datasets["shift"], "30 lowest-utilization shifts — latest month", "table", {
             "query_mode": "aggregate",
-            "groupby": ["vehicle_id", "vehicle_type"],
-            "metrics": ["completed_shifts", "trips_per_shift", "revenue_per_shift", "utilization_rate"],
-            "order_by_cols": [json.dumps(["utilization_rate", True])],
+            "show_cell_bars": False,
+            "groupby": ["shift_id", "shift_start", "driver_id", "driver_name", "vehicle_id", "vehicle_type"],
+            "metrics": ["priority_rank", "completed_shifts", "trips_per_shift", "revenue_per_hour", "utilization_rate", "avg_idle_minutes"],
+            "timeseries_limit_metric": "priority_rank",
+            "order_desc": False,
             "page_length": 15,
+            "row_limit": 1000,
+            "table_timestamp_format": "%d %b %Y %H:%M",
+            "adhoc_filters": [
+                {"expressionType": "SIMPLE", "subject": "is_latest_shift_month", "operator": "==", "comparator": True, "clause": "WHERE", "filterOptionName": "latest_shift_month_queue"},
+                {"expressionType": "SIMPLE", "subject": "monthly_utilization_rank", "operator": "<=", "comparator": 30, "clause": "WHERE", "filterOptionName": "lowest_thirty_shifts"},
+            ],
+        }),
+        "c_t3_vehicle_review": (datasets["vehicle_performance_monthly"], "Vehicle peer-review queue — latest month · provisional", "table", {
+            "query_mode": "aggregate",
+            "show_cell_bars": False,
+            "groupby": ["reporting_month", "vehicle_id", "vehicle_type"],
+            "metrics": ["utilization_percentile", "completed_shifts", "revenue_per_hour", "utilization_rate"],
+            "timeseries_limit_metric": "utilization_percentile",
+            "order_desc": False,
+            "page_length": 15,
+            "table_timestamp_format": "%b %Y",
+            "adhoc_filters": [
+                {"expressionType": "SIMPLE", "subject": "is_latest_reporting_month", "operator": "==", "comparator": True, "clause": "WHERE", "filterOptionName": "latest_vehicle_month_queue"},
+                {"expressionType": "SIMPLE", "subject": "is_review_candidate", "operator": "==", "comparator": True, "clause": "WHERE", "filterOptionName": "vehicle_review_rule"},
+            ],
         }),
 
         # Tab 4: Data Quality & Anomalies
-        "c_t4_kpi_dq": (datasets["dq_summary"], "DQ Issues", "big_number_total", {"metric": "dq_issue_count", "y_axis_format": "SMART_NUMBER"}),
-        "c_t4_kpi_quarantine": (datasets["dq_summary"], "Quarantine Records", "big_number_total", {"metric": "quarantine_count", "y_axis_format": "SMART_NUMBER"}),
-        "c_t4_kpi_trip_anomaly": (datasets["trip_pickup"], "Trip Anomalies", "big_number_total", {"metric": "anomaly_trip_count", "y_axis_format": "SMART_NUMBER"}),
-        "c_t4_kpi_shift_anomaly": (datasets["shift"], "Shift Anomalies", "big_number_total", {"metric": "anomaly_shift_count", "y_axis_format": "SMART_NUMBER"}),
-        "c_t4_dq_trend": (datasets["dq_summary"], "DQ Issues over Time", "echarts_timeseries_line", {
-            "granularity_sqla": "event_date_utc",
-            "time_grain_sqla": "P1D",
-            "metrics": ["dq_issue_count", "quarantine_count"],
-            "x_axis_time_format": "smart_date",
-            "y_axis_format": "SMART_NUMBER",
+        "c_t4_kpi_dq": (datasets["dq_batch_summary"], "DQ issue events — latest successful run", "big_number_total", {
+            "metric": "dq_issue_count", "y_axis_format": "SMART_NUMBER",
+            "adhoc_filters": [{"expressionType": "SIMPLE", "subject": "is_latest_dq_batch", "operator": "==", "comparator": True, "clause": "WHERE", "filterOptionName": "latest_dq_batch"}],
         }),
-        "c_t4_dq_severity": (datasets["dq_summary"], "Issues by Severity", "echarts_timeseries_bar", {
-            "x_axis": "severity", "groupby": [], "metrics": ["dq_issue_count"],
-            "sort_series_type": "sum", "order_desc": True,
+        "c_t4_kpi_quarantine": (datasets["dq_batch_summary"], "Quarantined rows — latest successful run", "big_number_total", {
+            "metric": "quarantine_count", "y_axis_format": "SMART_NUMBER",
+            "adhoc_filters": [{"expressionType": "SIMPLE", "subject": "is_latest_dq_batch", "operator": "==", "comparator": True, "clause": "WHERE", "filterOptionName": "latest_quarantine_batch"}],
         }),
-        "c_t4_dq_source": (datasets["dq_summary"], "Issues by Source System", "echarts_timeseries_bar", {
-            "x_axis": "source_system_code",
-            "groupby": ["severity"],
-            "metrics": ["dq_issue_count"],
-            "bar_stacked": True,
+        "c_t4_kpi_loaded": (datasets["dq_batch_summary"], "Rows loaded — latest successful run", "big_number_total", {
+            "metric": "rows_loaded", "y_axis_format": "SMART_NUMBER",
+            "adhoc_filters": [{"expressionType": "SIMPLE", "subject": "is_latest_dq_batch", "operator": "==", "comparator": True, "clause": "WHERE", "filterOptionName": "latest_loaded_batch"}],
         }),
-        "c_t4_dq_rules": (datasets["dq_summary"], "Top Data Quality Rules", "table", {
+        "c_t4_dq_trend": (datasets["dq_batch_summary"], "Successful NDS run health", "table", {
             "query_mode": "aggregate",
-            "groupby": ["rule_code", "source_entity", "severity"],
+            "groupby": ["batch_completed_at", "batch_status"],
+            "metrics": ["run_recency_rank", "rows_loaded", "dq_issue_count", "quarantine_count"],
+            "timeseries_limit_metric": "run_recency_rank",
+            "order_desc": False,
+            "page_length": 10,
+            "row_limit": 100,
+            "table_timestamp_format": "%d %b %Y %H:%M",
+        }),
+        "c_t4_dq_rules": (datasets["dq_summary"], "Historical DQ findings by rule", "table", {
+            "query_mode": "aggregate",
+            "groupby": ["rule_code", "source_system_code", "source_entity", "severity"],
             "metrics": ["dq_issue_count", "quarantine_count"],
             "order_by_cols": [json.dumps(["dq_issue_count", False])],
+            "timeseries_limit_metric": "dq_issue_count",
+            "order_desc": True,
             "page_length": 15,
         }),
 
         # Tab 5: OLAP Demo
-        "c_t5_slice": (datasets["olap_trip_cube"], "OLAP Slice - Monthly Pickup Borough Revenue", "echarts_timeseries_bar", {
-            "x_axis": "pickup_borough",
+        "c_t5_slice": (datasets["olap_trip_cube"], "Slice — Jul 2021 · Manhattan hourly profile", "echarts_timeseries_bar", {
+            "x_axis": "pickup_hour",
             "groupby": [],
-            "metrics": ["total_revenue", "total_trips"],
-            "sort_series_type": "sum",
-            "order_desc": True,
+            "metrics": ["total_trips"],
+            "show_legend": False,
             "adhoc_filters": [
-                {
-                    "expressionType": "SIMPLE",
-                    "subject": "pickup_month",
-                    "operator": "==",
-                    "comparator": 1,
-                    "clause": "WHERE",
-                    "filterOptionName": "olap_slice_month",
-                }
+                {"expressionType": "SIMPLE", "subject": "pickup_year", "operator": "==", "comparator": 2021, "clause": "WHERE", "filterOptionName": "olap_slice_year"},
+                {"expressionType": "SIMPLE", "subject": "pickup_month", "operator": "==", "comparator": 7, "clause": "WHERE", "filterOptionName": "olap_slice_month"},
+                {"expressionType": "SIMPLE", "subject": "pickup_borough", "operator": "==", "comparator": "Manhattan", "clause": "WHERE", "filterOptionName": "olap_slice_borough"},
             ],
         }),
-        "c_t5_dice": (datasets["olap_trip_cube"], "OLAP Dice - Month Borough Vehicle", "table", {
+        "c_t5_dice": (datasets["olap_trip_cube"], "Dice subset — Q1 2021 · Manhattan/Queens · Sedan", "table", {
             "query_mode": "aggregate",
             "groupby": ["pickup_month", "pickup_borough", "vehicle_type"],
             "metrics": ["total_trips", "total_revenue", "average_fare"],
@@ -897,75 +1152,117 @@ def main() -> None:
             "adhoc_filters": [
                 {
                     "expressionType": "SIMPLE",
+                    "subject": "pickup_year",
+                    "operator": "==",
+                    "comparator": 2021,
+                    "clause": "WHERE",
+                    "filterOptionName": "olap_dice_year",
+                },
+                {
+                    "expressionType": "SIMPLE",
                     "subject": "pickup_month",
-                    "operator": "IS NOT NULL",
-                    "comparator": None,
+                    "operator": "IN",
+                    "comparator": [1, 2, 3],
                     "clause": "WHERE",
                     "filterOptionName": "olap_dice_month",
                 },
                 {
                     "expressionType": "SIMPLE",
                     "subject": "pickup_borough",
-                    "operator": "IS NOT NULL",
-                    "comparator": None,
+                    "operator": "IN",
+                    "comparator": ["Manhattan", "Queens"],
                     "clause": "WHERE",
                     "filterOptionName": "olap_dice_borough",
                 },
                 {
                     "expressionType": "SIMPLE",
                     "subject": "vehicle_type",
-                    "operator": "IS NOT NULL",
-                    "comparator": None,
+                    "operator": "IN",
+                    "comparator": ["SEDAN"],
                     "clause": "WHERE",
                     "filterOptionName": "olap_dice_vehicle_type",
                 },
             ],
         }),
-        "c_t5_drilldown": (datasets["olap_trip_cube"], "OLAP Drill-down - Time Hierarchy", "table", {
-            "query_mode": "aggregate",
-            "groupby": ["pickup_year", "pickup_month", "pickup_day", "pickup_hour"],
-            "metrics": ["total_trips", "total_revenue", "average_trip_distance"],
-            "order_by_cols": [json.dumps(["pickup_year", True]), json.dumps(["pickup_month", True]), json.dumps(["pickup_day", True])],
-            "page_length": 20,
+        "c_t5_drilldown": (datasets["olap_trip_cube"], "Drill detail — Jul 2021 · Manhattan day × hour", "heatmap_v2", {
+            "x_axis": "pickup_hour",
+            "groupby": "pickup_day",
+            "metric": "total_trips",
+            "row_limit": 1000,
+            "linear_color_scheme": "schemeGreen",
+            "show_legend": False,
+            "adhoc_filters": [
+                {"expressionType": "SIMPLE", "subject": "pickup_year", "operator": "==", "comparator": 2021, "clause": "WHERE", "filterOptionName": "olap_drill_year"},
+                {"expressionType": "SIMPLE", "subject": "pickup_month", "operator": "==", "comparator": 7, "clause": "WHERE", "filterOptionName": "olap_drill_month"},
+                {"expressionType": "SIMPLE", "subject": "pickup_borough", "operator": "==", "comparator": "Manhattan", "clause": "WHERE", "filterOptionName": "olap_drill_borough"},
+            ],
         }),
-        "c_t5_rollup": (datasets["olap_shift_cube"], "OLAP Roll-up - Zone to Borough Utilization", "echarts_timeseries_bar", {
-            "x_axis": "shift_start_borough",
+        "c_t5_rollup": (datasets["olap_trip_cube"], "Roll-up — 2021 pickup zone → borough", "echarts_timeseries_bar", {
+            "x_axis": "pickup_borough",
             "groupby": [],
-            "metrics": ["completed_shifts", "utilization_rate", "revenue_per_hour"],
+            "metrics": ["total_trips"],
+            "orientation": "horizontal",
             "sort_series_type": "sum",
             "order_desc": True,
+            "show_legend": False,
+            "adhoc_filters": [
+                {"expressionType": "SIMPLE", "subject": "pickup_year", "operator": "==", "comparator": 2021, "clause": "WHERE", "filterOptionName": "olap_rollup_year"},
+            ],
         }),
-        "c_t5_pivot": (datasets["olap_trip_cube"], "OLAP Pivot - Borough by Hour Bucket", "pivot_table_v2", {
+        "c_t5_pivot": (datasets["olap_trip_cube"], "Pivot matrix — pickup borough × hour bucket", "pivot_table_v2", {
             "groupbyRows": ["pickup_borough"],
             "groupbyColumns": ["pickup_hour_bucket"],
-            "metrics": ["total_trips", "total_revenue"],
+            "metrics": ["total_trips"],
             "row_limit": 10000,
         }),
 
-        # Tab 6: Data Mining Insights
-        "c_dm_kpi_drivers": (datasets["driver_segments"], "Total Segmented Drivers", "big_number_total", {"metric": "driver_count", "y_axis_format": "SMART_NUMBER"}),
-        "c_dm_kpi_rules": (datasets["route_association_rules"], "Total Rules Found", "big_number_total", {"metric": "rule_count", "y_axis_format": "SMART_NUMBER"}),
-        "c_dm_driver_scatter": (datasets["driver_segments"], "Driver Segments Analysis", "bubble", {
+        # Tab 6: Exploratory Models
+        "c_dm_model_run": (datasets["driver_segments"], "Published driver-segmentation model run", "table", {
+            "query_mode": "aggregate",
+            "show_cell_bars": False,
+            "groupby": ["model_run_at", "training_start", "training_end", "feature_set", "model_k", "silhouette_score"],
+            "metrics": ["driver_count"],
+            "order_by_cols": [json.dumps(["model_run_at", False])],
+            "page_length": 5,
+            "row_limit": 5,
+            "table_timestamp_format": "%d %b %Y %H:%M",
+        }),
+        "c_dm_driver_scatter": (datasets["driver_segments"], "Driver segments — utilization vs revenue per shift hour", "bubble", {
             "series": "segment_label",
-            "entity": "driver_name",
-            "x": "utilization_rate",
-            "y": "revenue_per_hour",
+            "entity": "driver_id",
+            "x": "avg_driver_utilization_rate",
+            "y": "avg_driver_revenue_per_hour",
             "size": "completed_shifts",
             "row_limit": 1000,
+            "show_legend": True,
         }),
-        "c_dm_driver_table": (datasets["driver_segments"], "Driver Segments Profile", "table", {
+        "c_dm_driver_table": (datasets["driver_segments"], "Segment profile — exploratory driver averages", "table", {
             "query_mode": "aggregate",
             "groupby": ["segment_label"],
-            "metrics": ["driver_count", "completed_shifts", "revenue_per_hour", "utilization_rate", "idle_minutes_per_shift", "average_trip_distance", "tips_per_trip"],
-            "order_by_cols": [json.dumps(["revenue_per_hour", False])],
+            "metrics": ["driver_count", "completed_shifts", "avg_driver_revenue_per_hour", "avg_driver_utilization_rate", "idle_minutes_per_shift", "trips_per_shift"],
+            "order_by_cols": [json.dumps(["avg_driver_revenue_per_hour", False])],
+            "timeseries_limit_metric": "avg_driver_revenue_per_hour",
+            "order_desc": True,
         }),
-        "c_dm_rules_table": (datasets["route_association_rules"], "Top Route & Demand Association Rules", "table", {
+        "c_dm_rules_run": (datasets["route_association_rules"], "Published association-rule model run", "table", {
             "query_mode": "aggregate",
+            "show_cell_bars": False,
+            "groupby": ["model_run_at", "training_start", "training_end", "basket_count", "rules_generated", "min_support", "min_confidence", "min_lift"],
+            "metrics": ["published_rule_count"],
+            "page_length": 5,
+            "row_limit": 5,
+            "table_timestamp_format": "%d %b %Y %H:%M",
+        }),
+        "c_dm_rules_table": (datasets["route_association_rules"], "Published association rules — ranked by lift", "table", {
+            "query_mode": "aggregate",
+            "show_cell_bars": False,
             "groupby": ["antecedent", "consequent"],
             "metrics": ["rule_support", "rule_confidence", "rule_lift"],
             "order_by_cols": [json.dumps(["rule_lift", False])],
+            "timeseries_limit_metric": "rule_lift",
+            "order_desc": True,
             "page_length": 15,
-            "row_limit": 100,
+            "row_limit": 500,
         }),
     }
 
@@ -1046,7 +1343,7 @@ def main() -> None:
     dashboard.position_json = dashboard_layout(charts)
     dashboard.json_metadata = json.dumps(
         {
-            "color_scheme": "bnbColors",
+            "color_scheme": "supersetColors",
             "refresh_frequency": 0,
             "timed_refresh_immune_slices": [],
             "expanded_slices": {},
@@ -1055,77 +1352,151 @@ def main() -> None:
         }
     )
     dashboard.css = """
-.dashboard {
-  background: #f4f6f8;
-  color: #24313d;
+.dashboard,
+.dashboard-container,
+.dashboard-layout {
+  background: #f4f7fb !important;
+  color: #24364b !important;
+  font-family: "Segoe UI", Inter, Arial, sans-serif !important;
 }
 .dashboard-header {
-  background: #ffffff;
-  border-bottom: 1px solid #e3e8ec;
-  box-shadow: 0 1px 3px rgba(36, 49, 61, 0.06);
-  padding: 12px 18px;
-}
-.dashboard-header .dashboard-component-header {
-  font-weight: 700;
+  background: #ffffff !important;
+  border-bottom: 1px solid #dfe7f0 !important;
+  box-shadow: 0 1px 3px rgba(31, 55, 78, 0.06) !important;
+  padding: 10px 18px !important;
 }
 .dashboard-content {
-  padding: 12px 16px 24px;
+  width: 100% !important;
+  max-width: 1760px;
+  margin: 0 auto;
+  padding: 18px 20px 32px !important;
 }
 .dashboard-component-tabs .ant-tabs-nav {
-  background: #ffffff;
-  border: 1px solid #e3e8ec;
-  border-radius: 10px;
-  margin: 0 0 14px;
-  padding: 0 10px;
+  background: #ffffff !important;
+  border: 1px solid #dfe7f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 2px rgba(31, 55, 78, 0.04) !important;
+  margin: 0 0 14px !important;
+  padding: 4px 6px !important;
 }
 .dashboard-component-tabs .ant-tabs-tab {
-  color: #667785;
-  font-weight: 600;
-  padding: 12px 16px;
+  color: #5b6b7f !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  margin: 0 2px !important;
+  padding: 9px 13px !important;
+  transition: background 120ms ease, color 120ms ease !important;
 }
-.dashboard-component-tabs .ant-tabs-tab-active {
-  color: #157a55;
+.dashboard-component-tabs .ant-tabs-tab:hover {
+  background: #f1f6fc !important;
+  color: #0f6cbd !important;
+}
+.dashboard-component-tabs .ant-tabs-tab-active,
+.dashboard-component-tabs .ant-tabs-tab-active * {
+  background: #e7f1fb !important;
+  color: #0f6cbd !important;
 }
 .dashboard-component-tabs .ant-tabs-ink-bar {
-  background: #157a55;
-  height: 3px;
+  background: transparent !important;
+}
+.dashboard-markdown {
+  background: linear-gradient(110deg, #edf6ff 0%, #f7fbff 68%, #ffffff 100%) !important;
+  border: 1px solid #d5e6f7 !important;
+  border-left: 4px solid #0f6cbd !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 2px rgba(31, 55, 78, 0.04) !important;
+  padding: 13px 17px !important;
+}
+.dashboard-markdown h2 {
+  color: #17324d !important;
+  font-size: 21px !important;
+  font-weight: 650 !important;
+  line-height: 28px !important;
+  margin: 0 0 4px !important;
+}
+.dashboard-markdown p,
+.dashboard-markdown strong {
+  color: #53677d !important;
+  font-size: 12px !important;
+  line-height: 18px !important;
+  margin: 0 !important;
 }
 .dashboard-component-chart-holder {
-  background: #ffffff;
-  border: 1px solid #e3e8ec;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(36, 49, 61, 0.05);
-  overflow: hidden;
+  background: #ffffff !important;
+  border: 1px solid #dfe7f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(31, 55, 78, 0.06) !important;
+  overflow: hidden !important;
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease !important;
 }
 .dashboard-component-chart-holder:hover {
-  border-color: #b9c9c1;
-  box-shadow: 0 4px 12px rgba(36, 49, 61, 0.08);
+  border-color: #b8d3ed !important;
+  box-shadow: 0 6px 18px rgba(31, 55, 78, 0.10) !important;
+  transform: translateY(-1px) !important;
 }
-.chart-header {
-  border-bottom: 1px solid #eef1f3;
-  padding: 10px 12px 8px;
+.chart-header,
+[data-test="slice-header"] {
+  background: #ffffff !important;
+  border-bottom: 1px solid #edf1f6 !important;
+  min-height: 42px !important;
+  padding: 9px 13px 7px !important;
 }
-.chart-header .header-title {
-  color: #24313d;
-  font-size: 14px;
-  font-weight: 650;
+.chart-header .header-title,
+[data-test="slice-header"] .header-title,
+[data-test="slice-header"] .header-title a {
+  color: #213547 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
 }
 .dashboard-component-row {
-  margin-bottom: 12px;
+  margin-bottom: 14px !important;
 }
 .slice_container {
-  padding: 4px 8px 8px;
+  background: #ffffff !important;
+  padding: 5px 11px 11px !important;
 }
 .big_number_total {
-  color: #157a55;
+  color: #0f4c75 !important;
+  font-weight: 650 !important;
+}
+.big_number_total .header-line,
+.big_number_total .subheader-line {
+  color: #0f4c75 !important;
+}
+[data-test="slice-header"] .header-controls svg {
+  color: #6b7f94 !important;
 }
 .table-condensed > thead > tr > th {
-  background: #f7f9fa;
-  color: #526270;
-  font-weight: 650;
+  background: #f3f6fa !important;
+  color: #40566d !important;
+  border-color: #dfe7f0 !important;
+  font-weight: 650 !important;
+}
+.table-condensed > tbody > tr > td {
+  color: #2f4357 !important;
+  border-color: #edf1f6 !important;
 }
 .table-condensed > tbody > tr:hover {
-  background: #f0f7f4;
+  background: #f5f9fd !important;
+}
+.cell-bar.positive {
+  background: rgba(15, 108, 189, 0.18) !important;
+}
+.cell-bar.negative {
+  background: rgba(209, 52, 56, 0.18) !important;
+}
+.ant-pagination-item-active {
+  border-color: #0f6cbd !important;
+}
+.ant-pagination-item-active a {
+  color: #0f6cbd !important;
+}
+@media (max-width: 1440px) {
+  .dashboard-content { padding: 14px 12px 26px !important; }
+  .dashboard-component-tabs .ant-tabs-tab { padding: 8px 9px !important; }
+  .chart-header .header-title { font-size: 13px !important; }
 }
 """
     db.session.flush()

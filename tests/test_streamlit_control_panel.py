@@ -273,6 +273,13 @@ class TestStreamlitControlPanel(unittest.TestCase):
         self.assertIn('st.expander("🚀 Chế độ Demo Thuyết trình (Presentation Mode)")', content)
         self.assertIn('"🚀 Khởi chạy Auto-Demo"', content)
 
+    def test_bi_guidance_points_to_current_superset_demo(self) -> None:
+        content = self.app_path.read_text(encoding="utf-8")
+
+        self.assertIn("green-taxi-driver-operations", content)
+        self.assertIn("scripts.smoke_test_superset", content)
+        self.assertNotIn("Power BI", content)
+
     def test_theme_config_uses_green_taxi_light_palette(self) -> None:
         self.assertTrue(self.theme_path.exists())
         content = self.theme_path.read_text(encoding="utf-8")

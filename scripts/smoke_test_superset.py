@@ -118,8 +118,12 @@ def superset_smoke_tests() -> dict[str, object]:
         "trip_dropoff",
         "shift",
         "dq_summary",
+        "dq_batch_summary",
         "pareto_pickup_zone",
+        "top_pickup_zone_hour",
         "driver_performance_summary",
+        "driver_performance_monthly",
+        "vehicle_performance_monthly",
         "olap_trip_cube",
         "olap_shift_cube",
         "driver_segments",
@@ -140,8 +144,8 @@ def superset_smoke_tests() -> dict[str, object]:
         )
     )
     charts = request_json(f"{base_url}/api/v1/chart/?q={chart_query}", token=token)
-    if charts.get("count") != 42:
-        raise AssertionError(f"Expected 42 dashboard charts, found {charts.get('count')}")
+    if charts.get("count") != 35:
+        raise AssertionError(f"Expected 35 dashboard charts, found {charts.get('count')}")
     viz_types = {item["viz_type"] for item in charts.get("result", [])}
     if "heatmap_v2" not in viz_types or "heatmap" in viz_types:
         raise AssertionError(f"Unexpected heatmap viz types: {sorted(viz_types)}")
@@ -155,8 +159,8 @@ def superset_smoke_tests() -> dict[str, object]:
             token=token,
         )
         metric_count += len(detail["result"].get("metrics", []))
-    if metric_count != 88:
-        raise AssertionError(f"Expected 88 metric instances, found {metric_count}")
+    if metric_count != 109:
+        raise AssertionError(f"Expected 109 metric instances, found {metric_count}")
 
     dashboard_detail = request_json(
         f"{base_url}/api/v1/dashboard/{dashboard_id}",
@@ -187,21 +191,26 @@ def superset_smoke_tests() -> dict[str, object]:
     if not expected_tabs.issubset(set(tabs)):
         raise AssertionError(f"Missing expected dashboard tabs: {expected_tabs - set(tabs)}")
 
-    if markdown_cards:
-        raise AssertionError(f"Dashboard must not contain narrative cards: {markdown_cards}")
+    if len(markdown_cards) != 6:
+        raise AssertionError(f"Expected one context card per tab, found {markdown_cards}")
 
     required_charts = {
-        "Monthly Revenue & Trip Volume": "echarts_timeseries_line",
-        "Demand by Weekday & Hour": "heatmap_v2",
-        "Zone Concentration by Trips": "table",
-        "Driver Performance Matrix": "bubble",
-        "Driver Review Queue": "table",
-        "DQ Issues over Time": "echarts_timeseries_line",
-        "OLAP Slice - Monthly Pickup Borough Revenue": "echarts_timeseries_bar",
-        "OLAP Dice - Month Borough Vehicle": "table",
-        "OLAP Drill-down - Time Hierarchy": "table",
-        "OLAP Roll-up - Zone to Borough Utilization": "echarts_timeseries_bar",
-        "OLAP Pivot - Borough by Hour Bucket": "pivot_table_v2",
+        "Monthly total payment revenue": "echarts_timeseries_line",
+        "Observed trips by pickup zone and hour": "heatmap_v2",
+        "Pickup-zone concentration": "table",
+        "Zone value profile — volume vs revenue per trip": "bubble",
+        "Driver peer matrix — latest month": "bubble",
+        "Driver review queue — latest month": "table",
+        "30 lowest-utilization shifts — latest month": "table",
+        "Successful NDS run health": "table",
+        "Slice — Jul 2021 · Manhattan hourly profile": "echarts_timeseries_bar",
+        "Dice subset — Q1 2021 · Manhattan/Queens · Sedan": "table",
+        "Drill detail — Jul 2021 · Manhattan day × hour": "heatmap_v2",
+        "Roll-up — 2021 pickup zone → borough": "echarts_timeseries_bar",
+        "Pivot matrix — pickup borough × hour bucket": "pivot_table_v2",
+        "Published driver-segmentation model run": "table",
+        "Published association-rule model run": "table",
+        "Published association rules — ranked by lift": "table",
     }
     chart_by_name = {
         chart["slice_name"]: chart for chart in charts.get("result", [])
@@ -215,7 +224,7 @@ def superset_smoke_tests() -> dict[str, object]:
                 f"{chart_name} must use {expected_viz_type}, found {chart['viz_type']}"
             )
 
-    c_driver_table = chart_by_name["Driver Review Queue"]
+    c_driver_table = chart_by_name["Driver review queue — latest month"]
     driver_params = json.loads(c_driver_table.get("params") or "{}")
     driver_filters = driver_params.get("adhoc_filters", [])
     if not any(
@@ -235,12 +244,12 @@ def superset_smoke_tests() -> dict[str, object]:
         bench_data = json.load(bf)
     benchmark_total = bench_data.get("total_charts")
     benchmark_chart_count = len(bench_data.get("charts", {}))
-    benchmark_is_current = benchmark_total == 42 and benchmark_chart_count == 42
+    benchmark_is_current = benchmark_total == 35 and benchmark_chart_count == 35
     if not benchmark_is_current:
         print(
             "Benchmark artifact is stale; rerun python -m scripts.benchmark_superset "
             f"after provisioning OLAP charts. Found total_charts={benchmark_total}, "
-            f"charts={benchmark_chart_count}, expected 42.",
+            f"charts={benchmark_chart_count}, expected 35.",
             file=sys.stderr,
         )
 

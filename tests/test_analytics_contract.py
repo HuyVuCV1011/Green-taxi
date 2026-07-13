@@ -31,7 +31,11 @@ class AnalyticsContractTests(unittest.TestCase):
             "analytics.olap_trip_cube",
             "analytics.olap_shift_cube",
             "analytics.dq_summary",
+            "analytics.dq_batch_summary",
             "analytics.pareto_pickup_zone",
+            "analytics.top_pickup_zone_hour",
+            "analytics.driver_performance_monthly",
+            "analytics.vehicle_performance_monthly",
         ):
             self.assertIn(f"CREATE OR REPLACE VIEW {view_name}", self.sql)
 
@@ -132,6 +136,8 @@ class AnalyticsContractTests(unittest.TestCase):
         self.assertIn("`shift_start`", self.semantic)
         self.assertIn("`shift_end`", self.semantic)
         self.assertIn("`analytics.dq_summary`", self.semantic)
+        self.assertIn("`analytics.dq_batch_summary`", self.semantic)
+        self.assertIn("exploratory", self.semantic.lower())
         self.assertNotIn("USERELATIONSHIP", self.semantic)
 
     def test_final_dictionary_matches_current_dds_contract(self) -> None:

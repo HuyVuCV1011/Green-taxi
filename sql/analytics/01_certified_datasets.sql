@@ -9,8 +9,12 @@ DROP VIEW IF EXISTS analytics.trip_dropoff CASCADE;
 DROP VIEW IF EXISTS analytics.trip_pickup CASCADE;
 DROP VIEW IF EXISTS analytics.shift CASCADE;
 DROP VIEW IF EXISTS analytics.dq_summary CASCADE;
+DROP VIEW IF EXISTS analytics.dq_batch_summary CASCADE;
 DROP VIEW IF EXISTS analytics.pareto_pickup_zone CASCADE;
+DROP VIEW IF EXISTS analytics.top_pickup_zone_hour CASCADE;
 DROP VIEW IF EXISTS analytics.driver_performance_summary CASCADE;
+DROP VIEW IF EXISTS analytics.driver_performance_monthly CASCADE;
+DROP VIEW IF EXISTS analytics.vehicle_performance_monthly CASCADE;
 
 -- Physical table for K-Means driver segments
 CREATE TABLE IF NOT EXISTS analytics.driver_segments (
@@ -25,8 +29,24 @@ CREATE TABLE IF NOT EXISTS analytics.driver_segments (
     average_trip_distance NUMERIC(10, 2),
     tips_per_trip NUMERIC(10, 2),
     cluster_id INTEGER,
-    segment_label VARCHAR(50)
+    segment_label VARCHAR(50),
+    model_run_id UUID,
+    model_run_at TIMESTAMPTZ,
+    training_start DATE,
+    training_end DATE,
+    feature_set TEXT,
+    model_k SMALLINT,
+    silhouette_score NUMERIC(8, 6)
 );
+
+ALTER TABLE analytics.driver_segments
+    ADD COLUMN IF NOT EXISTS model_run_id UUID,
+    ADD COLUMN IF NOT EXISTS model_run_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS training_start DATE,
+    ADD COLUMN IF NOT EXISTS training_end DATE,
+    ADD COLUMN IF NOT EXISTS feature_set TEXT,
+    ADD COLUMN IF NOT EXISTS model_k SMALLINT,
+    ADD COLUMN IF NOT EXISTS silhouette_score NUMERIC(8, 6);
 
 -- Physical table for Route Association Rules
 CREATE TABLE IF NOT EXISTS analytics.route_association_rules (
@@ -37,8 +57,44 @@ CREATE TABLE IF NOT EXISTS analytics.route_association_rules (
     confidence NUMERIC(8, 6),
     lift NUMERIC(12, 6),
     antecedent_support NUMERIC(8, 6),
-    consequent_support NUMERIC(8, 6)
+    consequent_support NUMERIC(8, 6),
+    model_run_id UUID,
+    model_run_at TIMESTAMPTZ,
+    training_start DATE,
+    training_end DATE,
+    basket_count INTEGER,
+    rules_generated INTEGER,
+    rules_published INTEGER,
+    min_support NUMERIC(8, 6),
+    min_confidence NUMERIC(8, 6),
+    min_lift NUMERIC(12, 6),
+    antecedent_pickup_borough VARCHAR(100),
+    antecedent_pickup_zone VARCHAR(100),
+    antecedent_hour_bucket VARCHAR(50),
+    antecedent_day_type VARCHAR(50),
+    antecedent_vendor VARCHAR(100),
+    consequent_dropoff_borough VARCHAR(100),
+    consequent_dropoff_zone VARCHAR(100)
 );
+
+ALTER TABLE analytics.route_association_rules
+    ADD COLUMN IF NOT EXISTS model_run_id UUID,
+    ADD COLUMN IF NOT EXISTS model_run_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS training_start DATE,
+    ADD COLUMN IF NOT EXISTS training_end DATE,
+    ADD COLUMN IF NOT EXISTS basket_count INTEGER,
+    ADD COLUMN IF NOT EXISTS rules_generated INTEGER,
+    ADD COLUMN IF NOT EXISTS rules_published INTEGER,
+    ADD COLUMN IF NOT EXISTS min_support NUMERIC(8, 6),
+    ADD COLUMN IF NOT EXISTS min_confidence NUMERIC(8, 6),
+    ADD COLUMN IF NOT EXISTS min_lift NUMERIC(12, 6),
+    ADD COLUMN IF NOT EXISTS antecedent_pickup_borough VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS antecedent_pickup_zone VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS antecedent_hour_bucket VARCHAR(50),
+    ADD COLUMN IF NOT EXISTS antecedent_day_type VARCHAR(50),
+    ADD COLUMN IF NOT EXISTS antecedent_vendor VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS consequent_dropoff_borough VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS consequent_dropoff_zone VARCHAR(100);
 
 -- Grain: one row per trip. Default temporal/location role: pickup.
 CREATE OR REPLACE VIEW analytics.trip_pickup AS
@@ -222,11 +278,25 @@ SELECT
     end_location.service_zone AS shift_end_service_zone,
     f.shift_status,
     f.is_anomaly AS is_shift_anomaly,
+    DATE_TRUNC('month', f.shift_start)::date =
+        MAX(DATE_TRUNC('month', f.shift_start)::date) OVER () AS is_latest_shift_month,
+    ROW_NUMBER() OVER (
+        PARTITION BY DATE_TRUNC('month', f.shift_start)::date
+        ORDER BY
+            f.occupied_minutes / NULLIF(f.shift_duration_minutes, 0) ASC NULLS LAST,
+            f.shift_id
+    ) AS monthly_utilization_rank,
     f.shift_duration_minutes,
     f.trip_count,
     f.occupied_minutes,
     f.idle_minutes,
     f.total_revenue,
+    f.total_revenue * 60 / NULLIF(f.shift_duration_minutes, 0)
+        AS shift_revenue_per_hour,
+    f.occupied_minutes / NULLIF(f.shift_duration_minutes, 0)
+        AS shift_utilization_rate,
+    f.occupied_minutes * 100 / NULLIF(f.shift_duration_minutes, 0)
+        AS shift_utilization_pct,
     f.total_tips,
     f.batch_id
 FROM dds.fact_driver_shift AS f
@@ -442,6 +512,65 @@ GROUP BY
     quarantine.error_rule_code,
     quarantine.severity;
 
+-- Grain: one row per successful NDS pipeline run, including runs with zero DQ
+-- events. This prevents "latest run" from silently meaning "latest run that
+-- happened to have an issue". Issue events remain events, not affected rows.
+CREATE OR REPLACE VIEW analytics.dq_batch_summary AS
+WITH batch_rollup AS (
+    SELECT
+        batch_id,
+        release_id,
+        MAX(event_date_utc) AS latest_event_date_utc,
+        COALESCE(SUM(issue_count), 0)::bigint AS dq_issue_count,
+        COALESCE(SUM(quarantine_count), 0)::bigint AS quarantine_count,
+        COUNT(DISTINCT source_system_code) AS source_system_count,
+        COUNT(DISTINCT rule_code) AS rule_count
+    FROM analytics.dq_summary
+    GROUP BY batch_id, release_id
+),
+ranked AS (
+    SELECT
+        metadata.batch_id,
+        metadata.release_id,
+        batch_rollup.latest_event_date_utc,
+        metadata.pipeline_name,
+        metadata.batch_status,
+        metadata.batch_started_at,
+        metadata.batch_completed_at,
+        metadata.row_count_expected,
+        metadata.row_count_loaded,
+        COALESCE(batch_rollup.dq_issue_count, 0)::bigint AS dq_issue_count,
+        COALESCE(batch_rollup.quarantine_count, 0)::bigint AS quarantine_count,
+        COALESCE(batch_rollup.source_system_count, 0)::bigint AS source_system_count,
+        COALESCE(batch_rollup.rule_count, 0)::bigint AS rule_count,
+        ROW_NUMBER() OVER (
+            ORDER BY metadata.batch_completed_at DESC, metadata.batch_id DESC
+        ) AS batch_recency_rank
+    FROM audit.metadata_etl_batch AS metadata
+    LEFT JOIN batch_rollup
+      ON batch_rollup.batch_id = metadata.batch_id
+    WHERE metadata.pipeline_name = 'warehouse_nds'
+      AND metadata.batch_status = 'SUCCEEDED'
+      AND metadata.batch_completed_at IS NOT NULL
+)
+SELECT
+    batch_id,
+    release_id,
+    latest_event_date_utc,
+    pipeline_name,
+    batch_status,
+    batch_started_at,
+    batch_completed_at,
+    row_count_expected,
+    row_count_loaded,
+    dq_issue_count,
+    quarantine_count,
+    source_system_count,
+    rule_count,
+    batch_recency_rank,
+    batch_recency_rank = 1 AS is_latest_dq_batch
+FROM ranked;
+
 -- Grain: one row per pickup zone. Pre-calculates cumulative contribution metrics.
 CREATE OR REPLACE VIEW analytics.pareto_pickup_zone AS
 WITH zone_trips AS (
@@ -476,6 +605,43 @@ SELECT
     cum_trips::double precision / NULLIF(total_trips, 0) AS cum_trips_pct,
     cum_revenue::double precision / NULLIF(total_revenue, 0) AS cum_revenue_pct
 FROM zone_cum;
+
+-- Grain: one row per top pickup zone and pickup hour. The cohort is selected by
+-- all-period observed trip volume so every selected zone retains all 24 hours.
+CREATE OR REPLACE VIEW analytics.top_pickup_zone_hour AS
+WITH zone_totals AS (
+    SELECT
+        pickup_borough,
+        pickup_zone,
+        COUNT(trip_id) AS zone_trips,
+        ROW_NUMBER() OVER (
+            ORDER BY COUNT(trip_id) DESC, pickup_borough, pickup_zone
+        ) AS zone_rank
+    FROM analytics.trip_pickup
+    GROUP BY pickup_borough, pickup_zone
+),
+top_zones AS (
+    SELECT pickup_borough, pickup_zone, zone_rank
+    FROM zone_totals
+    WHERE zone_rank <= 12
+)
+SELECT
+    top_zones.zone_rank,
+    trip.pickup_borough,
+    trip.pickup_zone,
+    trip.pickup_borough || ' · ' || trip.pickup_zone AS pickup_zone_label,
+    trip.pickup_hour,
+    COUNT(trip.trip_id) AS observed_trips,
+    COALESCE(SUM(trip.total_amount), 0::numeric) AS total_revenue
+FROM analytics.trip_pickup AS trip
+JOIN top_zones
+  ON top_zones.pickup_borough = trip.pickup_borough
+ AND top_zones.pickup_zone = trip.pickup_zone
+GROUP BY
+    top_zones.zone_rank,
+    trip.pickup_borough,
+    trip.pickup_zone,
+    trip.pickup_hour;
 
 -- Grain: one row per driver across the certified completed-shift population.
 CREATE OR REPLACE VIEW analytics.driver_performance_summary AS
@@ -525,4 +691,123 @@ SELECT
             THEN 'High idle/shift'
         ELSE 'Within peer range'
     END AS review_reason
+FROM benchmarked;
+
+-- Grain: one row per driver and reporting month. Additive components are kept so
+-- Superset can recompute ratio-of-sums for a selected month range.
+CREATE OR REPLACE VIEW analytics.driver_performance_monthly AS
+WITH monthly_rollup AS (
+    SELECT
+        DATE_TRUNC('month', shift_start)::date AS reporting_month,
+        driver_key,
+        driver_id,
+        driver_name,
+        COUNT(shift_id) AS completed_shifts,
+        COALESCE(SUM(trip_count), 0)::bigint AS total_trips,
+        COALESCE(SUM(total_revenue), 0::numeric) AS total_revenue,
+        COALESCE(SUM(occupied_minutes), 0::numeric) AS occupied_minutes,
+        COALESCE(SUM(idle_minutes), 0::numeric) AS idle_minutes,
+        COALESCE(SUM(shift_duration_minutes), 0::numeric) AS shift_duration_minutes
+    FROM analytics.shift
+    GROUP BY DATE_TRUNC('month', shift_start)::date, driver_key, driver_id, driver_name
+),
+benchmarked AS (
+    SELECT
+        monthly_rollup.*,
+        PERCENT_RANK() OVER (
+            PARTITION BY reporting_month
+            ORDER BY total_revenue * 60 / NULLIF(shift_duration_minutes, 0)
+        ) AS revenue_per_hour_percentile,
+        PERCENT_RANK() OVER (
+            PARTITION BY reporting_month
+            ORDER BY idle_minutes::numeric / NULLIF(completed_shifts, 0)
+        ) AS idle_minutes_per_shift_percentile
+    FROM monthly_rollup
+)
+SELECT
+    reporting_month,
+    driver_key,
+    driver_id,
+    driver_name,
+    completed_shifts,
+    total_trips,
+    total_revenue,
+    occupied_minutes,
+    idle_minutes,
+    shift_duration_minutes,
+    total_trips::numeric / NULLIF(completed_shifts, 0) AS trips_per_shift,
+    total_revenue * 60 / NULLIF(shift_duration_minutes, 0) AS revenue_per_hour,
+    occupied_minutes / NULLIF(shift_duration_minutes, 0) AS utilization_rate,
+    idle_minutes::numeric / NULLIF(completed_shifts, 0) AS idle_minutes_per_shift,
+    revenue_per_hour_percentile,
+    idle_minutes_per_shift_percentile,
+    completed_shifts >= 10
+        AND revenue_per_hour_percentile < 0.25
+        AND idle_minutes_per_shift_percentile >= 0.75 AS needs_review,
+    CASE
+        WHEN completed_shifts < 10 THEN 'Below minimum sample'
+        WHEN revenue_per_hour_percentile < 0.25
+             AND idle_minutes_per_shift_percentile >= 0.75 THEN 'Needs review'
+        ELSE 'Peer range'
+    END AS review_status,
+    CASE
+        WHEN completed_shifts < 10 THEN 'Below provisional minimum shift sample'
+        WHEN revenue_per_hour_percentile < 0.25
+             AND idle_minutes_per_shift_percentile >= 0.75
+            THEN 'Low revenue/hour and high idle/shift'
+        WHEN revenue_per_hour_percentile < 0.25 THEN 'Low revenue/hour'
+        WHEN idle_minutes_per_shift_percentile >= 0.75 THEN 'High idle/shift'
+        ELSE 'Within peer range'
+    END AS review_reason,
+    reporting_month = MAX(reporting_month) OVER () AS is_latest_reporting_month
+FROM benchmarked;
+
+-- Grain: one row per vehicle and reporting month. This is an exploratory peer
+-- benchmark: the provisional 10-shift sample rule is not a certified KPI.
+CREATE OR REPLACE VIEW analytics.vehicle_performance_monthly AS
+WITH monthly_rollup AS (
+    SELECT
+        DATE_TRUNC('month', shift_start)::date AS reporting_month,
+        vehicle_key,
+        vehicle_id,
+        vehicle_type,
+        COUNT(shift_id) AS completed_shifts,
+        COALESCE(SUM(trip_count), 0)::bigint AS total_trips,
+        COALESCE(SUM(total_revenue), 0::numeric) AS total_revenue,
+        COALESCE(SUM(occupied_minutes), 0::numeric) AS occupied_minutes,
+        COALESCE(SUM(idle_minutes), 0::numeric) AS idle_minutes,
+        COALESCE(SUM(shift_duration_minutes), 0::numeric) AS shift_duration_minutes
+    FROM analytics.shift
+    GROUP BY
+        DATE_TRUNC('month', shift_start)::date,
+        vehicle_key,
+        vehicle_id,
+        vehicle_type
+),
+benchmarked AS (
+    SELECT
+        monthly_rollup.*,
+        PERCENT_RANK() OVER (
+            PARTITION BY reporting_month, vehicle_type
+            ORDER BY occupied_minutes / NULLIF(shift_duration_minutes, 0)
+        ) AS utilization_percentile
+    FROM monthly_rollup
+)
+SELECT
+    reporting_month,
+    vehicle_key,
+    vehicle_id,
+    vehicle_type,
+    completed_shifts,
+    total_trips,
+    total_revenue,
+    occupied_minutes,
+    idle_minutes,
+    shift_duration_minutes,
+    total_trips::numeric / NULLIF(completed_shifts, 0) AS trips_per_shift,
+    total_revenue * 60 / NULLIF(shift_duration_minutes, 0) AS revenue_per_hour,
+    occupied_minutes / NULLIF(shift_duration_minutes, 0) AS utilization_rate,
+    utilization_percentile,
+    completed_shifts >= 10 AND utilization_percentile < 0.25 AS is_review_candidate,
+    reporting_month = MAX(reporting_month) OVER () AS is_latest_reporting_month
 FROM benchmarked;

@@ -143,7 +143,7 @@ python scripts/run_data_mining.py
 
 Script ghi `analytics.driver_segments` và
 `analytics.route_association_rules`, sau đó Superset provisioning sẽ hiển thị
-các kết quả này trong tab **Data Mining Insights**.
+các kết quả này trong tab **Exploratory models**.
 
 Benchmark Superset sau khi đổi chart/layout:
 

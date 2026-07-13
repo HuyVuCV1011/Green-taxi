@@ -1,12 +1,33 @@
 import os
 import sys
+import warnings
+from datetime import datetime, timezone
+from uuid import uuid4
+
 import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 
 # Ensure print output is flushed
 sys.stdout.reconfigure(line_buffering=True) if hasattr(sys.stdout, 'reconfigure') else None
+
+DRIVER_CLUSTER_COUNT = 3
+RULE_MIN_SUPPORT = 0.005
+RULE_MIN_CONFIDENCE = 0.2
+RULE_MIN_LIFT = 1.1
+MAX_PUBLISHED_RULES = 100
+
+def read_sql_quietly(query, conn):
+    """Read SQL with the project's psycopg2 connection without noisy pandas DBAPI warnings."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="pandas only supports SQLAlchemy connectable.*",
+            category=UserWarning,
+        )
+        return pd.read_sql(query, conn)
 
 def format_item(item):
     prefix_map = {
@@ -27,6 +48,40 @@ def format_item(item):
 def format_rule_string(rule_str):
     items = [format_item(i.strip()) for i in rule_str.split(', ')]
     return ', '.join(items)
+
+
+def rule_dimension_fields(antecedent, consequent):
+    """Expose structured rule dimensions alongside the readable rule text."""
+    fields = {
+        'antecedent_pickup_borough': None,
+        'antecedent_pickup_zone': None,
+        'antecedent_hour_bucket': None,
+        'antecedent_day_type': None,
+        'antecedent_vendor': None,
+        'consequent_dropoff_borough': None,
+        'consequent_dropoff_zone': None,
+    }
+    antecedent_prefixes = {
+        'pb:': 'antecedent_pickup_borough',
+        'pz:': 'antecedent_pickup_zone',
+        'hb:': 'antecedent_hour_bucket',
+        'dt:': 'antecedent_day_type',
+        'vn:': 'antecedent_vendor',
+    }
+    consequent_prefixes = {
+        'db:': 'consequent_dropoff_borough',
+        'dz:': 'consequent_dropoff_zone',
+    }
+    for item in antecedent:
+        for prefix, field in antecedent_prefixes.items():
+            if item.startswith(prefix):
+                fields[field] = item[len(prefix):]
+                break
+    for prefix, field in consequent_prefixes.items():
+        if consequent.startswith(prefix):
+            fields[field] = consequent[len(prefix):]
+            break
+    return fields
 
 def run_apriori(transactions, min_support=0.005, min_confidence=0.2, min_lift=1.1):
     num_trans = len(transactions)
@@ -95,6 +150,7 @@ def run_apriori(transactions, min_support=0.005, min_confidence=0.2, min_lift=1.
                 lift = conf / support_dict[consequent]
                 
                 if conf >= min_confidence and lift >= min_lift:
+                    fields = rule_dimension_fields(antecedent, item)
                     rules.append({
                         'antecedent': format_rule_string(', '.join(sorted(list(antecedent)))),
                         'consequent': format_item(item),
@@ -102,7 +158,8 @@ def run_apriori(transactions, min_support=0.005, min_confidence=0.2, min_lift=1.
                         'confidence': conf,
                         'lift': lift,
                         'antecedent_support': support_dict[antecedent],
-                        'consequent_support': support_dict[consequent]
+                        'consequent_support': support_dict[consequent],
+                        **fields,
                     })
                     
     rules.sort(key=lambda x: x['lift'], reverse=True)
@@ -149,10 +206,13 @@ def run_driver_segmentation(conn) -> int:
     FROM driver_shifts s
     LEFT JOIN driver_trips t ON s.driver_key = t.driver_key;
     """
-    df = pd.read_sql(query, conn)
+    df = read_sql_quietly(query, conn)
     
-    if len(df) < 3:
-        print(f"Not enough drivers ({len(df)}) to cluster into 3 groups. Skipping driver clustering.")
+    if len(df) <= DRIVER_CLUSTER_COUNT:
+        print(
+            f"Not enough drivers ({len(df)}) to calculate a valid silhouette score "
+            f"for {DRIVER_CLUSTER_COUNT} groups. Skipping driver clustering."
+        )
         return 0
         
     features = [
@@ -167,8 +227,12 @@ def run_driver_segmentation(conn) -> int:
     X_scaled = scaler.fit_transform(X)
     
     # Fit KMeans
-    kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+    kmeans = KMeans(n_clusters=DRIVER_CLUSTER_COUNT, random_state=42, n_init=10)
     df['cluster_id'] = kmeans.fit_predict(X_scaled)
+    silhouette = float(silhouette_score(X_scaled, df['cluster_id']))
+    model_run_id = uuid4()
+    model_run_at = datetime.now(timezone.utc)
+    feature_set = ','.join(features)
     
     # Dynamic label mapping based on centroids
     cluster_means = df.groupby('cluster_id')[['revenue_per_hour', 'idle_minutes_per_shift', 'utilization_rate']].mean()
@@ -199,19 +263,30 @@ def run_driver_segmentation(conn) -> int:
             driver_key, driver_id, driver_name, completed_shifts,
             trips_per_shift, revenue_per_hour, utilization_rate,
             idle_minutes_per_shift, average_trip_distance, tips_per_trip,
-            cluster_id, segment_label
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            cluster_id, segment_label, model_run_id, model_run_at,
+            training_start, training_end, feature_set, model_k, silhouette_score
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
+
+        with conn.cursor() as metadata_cur:
+            metadata_cur.execute(
+                "SELECT MIN(shift_start)::date, MAX(shift_start)::date FROM analytics.shift"
+            )
+            training_start, training_end = metadata_cur.fetchone()
         
         for _, row in df.iterrows():
             cur.execute(insert_query, (
                 row['driver_key'], row['driver_id'], row['driver_name'], int(row['completed_shifts']),
                 row['trips_per_shift'], row['revenue_per_hour'], row['utilization_rate'],
                 row['idle_minutes_per_shift'], row['average_trip_distance'], row['tips_per_trip'],
-                int(row['cluster_id']), row['segment_label']
+                int(row['cluster_id']), row['segment_label'], str(model_run_id), model_run_at,
+                training_start, training_end, feature_set, DRIVER_CLUSTER_COUNT, silhouette,
             ))
             
-    print(f"Successfully loaded {len(df)} driver segments into analytics.driver_segments.")
+    print(
+        f"Successfully loaded {len(df)} driver segments into analytics.driver_segments "
+        f"for model run {model_run_id} (silhouette={silhouette:.4f})."
+    )
     return len(df)
 
 def run_route_association_rules(conn) -> int:
@@ -221,6 +296,8 @@ def run_route_association_rules(conn) -> int:
     # Query trips
     query = """
     SELECT
+        trip_id,
+        pickup_datetime,
         pickup_borough,
         pickup_zone,
         dropoff_borough,
@@ -235,9 +312,10 @@ def run_route_association_rules(conn) -> int:
         CASE WHEN pickup_day_name IN ('Saturday', 'Sunday') THEN 'Weekend' ELSE 'Weekday' END AS day_type,
         vendor_name
     FROM analytics.trip_pickup
+    ORDER BY trip_id
     LIMIT 50000;
     """
-    df = pd.read_sql(query, conn)
+    df = read_sql_quietly(query, conn)
     
     if len(df) == 0:
         print("No trip data found. Skipping association rules.")
@@ -258,7 +336,18 @@ def run_route_association_rules(conn) -> int:
         transactions.append(t)
         
     # Run Apriori
-    rules = run_apriori(transactions, min_support=0.005, min_confidence=0.2, min_lift=1.1)
+    rules = run_apriori(
+        transactions,
+        min_support=RULE_MIN_SUPPORT,
+        min_confidence=RULE_MIN_CONFIDENCE,
+        min_lift=RULE_MIN_LIFT,
+    )
+    model_run_id = uuid4()
+    model_run_at = datetime.now(timezone.utc)
+    training_start = pd.to_datetime(df['pickup_datetime']).min().date()
+    training_end = pd.to_datetime(df['pickup_datetime']).max().date()
+    rules_generated = len(rules)
+    rules_published = min(rules_generated, MAX_PUBLISHED_RULES)
     
     # Save to database
     with conn.cursor() as cur:
@@ -267,19 +356,33 @@ def run_route_association_rules(conn) -> int:
         insert_query = """
         INSERT INTO analytics.route_association_rules (
             antecedent, consequent, support, confidence, lift,
-            antecedent_support, consequent_support
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            antecedent_support, consequent_support, model_run_id, model_run_at,
+            training_start, training_end, basket_count, rules_generated,
+            rules_published, min_support, min_confidence, min_lift,
+            antecedent_pickup_borough, antecedent_pickup_zone,
+            antecedent_hour_bucket, antecedent_day_type, antecedent_vendor,
+            consequent_dropoff_borough, consequent_dropoff_zone
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         
-        for r in rules[:100]:
+        for r in rules[:MAX_PUBLISHED_RULES]:
             cur.execute(insert_query, (
                 r['antecedent'], r['consequent'], float(r['support']),
                 float(r['confidence']), float(r['lift']),
-                float(r['antecedent_support']), float(r['consequent_support'])
+                float(r['antecedent_support']), float(r['consequent_support']),
+                str(model_run_id), model_run_at, training_start, training_end,
+                len(transactions), rules_generated, rules_published,
+                RULE_MIN_SUPPORT, RULE_MIN_CONFIDENCE, RULE_MIN_LIFT,
+                r['antecedent_pickup_borough'], r['antecedent_pickup_zone'],
+                r['antecedent_hour_bucket'], r['antecedent_day_type'], r['antecedent_vendor'],
+                r['consequent_dropoff_borough'], r['consequent_dropoff_zone'],
             ))
             
-    print(f"Successfully loaded {min(len(rules), 100)} association rules into analytics.route_association_rules.")
-    return min(len(rules), 100)
+    print(
+        f"Successfully loaded {rules_published} published association rules "
+        f"from {rules_generated} generated rules for model run {model_run_id}."
+    )
+    return rules_published
 
 def execute_data_mining(conn) -> dict[str, int]:
     """Execute all data mining models and return loaded counts."""

@@ -39,8 +39,12 @@ class SupersetDemoContractTests(unittest.TestCase):
             "trip_dropoff",
             "shift",
             "dq_summary",
+            "dq_batch_summary",
             "pareto_pickup_zone",
+            "top_pickup_zone_hour",
             "driver_performance_summary",
+            "driver_performance_monthly",
+            "vehicle_performance_monthly",
             "olap_trip_cube",
             "olap_shift_cube",
             "driver_segments",
@@ -72,23 +76,24 @@ class SupersetDemoContractTests(unittest.TestCase):
         self.assertIn("viewer.password = generate_password_hash(password)", script)
         self.assertIn("driver_review_rule", script)
         self.assertIn("db.session.delete(slc)", script)
-        self.assertNotIn('"type": "MARKDOWN"', script)
-        self.assertIn('"x_axis": "pickup_weekday_label"', script)
+        self.assertIn('"type": "MARKDOWN"', script)
+        self.assertIn("Exploratory chart", script)
         self.assertIn('"groupby": "pickup_weekday_label"', script)
-        self.assertIn("Driver Performance Matrix", script)
-        self.assertIn("Average Trip Distance by Borough", script)
-        self.assertIn("OLAP Slice - Monthly Pickup Borough Revenue", script)
-        self.assertIn("OLAP Dice - Month Borough Vehicle", script)
-        self.assertIn("OLAP Drill-down - Time Hierarchy", script)
-        self.assertIn("OLAP Roll-up - Zone to Borough Utilization", script)
-        self.assertIn("OLAP Pivot - Borough by Hour Bucket", script)
-        self.assertIn("Total Segmented Drivers", script)
-        self.assertIn("Total Rules Found", script)
-        self.assertIn("Driver Segments Analysis", script)
-        self.assertIn("Driver Segments Profile", script)
-        self.assertIn("Top Route & Demand Association Rules", script)
+        self.assertIn("Monthly total payment revenue", script)
+        self.assertIn("Demand patterns", script)
+        self.assertIn("Trust & data health", script)
+        self.assertIn("Driver peer matrix — latest month", script)
+        self.assertIn("30 lowest-utilization shifts — latest month", script)
+        self.assertIn("Zone value profile — volume vs revenue per trip", script)
+        self.assertIn("Dice subset — Q1 2021", script)
+        self.assertIn("Drill detail — Jul 2021 · Manhattan day × hour", script)
+        self.assertIn("Pivot matrix", script)
+        self.assertIn("Published driver-segmentation model run", script)
+        self.assertIn("Published association rules", script)
+        self.assertIn("Driver segments — utilization vs revenue per shift hour", script)
+        self.assertIn("Segment profile — exploratory driver averages", script)
         self.assertIn('"pivot_table_v2"', script)
-        self.assertIn("#f4f6f8", script)
+        self.assertIn("#f4f7fb", script)
 
     def test_smoke_suite_checks_read_and_write_boundaries(self) -> None:
         smoke = (ROOT / "scripts" / "smoke_test_superset.py").read_text(
@@ -100,8 +105,8 @@ class SupersetDemoContractTests(unittest.TestCase):
         self.assertIn("dds.fact_driver_trip", smoke)
         self.assertIn("CREATE TABLE analytics._superset_write_probe", smoke)
         self.assertIn('"dq_summary"', smoke)
-        self.assertIn("Expected 42 dashboard charts", smoke)
-        self.assertIn("Expected 88 metric instances", smoke)
+        self.assertIn("Expected 35 dashboard charts", smoke)
+        self.assertIn("Expected 109 metric instances", smoke)
         self.assertIn("Benchmark artifact is stale", smoke)
         self.assertIn('"benchmark_is_current"', smoke)
         self.assertIn("if native_filters:", smoke)

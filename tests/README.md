@@ -9,7 +9,7 @@ lượng tài liệu Markdown.
 | File | Vai trò |
 |---|---|
 | `test_analytics_contract.py` | Kiểm tra analytics views, OLAP/Data Mining tables, grain và metric contract |
-| `test_superset_demo_contract.py` | Kiểm tra Superset compose, read-only role, 10 datasets, 88 metrics và 42 charts trong provisioning script |
+| `test_superset_demo_contract.py` | Kiểm tra Superset compose, read-only role, 14 datasets, 109 metrics và 35 visuals trong provisioning script |
 | `test_markdown_docs.py` | Kiểm tra Markdown links, script references, stale docs và secret patterns |
 | `test_warehouse_ddl_contract.py` | Kiểm tra schema warehouse, NDS/DDS/DQ order, SCD2 indexes và DQ enums |
 | `test_dds_loader.py`, `test_nds_loader.py`, `test_load_staging.py` | Unit/contract tests cho staging, NDS, DDS loaders và DQ handling |

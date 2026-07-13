@@ -74,8 +74,12 @@ alias rõ `shift_start_*` và `shift_end_*`; join vẫn 1:1 và không nhân fac
 | `analytics.shift` | `shift_start` | `shift_start_*` | Chọn `shift_end` và `shift_end_*` tường minh khi phân tích kết thúc ca |
 | `analytics.shift_trip_aggregate` | Không áp đặt; join theo `shift_id` | Không có | Aggregate kỹ thuật chống fan-out |
 | `analytics.dq_summary` | `event_date_utc` | Không có | Audit/DQ UTC |
+| `analytics.dq_batch_summary` | `batch_completed_at` | Không có | Một dòng mỗi successful NDS run, kể cả run có 0 DQ events; có reconciliation và recency rank |
 | `analytics.pareto_pickup_zone` | Không áp đặt | `pickup_*` | Một dòng mỗi pickup zone, phục vụ concentration/ranking |
+| `analytics.top_pickup_zone_hour` | Không áp đặt | Pickup zone/hour | Một dòng mỗi top-12 pickup zone và giờ; đủ 24 giờ cho heatmap |
 | `analytics.driver_performance_summary` | Không áp đặt | Driver | Một dòng mỗi driver, phục vụ peer benchmark và review queue |
+| `analytics.driver_performance_monthly` | `reporting_month` | Driver/tháng | Một dòng mỗi driver-tháng, ratio từ additive components và `is_latest_reporting_month` |
+| `analytics.vehicle_performance_monthly` | `reporting_month` | Vehicle/tháng | Một dòng mỗi vehicle-tháng; latest-month flag; peer flag là provisional |
 
 Pickup là default role vì nhu cầu vận hành phát sinh tại nơi/thời điểm đón.
 Dropoff analysis phải dùng dataset dropoff. Semantic model chỉ dùng default role
@@ -172,3 +176,19 @@ Các extension OLAP và Data Mining đã được triển khai trong schema `ana
 
 Các extension này phải reconcile với metric catalog khi dùng measure hiện có và
 phải ghi rõ khi metric là exploratory thay vì certified.
+
+## 11. Dashboard presentation and model provenance
+
+- Không đặt revenue (USD), trip count hoặc utilization (%) trên cùng một y-axis.
+  Nếu cần đối chiếu, dùng visual riêng hoặc secondary axis chỉ khi scale, unit và
+  tooltip được kiểm thử rõ ràng.
+- Dashboard dùng một Markdown context card ở đầu mỗi tab. Native time filter vẫn
+  được tắt do lỗi đã biết của Superset 6.1; chart-level filters phải nêu điều
+  kiện cố định trong tiêu đề/mô tả.
+- `analytics.dq_batch_summary` bắt đầu từ successful `warehouse_nds` audit
+  batches rồi LEFT JOIN DQ rollup. Vì vậy latest successful zero-event run không
+  bị bỏ; view này vẫn không thay thế grain rule-level của `analytics.dq_summary`.
+- `driver_segments` và `route_association_rules` là exploratory, không được gắn
+  certified owner. Mỗi run lưu model run ID/time, training window và threshold;
+  association rules còn lưu số basket/rule generated/published và dimensions đã
+  parse để kiểm chứng.

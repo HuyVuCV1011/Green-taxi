@@ -85,7 +85,7 @@ Dispatch Shift và Trip Assignment để trả lời 5 nhóm câu hỏi nghiệp
 | DQ/Audit/Quarantine | `ERROR` bị quarantine; `WARN`/anomaly được giữ lineage để phân tích |
 | NDS + DDS | NDS chuẩn hóa tích hợp và DDS star schema cho Driver Operations |
 | Idempotency | Seed, staging, NDS, DDS và Superset provisioning chạy lại an toàn |
-| BI-ready analytics | 10 Superset datasets, 88 metric instances, 42 charts, read-only BI role, operational monitoring, OLAP demo và Data Mining insights |
+| BI-ready analytics | 14 Superset datasets, 109 metric instances, 35 decision-focused visuals, read-only BI role, operational monitoring, OLAP lab và exploratory Data Mining insights |
 | Data Mining | Driver segmentation và route association rules phục vụ quyết định vận hành |
 
 ---
@@ -216,10 +216,11 @@ Mỗi thành viên tự sinh credential Superset local; không chia sẻ hoặc 
 của lệnh lấy login. Vận hành và demo dashboard:
 [Superset Local Demo Runbook](docs/analytics/superset-local-demo-runbook.md).
 
-Dashboard hiện tại là bản **operational monitoring** được bootstrap tự động từ
-code, tập trung vào KPI strip, trend, ordered weekday/hour heatmap,
-ranking/detail table và DQ/anomaly queue. Mỗi chart có mô tả gắn với
-BQ/OLAP/Data Mining tương ứng trong Superset metadata. Nếu cần chỉnh layout/chart
+Dashboard hiện tại là bản **light, decision-first operational dashboard** được
+bootstrap tự động từ code: Executive pulse, Demand patterns, latest-month
+Workforce actions, Trust & data health, OLAP lab và Exploratory models. Mixed-unit
+series được tách, empty anomaly queues được suppress, và mỗi chart có mô tả gắn
+với BQ/OLAP/Data Mining tương ứng trong Superset metadata. Nếu cần chỉnh layout/chart
 thủ công trong Superset UI, hãy đưa thay đổi ngược lại vào
 `scripts/provision_superset.py` trước khi reset metadata để tránh mất chỉnh sửa
 local.
@@ -313,7 +314,7 @@ points chính.
 - [x] Chạy full release với 19 TLC files và xác nhận reconciliation/idempotency.
 - [x] Khóa analytics semantic contract, certified metrics và analytics SQL views.
 - [x] Triển khai Superset local với metadata DB và warehouse role read-only.
-- [x] Provision 10 Superset datasets, 88 metric instances, 42 charts, operational monitoring dashboard BQ01-BQ05, OLAP demo và Data Mining insights trên 6 tabs.
+- [x] Provision 14 Superset datasets, 109 metric instances, 35 decision-focused visuals, operational monitoring dashboard BQ01-BQ05, OLAP lab và Data Mining insights trên 6 tabs; mining outputs được gắn exploratory.
 - [x] Triển khai OLAP extension bằng PostgreSQL ROLAP views và Superset charts.
 - [x] Triển khai Data Mining extension gồm K-Means driver segmentation và Apriori route association rules.
 - [x] Chạy health, permission, query, reconciliation và browser smoke tests.

@@ -80,27 +80,28 @@ business-state deltas were zero and successful batch history was retained.
   `psycopg2-binary==2.9.11`.
 - BI login chỉ có quyền trên approved `analytics` views; quyền đọc DDS trực tiếp
   và quyền ghi đều bị smoke test từ chối.
-- Superset hiện được bootstrap với 10 datasets, 88 metric instances, 42 charts
-  và dashboard BQ01-BQ05, OLAP demo, Data Mining insights trên 6 tabs.
+- Superset hiện được bootstrap với 14 datasets, 109 metric instances, 35
+  decision-focused visuals và dashboard BQ01-BQ05, OLAP lab, Exploratory models
+  trên 6 tabs.
 - Mỗi chart đều được cấu hình tự động sinh `query_context` giúp REST API v1 truy vấn trực tiếp thành công.
-- Artifact benchmark hiện có tại
-  `deliverables/benchmark/superset_benchmark_results.json` đã được refresh đủ
-  42 charts ngày 18/06/2026, với trung bình các giá trị P95 là `0.660` giây.
-  Chart chậm nhất là `OLAP Drill-down - Time Hierarchy` với P95 `3.469` giây.
+- Artifact benchmark tại
+  `deliverables/benchmark/superset_benchmark_results.json` đã được refresh cho
+  bản clean-slate: `total_charts = 35`, đủ 35 chart entries, overall average
+  P95 `0.636s`, slowest chart `Observed trips by pickup zone and hour` P95
+  `3.319s`.
 
 ## Validation and security
 
 - Python compile: pass cho Superset setup/provision/smoke scripts.
-- Unit tests: 138 pass trong lần review ngày 18/06/2026.
+- Unit tests: 141 pass trong lần review ngày 13/07/2026.
 - Main Docker Compose config: pass; four services healthy.
 - Full clean warehouse validation: 14/14 checks pass.
 - Superset Compose config: pass.
 - Superset app và metadata DB: healthy.
 - Superset runtime/API login/dashboard/dataset smoke tests: pass.
-- Superset benchmark artifact: refreshed đủ 42 charts.
+- Superset benchmark artifact: current với 35 visuals sau clean-slate provision.
 - Read-only analytics query và write-denial tests: pass.
-- Browser walkthrough cũ chỉ bao phủ dashboard trước extension, không có
-  Data/Network error hoặc loading treo. Cần kiểm tra lại bằng mắt đủ 6 tabs sau
-  khi Superset local được start lại.
+- Browser walkthrough đã kiểm tra đủ 6 tabs, light theme và 1366×768; mọi chart
+  phải không còn Data/Network error trước khi release.
 - `.env`, `.env.superset`, raw/full data, database files và volumes remain ignored.
 - No secret, database dump, full data or metadata database was added to Git.

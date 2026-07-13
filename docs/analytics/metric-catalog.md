@@ -33,8 +33,10 @@ Unknown/inferred được tính mặc định để giữ reconciliation.
 | `active_vehicle_count` | Vehicle distinct có trip activity trong kỳ | `analytics.trip_pickup`; `COUNT(DISTINCT vehicle_key)` | Trip filter context; non-additive | Pickup; không dùng current status | Integer; fact activity; Certified |
 | `dq_issue_count` | Số DQ issues theo nhóm DQ | `analytics.dq_summary`; `SUM(issue_count)` | DQ event summary; additive | UTC event date; null to 0 | Integer; `dq.dq_issue`; Certified DQ only |
 | `quarantine_count` | Số records bị quarantine ERROR | `analytics.dq_summary`; `SUM(quarantine_count)` | DQ event summary; additive | UTC event date; null to 0 | Integer; `dq.quarantine_record`; Certified DQ only |
-| `idle_minutes_per_shift` | Phút rảnh trung bình mỗi ca theo driver summary | `analytics.driver_performance_summary`; `AVG(idle_minutes_per_shift)` | Driver summary; non-additive | Driver peer context; zero drivers -> NULL | Minute 0.00; review queue metric |
-| `review_driver_count` | Số driver thỏa rule cần xem xét | `analytics.driver_performance_summary`; `COUNT(*) FILTER (WHERE needs_review)` | Driver summary; additive over driver rows only | Không dùng ở trip/shift grain | Integer; peer review boundary |
+| `rows_loaded` | Dòng đã nạp của successful NDS run | `analytics.dq_batch_summary`; `SUM(row_count_loaded)` | Successful NDS run | Batch completed UTC; latest flag có thể bằng 0 issues | Integer; reconciliation context |
+| `idle_minutes_per_shift` | Phút rảnh trung bình mỗi ca theo driver-month | `analytics.driver_performance_monthly`; `SUM(idle_minutes) / SUM(completed_shifts)` | Driver-month; non-additive qua driver nếu không weighted | Latest reporting month trong action queue | Minute 0.00; review queue metric |
+| `review_driver_count` | Số driver thỏa rule cần xem xét | `analytics.driver_performance_monthly`; `COUNT(*) FILTER (WHERE needs_review)` | Driver-month; additive over driver rows only | Latest reporting month; minimum 10 shifts | Integer; peer review boundary |
+| `review_vehicle_count` | Số vehicle bị gắn cờ peer-review provisional | `analytics.vehicle_performance_monthly`; `COUNT(*) FILTER (WHERE is_review_candidate)` | Vehicle-month; additive over rows only | Reporting month; ngưỡng tối thiểu 10 shifts cần business-owner xác nhận | Integer; Exploratory, không phải KPI certified |
 
 ## Superset implementation notes
 
@@ -62,6 +64,9 @@ Các metric dưới đây phục vụ OLAP/Data Mining extension. Các metrics l
 | `rule_support` | `analytics.route_association_rules` | Tần suất pattern tuyến/khu vực |
 | `rule_confidence` | `analytics.route_association_rules` | Xác suất consequent khi antecedent xuất hiện |
 | `rule_lift` | `analytics.route_association_rules` | Độ hữu ích so với tần suất nền |
+| `published_rule_count` | `analytics.route_association_rules` | Số rule exploratory được công bố sau cap; không suy ra tổng rules có thể có |
+| `avg_driver_revenue_per_hour` | `analytics.driver_segments` | Trung bình theo segment, chỉ dùng diễn giải exploratory |
+| `avg_driver_utilization_rate` | `analytics.driver_segments` | Trung bình theo segment, không thay thế ratio-of-sums certified |
 
 Exploratory metrics phải được gắn nhãn rõ trong Superset để không bị nhầm với
 certified KPI vận hành.

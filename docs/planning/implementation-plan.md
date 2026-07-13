@@ -97,10 +97,10 @@ Status: `IMPLEMENTED AND SMOKE-TESTED`
 3. Superset datasets `trip_pickup`, `trip_dropoff`, `shift`, `dq_summary`,
    `pareto_pickup_zone` và `driver_performance_summary`.
 4. Certified metrics theo semantic contract.
-5. Operational monitoring dashboard BQ01-BQ05 với OLAP demo và Data Mining
-   insights, 42 charts trên 6 tabs: Operations Overview, Demand Patterns,
-   Driver & Fleet Performance, Data Quality & Anomalies, OLAP Demo và Data
-   Mining Insights.
+5. Operational monitoring dashboard BQ01-BQ05 với OLAP lab và exploratory
+   models, 35 decision-focused visuals trên 6 tabs: Executive pulse, Demand
+   patterns, Workforce actions, Trust & data health, OLAP lab và Exploratory
+   models.
 6. Health, API, permission, query và browser smoke tests.
 
 Measures:
@@ -143,7 +143,7 @@ Status: `IMPLEMENTED AND BENCHMARKED`
 - Khai thác route/demand association rules bằng Apriori, đánh
   giá bằng support, confidence và lift.
 - Xuất kết quả thành analytics tables/views để Superset trình bày.
-- Benchmark artifact đã refresh đủ 42 charts sau khi Data Mining Insights được
+- Benchmark artifact đã refresh đủ 35 visuals sau khi provision dashboard mới.
   provision vào dashboard.
 
 Chi tiết: [../analytics/data-mining-plan.md](../analytics/data-mining-plan.md).
