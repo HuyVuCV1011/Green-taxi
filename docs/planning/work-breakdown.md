@@ -67,7 +67,7 @@ Status: `COMPLETED`
 
 - Certified KPI definitions.
 - Superset metadata DB và read-only warehouse connection.
-- 10 Superset datasets, 88 metric instances và dashboard theo
+- 14 Superset datasets, 109 metric instances và dashboard theo
   analytics contract.
 - Driver/shift peer comparison.
 - Business anomaly rules.
@@ -94,7 +94,7 @@ Status: `IMPLEMENTED AND BENCHMARKED`
 - K-Means driver segmentation.
 - Route/demand association rules.
 - Superset views/charts cho segment và top rules.
-- Benchmark artifact đã refresh đủ 42 charts sau khi thêm Data Mining tab.
+- Benchmark artifact đã refresh đủ 35 visuals sau khi provision dashboard mới.
 
 Deliverable: Data Mining outputs hỗ trợ điều phối/đào tạo dựa trên dữ liệu lịch sử.
 

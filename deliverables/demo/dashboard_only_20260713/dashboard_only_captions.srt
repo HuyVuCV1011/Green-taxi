@@ -1,0 +1,23 @@
+1
+00:00:00,000 --> 00:00:10,000
+Executive pulse: historical revenue, trips, active assets and utilization.
+
+2
+00:00:10,000 --> 00:00:20,000
+Demand patterns: borough, hour, weekday and zone-value views.
+
+3
+00:00:20,000 --> 00:00:30,000
+Workforce actions: latest-month queues for driver, vehicle and shift follow-up.
+
+4
+00:00:30,000 --> 00:00:40,000
+Trust and data health: latest successful run, DQ findings and quarantine.
+
+5
+00:00:40,000 --> 00:00:50,000
+OLAP lab: pivot, slice, roll-up, dice and drill views.
+
+6
+00:00:50,000 --> 00:01:00,000
+Exploratory models: segmentation and association rules as analyst evidence.

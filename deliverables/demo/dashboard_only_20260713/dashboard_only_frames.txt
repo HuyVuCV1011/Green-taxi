@@ -1,0 +1,13 @@
+file 'frames/01_executive_pulse.png'
+duration 10
+file 'frames/02_demand_patterns.png'
+duration 10
+file 'frames/03_workforce_actions.png'
+duration 10
+file 'frames/04_trust_data_health.png'
+duration 10
+file 'frames/05_olap_lab.png'
+duration 10
+file 'frames/06_exploratory_models.png'
+duration 10
+file 'frames/06_exploratory_models.png'

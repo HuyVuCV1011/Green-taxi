@@ -30,38 +30,47 @@ Ratios phải được tính từ tổng tử số/tổng mẫu số, không c�
 
 ## Monitoring Dashboard Structure
 
-Dashboard `NYC Green Taxi - Driver Operations` là một **operational monitoring
-dashboard**, không phải một báo cáo narrative dài. Layout theo phong cách light
-enterprise dashboard: KPI strip ở đầu tab, visual chính ở giữa, ranking/detail
-table ở cuối luồng điều tra. Trạng thái hiện tại được provision tự động trong
-Superset với 10 datasets, 88 metric instances, 42 charts và 6 tabs.
+Dashboard `NYC Green Taxi - Driver Operations` là một **decision-first
+operational dashboard**. Bản clean-slate dùng light enterprise canvas, card
+trắng, một semantic accent và màu trạng thái có chủ đích. Mỗi tab bắt đầu bằng
+context, sau đó mới đến KPI/visual hành động. Superset provision 14 datasets,
+109 metric instances, 35 decision-focused visuals trên 6 tabs:
 
-1. **Operations Overview**
-   - KPI cards: total revenue, total trips, active drivers, active vehicles,
-     overall shift utilization.
-   - Monthly revenue/trip trend.
-   - Pickup borough ranking, top pickup zones và ordered weekday profile.
+1. **Executive pulse**
+   - All-history KPI strip có period/timezone rõ: total payment revenue,
+     observed trips, drivers/vehicles with trip activity và shift utilization.
+   - Revenue và observed trips là hai aligned small multiples, không shared
+     mixed-unit axis.
+   - Pickup-borough ranking là breakdown duy nhất ở overview.
 
-2. **Demand Patterns**
-   - Ordered weekday x hour heatmap để tránh đọc sai thứ tự ngày trong tuần.
-   - Hourly demand profile.
-   - Zone concentration table với cumulative trip percentage.
-   - Top pickup zones by revenue.
-   - Pickup/dropoff borough volume và average trip distance by borough.
+2. **Demand patterns**
+   - Hero heatmap top-12 pickup zone × 24 giờ giữ đủ mọi ô của cohort.
+   - Weekday × hour heatmap và hourly profile dùng trục có thứ tự.
+   - Pareto concentration table và zone value profile (volume × revenue/trip)
+     thay cho nhiều ranking lặp lại.
+   - Tab chỉ diễn giải observed/served activity, không gọi là unmet demand.
 
-3. **Driver & Fleet Performance**
-   - Shift KPIs: completed shifts, revenue per shift hour, trips per shift,
-     shift utilization.
-   - Driver performance matrix dùng `analytics.driver_performance_summary`.
-   - Driver review queue dựa trên rule `needs_review`, không hard-code tên tài
-     xế.
-   - Vehicle type performance và vehicle detail table.
+3. **Workforce actions**
+   - Tất cả KPI và queue dùng latest reporting month.
+   - Driver review queue là hero; peer matrix chỉ dùng ba status hành động.
+   - Top-30 lowest-utilization shifts có rank, driver, vehicle và metric context.
+   - Vehicle peer-review queue tách rõ trạng thái provisional.
 
-4. **Data Quality & Anomalies**
-   - DQ issue, quarantine, trip anomaly và shift anomaly KPI.
-   - DQ trend, severity/source breakdown và top data-quality rules.
-   - DQ, quarantine, trip anomaly và shift anomaly là các khái niệm riêng,
-     không cộng thành một tổng.
+4. **Trust & data health**
+   - Latest successful NDS run lấy từ audit metadata kể cả khi có 0 issue.
+   - DQ issue events, quarantined rows và rows loaded là ba KPI riêng.
+   - Successful-run health table thay chart trend bị scale distortion.
+   - Historical findings by rule/source giữ đường điều tra; anomaly queues rỗng
+     được suppress thay vì render `No results`.
+
+5. **OLAP lab**
+   - Năm operation tường minh: slice, dice, drill-down, roll-up và pivot.
+   - Mỗi visual ghi rõ member đang chọn và chỉ dùng một đơn vị trên mỗi axis.
+
+6. **Exploratory models**
+   - Driver-segmentation và association-rule provenance tách khỏi results.
+   - Model run, training window, thresholds và publication cap luôn hiển thị.
+   - Outputs được gắn exploratory, không trình bày như certified KPI.
 
 ## Superset implementation scope
 
@@ -72,9 +81,9 @@ Superset với 10 datasets, 88 metric instances, 42 charts và 6 tabs.
   hiển thị theo thứ tự vận hành thay vì thứ tự chữ cái.
 - `analytics.shift` giữ shift-grain metrics; không join trực tiếp trip và shift
   ở row level.
-- `analytics.pareto_pickup_zone` và `analytics.driver_performance_summary` là
-  summary datasets phục vụ concentration analysis, driver matrix và review
-  queue.
+- `analytics.pareto_pickup_zone` phục vụ concentration/value analysis;
+  `analytics.driver_performance_monthly` và
+  `analytics.vehicle_performance_monthly` phục vụ latest-month action queues.
 - `analytics.dq_summary` là DQ boundary riêng; không dùng để thay thế business
   fact.
 - `analytics.shift_trip_aggregate` chỉ là view kỹ thuật chống fan-out, không
@@ -83,7 +92,7 @@ Superset với 10 datasets, 88 metric instances, 42 charts và 6 tabs.
 ## Implemented OLAP and Data Mining extension
 
 Các dashboard hiện tại trả lời BQ01-BQ05 ở dạng operational monitoring, có tab
-OLAP demo và tab Data Mining Insights.
+OLAP lab và tab Exploratory models.
 
 - **ROLAP layer**: `analytics.olap_trip_cube` và
   `analytics.olap_shift_cube` demo slice, dice, drill-down, roll-up và pivot

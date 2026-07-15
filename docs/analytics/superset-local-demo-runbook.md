@@ -61,8 +61,11 @@ http://localhost:8088/superset/dashboard/green-taxi-driver-operations/
 | `analytics.trip_dropoff` | `dropoff_datetime` | `dropoff_*` | Cùng metric trip, nhưng role dropoff tường minh |
 | `analytics.shift` | `shift_start` | `shift_start_*` | Shift count, trips/revenue per shift, revenue/hour, occupied/idle, utilization, avg_idle_minutes, anomaly |
 | `analytics.dq_summary` | `event_date_utc` | *None* | DQ issue count, quarantine count |
-| `analytics.pareto_pickup_zone` | *None* | `pickup_*` | Total trips, cumulative trips percentage, total revenue, cumulative revenue percentage |
+| `analytics.dq_batch_summary` | `batch_completed_at` | *None* | Successful NDS run status, reconciliation, DQ/quarantine counts and recency |
+| `analytics.pareto_pickup_zone` | *None* | `pickup_*` | Total trips, cumulative shares, total revenue and revenue/trip |
 | `analytics.driver_performance_summary` | *None* | Driver | Driver count, completed shifts, revenue/hour, utilization, idle minutes/shift, trips/shift, review driver count |
+| `analytics.driver_performance_monthly` | `reporting_month` | Driver/month | Latest-month action metrics calculated from additive components |
+| `analytics.vehicle_performance_monthly` | `reporting_month` | Vehicle/month | Latest-month provisional peer-review queue, not a certified KPI |
 
 Mỗi dataset và metric chứa certification metadata:
 
@@ -70,8 +73,8 @@ Mỗi dataset và metric chứa certification metadata:
 - Contract: `docs/analytics/semantic-contract.md`
 - Metric source: `docs/analytics/metric-catalog.md`
 
-Bootstrap idempotent tạo hoặc cập nhật 10 Superset datasets, 88 metric instances
-(trip metrics được khai báo riêng trên pickup/dropoff), 42 charts và 1
+Bootstrap idempotent tạo hoặc cập nhật 14 Superset datasets, 109 metric instances
+(trip metrics được khai báo riêng trên pickup/dropoff), 35 decision-focused visuals và 1
 operational monitoring dashboard gồm 6 tabs. `analytics.shift_trip_aggregate`
 là view kỹ thuật chống fan-out để giữ semantic contract; view này không được
 provision thành Superset dataset độc lập.
@@ -85,47 +88,42 @@ khi nâng image và xác nhận API tương thích bằng browser smoke test.
 
 ## 4. Dashboard review and improvement log
 
-Đánh giá hiện tại: dashboard đã bao phủ BQ01-BQ05, OLAP và Data Mining trên 6
-tabs, dùng đúng certified datasets và không phá semantic grain. Các điểm cần ưu
-tiên khi cải thiện là khả năng đọc nhanh theo câu hỏi nghiệp vụ, thứ tự thời
-gian trên chart category, và hiệu năng của các chart distinct-count/OLAP nặng.
+Dashboard đã được đánh giá clean-slate và rebuild theo decision flow, không giữ
+inventory cũ chỉ để đạt số lượng chart. Các thay đổi chính:
 
-Đã cải thiện trong provisioning script:
+- Buộc light theme ở cấp Superset (`THEME_DARK = None`) để chart engine, axis,
+  header và dashboard CSS cùng một contrast system; không dùng dark shell.
+- Tách revenue/trips thành aligned small multiples; loại mọi shared-axis
+  mixed-unit chart.
+- Thêm top-zone × hour view giữ đủ 12 × 24 cells và zone value profile thay
+  ranking doanh thu lặp lại.
+- Đồng nhất Workforce action center về latest reporting month; queue là hero,
+  shift queue có priority rank và vehicle queue ghi rõ provisional.
+- Sửa latest DQ run từ audit metadata để successful zero-event run không bị bỏ;
+  thay distorted trend chart bằng successful-run health table.
+- OLAP lab có đủ slice, dice, drill-down, roll-up và pivot ở các visual riêng.
+- Tách model provenance/thresholds khỏi kết quả clustering/association rules.
+- Chuẩn hóa English dashboard labels, table headers và metric display names.
 
-- Thêm `CHART_DESCRIPTIONS` để mỗi chart ghi rõ BQ/OLAP/DM mà chart phục vụ.
-- Dùng các nhãn `*_weekday_label` có tiền tố thứ tự trong analytics views cho
-  weekday bar chart và weekday-hour heatmap, tránh Superset sắp xếp thứ theo
-  chữ cái hoặc theo metric.
-- Giữ nguyên số lượng chart/dataset/metric để dashboard vẫn tương thích smoke
-  tests và benchmark artifact hiện có.
-
-Backlog cải thiện an toàn:
-
-- Bật native time filter sau khi nâng Superset image và browser smoke test xác
-  nhận không còn lỗi `/api/v1/time_range/`.
-- Nếu demo chạy chậm trên máy yếu, cân nhắc materialized summary cho
-  `Active Drivers`, `Active Vehicles` và `OLAP Drill-down - Time Hierarchy`.
-- Nếu cần đi sâu BQ01 hơn, bổ sung thêm view hoặc chart zone-hour theo top pickup
-  zones rồi refresh benchmark đủ 42+ charts sau khi provision.
+Backlog có chủ đích chỉ còn native dashboard filter: bật lại sau khi nâng image
+và browser smoke test xác nhận `/api/v1/time_range/` không còn lỗi. Không giả vờ
+filter hoạt động trên phiên bản hiện tại.
 
 ## 5. Dashboard demo flow
 
-1. Mở dashboard và chỉ badge certified/published.
-2. Tab **Operations Overview**: đọc KPI strip, monthly trend, pickup borough,
-   top zone và ordered weekday profile để nắm trạng thái toàn hệ thống trong
-   một màn.
-3. Tab **Demand Patterns**: dùng heatmap weekday/hour đã có thứ tự ngày, hourly
-   profile, zone concentration và pickup/dropoff borough charts để theo dõi nhu
-   cầu theo thời gian và địa lý.
-4. Tab **Driver & Fleet Performance**: dùng driver matrix, driver review queue,
-   vehicle type và vehicle detail để ưu tiên điều phối/đào tạo.
-5. Tab **Data Quality & Anomalies**: theo dõi DQ issues, quarantine, anomaly KPI,
-   trend, severity/source breakdown và top rules. Không cộng DQ, quarantine,
-   trip anomaly và shift anomaly thành một chỉ số chung.
-6. Tab **OLAP Demo**: dùng ROLAP views để minh họa slice, dice, drill-down,
-   roll-up và pivot trên Superset.
-7. Tab **Data Mining Insights**: xem driver segments, segment profile và top
-   route association rules theo lift.
+1. Mở dashboard và chỉ badge certified/published cùng period/timezone context.
+2. **Executive pulse**: đọc KPI strip và hai small multiples revenue/trips;
+   không diễn giải scale giữa hai chart như cùng đơn vị.
+3. **Demand patterns**: bắt đầu từ zone × hour hero, sau đó weekday/hour,
+   concentration và zone value profile.
+4. **Workforce actions**: đọc latest-month KPI, driver queue, ba-status peer
+   matrix, vehicle queue và 30 ca utilization thấp nhất.
+5. **Trust & data health**: xác nhận latest run có 0 issue/quarantine hay không,
+   đối chiếu rows loaded, rồi mở historical rule findings khi cần.
+6. **OLAP lab**: chỉ lần lượt slice, dice, drill-down, roll-up và pivot; member
+   được ghi ngay trong chart title.
+7. **Exploratory models**: xác nhận model run/training window/threshold trước,
+   sau đó mới đọc segments, profiles và rules ranked by lift.
 
 Dashboard này ưu tiên tính reproducible và semantic correctness hơn dashboard
 design tùy biến thủ công. Mọi chart/layout đang nằm trong
@@ -154,7 +152,7 @@ Smoke suite xác nhận:
 
 - `/health` trả `OK`;
 - admin REST login thành công;
-- dashboard, 10 datasets, 88 metric instances và 42 charts tồn tại;
+- dashboard, 14 datasets, 109 metric instances và 35 decision-focused visuals tồn tại;
 - dashboard không provision native time filter bị lỗi trên Superset 6.1.0;
 - `superset_ro` query được approved analytics views;
 - pickup/dropoff count khớp;
@@ -235,14 +233,7 @@ Kết quả đo đạc chi tiết của từng lượt chạy được xuất ra
 
 ### 10.2. Tóm tắt kết quả đo đạc thực tế
 
-- **Dashboard hiện tại sau provision**: 10 datasets, 88 metric instances,
-  42 charts và 6 tabs.
-- **Artifact benchmark hiện có**: đã refresh ngày 18/06/2026 với đủ 42 charts.
-- **Trung bình các giá trị P95 của 42 charts**: `0.660` giây trong lần đo local.
-  Đây không phải end-to-end dashboard P95.
-- **Chart chậm nhất (P95)**: `OLAP Drill-down - Time Hierarchy` (`3.469` giây).
-- **Các KPI distinct chậm nhất kế tiếp**: `Active Vehicles` (`1.770` giây) và
-  `Active Drivers` (`1.756` giây), do `COUNT(DISTINCT ...)` trên hơn 2.3 triệu
-  trip rows.
-- **Các charts còn lại**: P95 khoảng `0.15` đến `0.90` giây trong môi trường đo.
-  Kết quả phụ thuộc máy local, cache và tải đồng thời.
+- **Dashboard hiện tại sau provision**: 14 datasets, 109 metric instances,
+  35 decision-focused visuals, 6 tabs và một context card mỗi tab.
+- Benchmark artifact phải có đúng `total_charts = 35` và 35 chart entries mới
+  được dùng làm bằng chứng hiệu năng cho bản clean-slate này.

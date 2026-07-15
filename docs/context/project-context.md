@@ -29,9 +29,9 @@ Data Sources -> Staging -> ODS -> DQ/Audit -> NDS -> DDS -> BI/OLAP/Mining
   staging kèm audit metadata, row hash và row-count reconciliation.
 - NDS, DDS, DQ rules và full-release reconciliation đã hoàn tất.
 - Superset local demo đã triển khai với metadata PostgreSQL riêng, warehouse
-  role read-only, 10 datasets, 88 metric instances, 42 charts, operational
+  role read-only, 14 datasets, 109 metric instances, 35 decision-focused visuals, operational
   monitoring dashboard BQ01-BQ05, OLAP demo và Data Mining insights trên 6 tabs.
-  Benchmark artifact đã được refresh đủ 42 charts ngày 18/06/2026.
+  Benchmark artifact trước thay đổi dashboard cần được refresh sau provision.
 - OLAP đã triển khai bằng PostgreSQL ROLAP views + Superset. Data Mining đã
   triển khai bằng K-Means driver segmentation và association rules cho pattern
   pickup/dropoff theo thời gian/khu vực.

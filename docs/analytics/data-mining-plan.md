@@ -100,7 +100,7 @@ Business deployment:
 - Có notebook hoặc script reproducible cho từng bài toán. (Đã có script `scripts/run_data_mining.py` và module `src/analytics/data_mining.py`)
 - Có bảng/view kết quả trong `analytics` hoặc schema kết quả được phê duyệt. (Bảng `analytics.driver_segments` và `analytics.route_association_rules`)
 - Có giải thích feature, thuật toán, tham số, metric đánh giá và giới hạn. (Xem chi tiết bên dưới)
-- Kết quả hiển thị được trong Superset mà không query trực tiếp staging/NDS. (Tab 6: Data Mining Insights trên Superset dashboard)
+- Kết quả hiển thị được trong Superset mà không query trực tiếp staging/NDS. (Tab 6: Exploratory models trên Superset dashboard)
 - Kết luận gắn với quyết định vận hành cụ thể.
 
 ## Implementation details

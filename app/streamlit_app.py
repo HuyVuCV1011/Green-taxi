@@ -343,10 +343,10 @@ with tab_pipeline:
                     if is_dds_ready(demo_result, demo_dry_run):
                         st.success("🎉 DDS Ready for BI")
                         st.markdown("""
-                        ### 📊 Hướng dẫn kết nối công cụ BI:
-                        1. Mở tệp báo cáo Power BI (`deliverables/` hoặc cấu hình riêng).
-                        2. Nhấp vào nút **Refresh** trên thanh công cụ để cập nhật dữ liệu.
-                        3. Kiểm tra các biểu đồ Driver Performance và Fleet Utilization.
+                        ### 📊 Hướng dẫn kiểm tra BI:
+                        1. Mở Superset dashboard local tại `http://localhost:8088/superset/dashboard/green-taxi-driver-operations/`.
+                        2. Chạy `python -m scripts.smoke_test_superset` nếu cần xác nhận health, datasets, charts và quyền read-only.
+                        3. Kiểm tra các tab Operations Overview, Driver & Fleet Performance, Data Quality & Anomalies, OLAP Demo và Data Mining Insights.
                         """)
                     elif demo_dry_run:
                         st.info("ℹ️ Dry run completed - no data was loaded")
