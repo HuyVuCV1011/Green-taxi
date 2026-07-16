@@ -21,8 +21,8 @@ contract và metric catalog. Mọi dependency reconciliation trong draft đã đ
 | `KPI02` | Active driver count | `analytics.trip_pickup` | `active_driver_count` | Pickup | DDS fact activity |
 | `KPI03` | Active vehicle count | `analytics.trip_pickup` | `active_vehicle_count` | Pickup | DDS fact activity |
 | `OLAP01` | Slice/dice/drill-down/roll-up/pivot theo time, location, driver, vehicle | `analytics.olap_trip_cube`, `analytics.olap_shift_cube` | Existing certified measures where applicable | Dataset default | Implemented ROLAP |
-| `DM01` | Phân nhóm driver theo hiệu suất vận hành | `analytics.driver_segments` | Exploratory clustering metrics | Driver hoặc driver-month | Implemented Data Mining |
-| `DM02` | Khám phá luật kết hợp pickup/dropoff/time pattern | `analytics.route_association_rules` | `support`, `confidence`, `lift` | Rule output | Implemented Data Mining |
+| `DM01` | Phân nhóm driver theo hiệu suất vận hành | `analytics.current_driver_segments` | Silhouette, Davies–Bouldin, Calinski–Harabasz, stability ARI | Eligible driver/current run | Implemented exploratory Mining |
+| `DM02` | Khám phá luật kết hợp pickup/dropoff/time pattern | `analytics.current_route_association_rules` | `support`, `confidence`, `lift`, stability | Published rule/current run | Implemented exploratory Mining |
 
 ## Locked decisions
 

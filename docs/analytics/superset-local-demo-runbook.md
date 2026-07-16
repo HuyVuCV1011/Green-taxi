@@ -102,7 +102,8 @@ inventory cũ chỉ để đạt số lượng chart. Các thay đổi chính:
 - Sửa latest DQ run từ audit metadata để successful zero-event run không bị bỏ;
   thay distorted trend chart bằng successful-run health table.
 - OLAP lab có đủ slice, dice, drill-down, roll-up và pivot ở các visual riêng.
-- Tách model provenance/thresholds khỏi kết quả clustering/association rules.
+- Tách model provenance/quality metrics khỏi kết quả clustering/association rules;
+  dashboard dùng current-run views để không trộn lịch sử model.
 - Chuẩn hóa English dashboard labels, table headers và metric display names.
 
 Backlog có chủ đích chỉ còn native dashboard filter: bật lại sau khi nâng image
@@ -122,8 +123,9 @@ filter hoạt động trên phiên bản hiện tại.
    đối chiếu rows loaded, rồi mở historical rule findings khi cần.
 6. **OLAP lab**: chỉ lần lượt slice, dice, drill-down, roll-up và pivot; member
    được ghi ngay trong chart title.
-7. **Exploratory models**: xác nhận model run/training window/threshold trước,
-   sau đó mới đọc segments, profiles và rules ranked by lift.
+7. **Exploratory models**: xác nhận current model run/training window, K-Means
+   quality (silhouette/DB/ARI) hoặc Apriori thresholds/stability trước; sau đó mới
+   đọc segments, profiles và rules ranked by lift.
 
 Dashboard này ưu tiên tính reproducible và semantic correctness hơn dashboard
 design tùy biến thủ công. Mọi chart/layout đang nằm trong

@@ -138,11 +138,11 @@ Chi tiết: [../analytics/olap-plan.md](../analytics/olap-plan.md).
 Status: `IMPLEMENTED AND BENCHMARKED`
 
 - Tạo dataset chuẩn cho driver-level hoặc driver-month features.
-- Chạy K-Means driver segmentation, đánh giá bằng centroid/silhouette và đặt
-  nhãn theo ý nghĩa nghiệp vụ.
-- Khai thác route/demand association rules bằng Apriori, đánh
-  giá bằng support, confidence và lift.
-- Xuất kết quả thành analytics tables/views để Superset trình bày.
+- Chạy K-Means driver segmentation với selection/stability guardrail; nhãn chỉ
+  là diễn giải exploratory.
+- Khai thác route/demand association rules bằng Apriori stratified sample, đánh
+  giá bằng support, confidence, lift và stability.
+- Lưu history theo model run và publish current views cho Superset trình bày.
 - Benchmark artifact đã refresh đủ 35 visuals sau khi provision dashboard mới.
   provision vào dashboard.
 

@@ -91,9 +91,9 @@ Deliverable: OLAP demo trên Superset phục vụ phân tích đa chiều vận 
 Status: `IMPLEMENTED AND BENCHMARKED`
 
 - Driver feature dataset.
-- K-Means driver segmentation.
-- Route/demand association rules.
-- Superset views/charts cho segment và top rules.
+- K-Means driver segmentation với model selection và stability guardrail.
+- Route/demand association rules với deterministic stratified sample.
+- Superset current-run views/charts cho segment và top rules.
 - Benchmark artifact đã refresh đủ 35 visuals sau khi provision dashboard mới.
 
 Deliverable: Data Mining outputs hỗ trợ điều phối/đào tạo dựa trên dữ liệu lịch sử.

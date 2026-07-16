@@ -15,8 +15,9 @@ người xem suy luận sai dù SQL source vẫn đúng.
 - Bổ sung dataset batch-level cho DQ và queue điều tra anomaly ở trip/shift grain.
 - Bổ sung driver-month trend và vehicle-month peer queue; vehicle threshold là
   provisional cho đến khi business owner xác nhận.
-- K-Means/Apriori được đánh dấu `exploratory`, lưu model provenance, training
-  window và threshold; không gắn certification owner.
+- K-Means/Apriori được đánh dấu `exploratory`, lưu lịch sử trong model-run ledger;
+  dashboard chỉ đọc current successful run, hiển thị training window, parameters
+  và quality/stability metrics; không gắn certification owner.
 - Giữ native filters tắt trên Superset 6.1 do lỗi time filter đã biết; thêm
   context card và điều kiện chart-level minh bạch.
 

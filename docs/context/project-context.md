@@ -32,9 +32,9 @@ Data Sources -> Staging -> ODS -> DQ/Audit -> NDS -> DDS -> BI/OLAP/Mining
   role read-only, 14 datasets, 109 metric instances, 35 decision-focused visuals, operational
   monitoring dashboard BQ01-BQ05, OLAP demo và Data Mining insights trên 6 tabs.
   Benchmark artifact trước thay đổi dashboard cần được refresh sau provision.
-- OLAP đã triển khai bằng PostgreSQL ROLAP views + Superset. Data Mining đã
-  triển khai bằng K-Means driver segmentation và association rules cho pattern
-  pickup/dropoff theo thời gian/khu vực.
+- OLAP đã triển khai bằng PostgreSQL ROLAP views + Superset. Data Mining dùng
+  K-Means có model-selection/stability guardrail và Apriori stratified sample;
+  history/provenance nằm ở model-run ledger, dashboard chỉ đọc current run.
 - Báo cáo, slide và sơ đồ cũ trong `archive/` là tài liệu trước feedback, không
   phải thiết kế hiện hành.
 - Data release hiện hành bao phủ 01/2020-07/2021, đúng phạm vi đã chốt cho
