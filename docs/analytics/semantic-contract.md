@@ -169,10 +169,14 @@ Các extension OLAP và Data Mining đã được triển khai trong schema `ana
   pickup/dropoff location, driver, vehicle và vendor dimensions.
 - `analytics.olap_shift_cube`: ROLAP dataset cho shift analysis với time,
   driver, vehicle, vendor, utilization và idle/revenue measures.
-- `analytics.driver_segments`: kết quả K-Means driver segmentation, grain là
-  một dòng mỗi driver hoặc driver-month theo feature set được xuất.
-- `analytics.route_association_rules`: kết quả association rules cho
-  pickup/dropoff/time patterns, gồm `support`, `confidence` và `lift`.
+- `analytics.driver_segments` và `analytics.route_association_rules`: physical
+  history của từng successful model run; không dùng trực tiếp cho dashboard.
+- `analytics.current_driver_segments`: current successful K-Means run, grain một
+  dòng mỗi driver đủ điều kiện.
+- `analytics.current_route_association_rules`: current successful Apriori run,
+  grain một dòng mỗi luật được công bố.
+- `analytics.model_runs`: one row per exploratory model run, chứa window,
+  input/eligible count, sampling method, parameters và evaluation metrics.
 
 Các extension này phải reconcile với metric catalog khi dùng measure hiện có và
 phải ghi rõ khi metric là exploratory thay vì certified.
@@ -188,7 +192,8 @@ phải ghi rõ khi metric là exploratory thay vì certified.
 - `analytics.dq_batch_summary` bắt đầu từ successful `warehouse_nds` audit
   batches rồi LEFT JOIN DQ rollup. Vì vậy latest successful zero-event run không
   bị bỏ; view này vẫn không thay thế grain rule-level của `analytics.dq_summary`.
-- `driver_segments` và `route_association_rules` là exploratory, không được gắn
-  certified owner. Mỗi run lưu model run ID/time, training window và threshold;
-  association rules còn lưu số basket/rule generated/published và dimensions đã
-  parse để kiểm chứng.
+- Các current mining views là exploratory, không được gắn certified owner.
+  Physical tables giữ lịch sử run; `analytics.model_runs.is_current` chọn đúng
+  một successful run cho mỗi model type, nên dashboard không trộn row của nhiều
+  lần fit. Association rules còn lưu basket/rule generated/published, stability
+  và dimensions đã parse để kiểm chứng.

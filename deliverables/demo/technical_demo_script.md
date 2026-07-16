@@ -110,7 +110,7 @@ Use these as burn-in captions or chapter overlays:
 - `Semantic Layer: certified analytics views`
 - `Superset: 14 datasets, 109 metric instances, 35 visuals`
 - `OLAP: slice, dice, drill-down, roll-up and pivot`
-- `Data Mining: driver segmentation and route association rules`
+- `Data Mining: current-run K-Means segmentation and stratified Apriori rules; exploratory only`
 - `Validation: revenue, distance, duration and grain checks pass`
 - `Security: read-only BI role on approved analytics views`
 - `Tests: 141 automated tests passed`

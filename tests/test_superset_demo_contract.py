@@ -47,8 +47,8 @@ class SupersetDemoContractTests(unittest.TestCase):
             "vehicle_performance_monthly",
             "olap_trip_cube",
             "olap_shift_cube",
-            "driver_segments",
-            "route_association_rules",
+            "current_driver_segments",
+            "current_route_association_rules",
         ):
             self.assertIn(f'"{dataset}"', script)
         for metric in (
@@ -90,6 +90,8 @@ class SupersetDemoContractTests(unittest.TestCase):
         self.assertIn("Pivot matrix", script)
         self.assertIn("Published driver-segmentation model run", script)
         self.assertIn("Published association rules", script)
+        self.assertIn("model_stability_ari", script)
+        self.assertIn("rule_stability", script)
         self.assertIn("Driver segments — utilization vs revenue per shift hour", script)
         self.assertIn("Segment profile — exploratory driver averages", script)
         self.assertIn('"pivot_table_v2"', script)

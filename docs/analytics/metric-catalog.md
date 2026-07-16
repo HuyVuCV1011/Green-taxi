@@ -59,14 +59,16 @@ Các metric dưới đây phục vụ OLAP/Data Mining extension. Các metrics l
 | Metric | Source | Purpose |
 |---|---|---|
 | `tips_per_trip` | Driver segmentation dataset | Đo chất lượng/khả năng tạo tip theo driver |
-| `idle_minutes_per_shift` by segment | `analytics.driver_segments` | So sánh nhóm driver sau clustering |
-| `cluster_size` | `analytics.driver_segments` | Số driver trong từng segment |
-| `rule_support` | `analytics.route_association_rules` | Tần suất pattern tuyến/khu vực |
-| `rule_confidence` | `analytics.route_association_rules` | Xác suất consequent khi antecedent xuất hiện |
-| `rule_lift` | `analytics.route_association_rules` | Độ hữu ích so với tần suất nền |
-| `published_rule_count` | `analytics.route_association_rules` | Số rule exploratory được công bố sau cap; không suy ra tổng rules có thể có |
-| `avg_driver_revenue_per_hour` | `analytics.driver_segments` | Trung bình theo segment, chỉ dùng diễn giải exploratory |
-| `avg_driver_utilization_rate` | `analytics.driver_segments` | Trung bình theo segment, không thay thế ratio-of-sums certified |
+| `idle_minutes_per_shift` by segment | `analytics.current_driver_segments` | So sánh nhóm driver của current run |
+| `cluster_size` | `analytics.current_driver_segments` | Số driver đủ điều kiện trong từng segment hiện hành |
+| `model_stability_ari` | `analytics.current_driver_segments` | Độ lặp partition qua nhiều seed; không phải accuracy |
+| `rule_support` | `analytics.current_route_association_rules` | Tần suất pattern tuyến/khu vực |
+| `rule_confidence` | `analytics.current_route_association_rules` | Xác suất consequent khi antecedent xuất hiện |
+| `rule_lift` | `analytics.current_route_association_rules` | Độ hữu ích so với tần suất nền |
+| `rule_stability` | `analytics.current_route_association_rules` | Độ gần nhau của confidence giữa hai nửa thời gian sample |
+| `published_rule_count` | `analytics.current_route_association_rules` | Số luật current run được công bố sau quality filters/cap |
+| `avg_driver_revenue_per_hour` | `analytics.current_driver_segments` | Trung bình theo segment, chỉ dùng diễn giải exploratory |
+| `avg_driver_utilization_rate` | `analytics.current_driver_segments` | Trung bình theo segment, không thay thế ratio-of-sums certified |
 
 Exploratory metrics phải được gắn nhãn rõ trong Superset để không bị nhầm với
 certified KPI vận hành.

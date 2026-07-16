@@ -14,12 +14,16 @@
 | `analytics.olap_trip_cube` | 1 row/trip | ROLAP slice, dice, drill-down and pivot over trip dimensions |
 | `analytics.olap_shift_cube` | 1 row/shift | ROLAP roll-up and utilization analysis over shift dimensions |
 
-The same script also creates Data Mining output tables:
+The same script also creates exploratory Data Mining history tables and the
+dashboard-safe current-run views:
 
 | Table | Grain | Purpose |
 |---|---|---|
-| `analytics.driver_segments` | 1 row/driver | K-Means driver segmentation output |
-| `analytics.route_association_rules` | 1 row/rule | Apriori route and demand association rules |
+| `analytics.model_runs` | 1 row/model run | Parameters, quality metrics and current-run flag |
+| `analytics.driver_segments` | 1 row/driver/run | K-Means history; not a dashboard dataset |
+| `analytics.route_association_rules` | 1 row/rule/run | Apriori history; not a dashboard dataset |
+| `analytics.current_driver_segments` | 1 row/eligible driver | Current successful K-Means run for Superset |
+| `analytics.current_route_association_rules` | 1 row/published rule | Current successful Apriori run for Superset |
 
 `python -m scripts.setup_superset_warehouse` áp dụng views và security grants.
 Các view không materialize hoặc sửa warehouse rows.

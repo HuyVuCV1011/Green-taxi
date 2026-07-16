@@ -69,7 +69,7 @@ context, sau đó mới đến KPI/visual hành động. Superset provision 14 d
 
 6. **Exploratory models**
    - Driver-segmentation và association-rule provenance tách khỏi results.
-   - Model run, training window, thresholds và publication cap luôn hiển thị.
+   - Model run, training window, parameters/quality metrics và publication cap luôn hiển thị; dashboard chỉ đọc current successful run.
    - Outputs được gắn exploratory, không trình bày như certified KPI.
 
 ## Superset implementation scope

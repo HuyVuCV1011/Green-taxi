@@ -81,14 +81,14 @@ DATASETS = {
         "main_dttm_col": "shift_start",
         "description": "ROLAP shift cube view for utilization, idle time and revenue/hour demos.",
     },
-    "driver_segments": {
+    "current_driver_segments": {
         "main_dttm_col": None,
-        "description": "One row per driver segment from K-Means clustering.",
+        "description": "Current successful K-Means run; one row per eligible driver.",
         "certified": False,
     },
-    "route_association_rules": {
+    "current_route_association_rules": {
         "main_dttm_col": None,
-        "description": "One row per route association rule from Apriori.",
+        "description": "Current successful Apriori run; one row per published rule.",
         "certified": False,
     },
 }
@@ -106,6 +106,7 @@ DRIVER_SEGMENTS_METRICS = {
     "trips_per_shift": ("Số chuyến trung bình mỗi ca", "AVG(trips_per_shift)", ",.2f"),
     "average_trip_distance": ("Quãng đường trung bình", "AVG(average_trip_distance)", ",.2f"),
     "tips_per_trip": ("Tiền tip trung bình chuyến", "AVG(tips_per_trip)", "$,.2f"),
+    "model_stability_ari": ("Độ ổn định phân cụm (ARI)", "MAX(stability_ari)", ".3f"),
 }
 
 ROUTE_ASSOCIATION_RULES_METRICS = {
@@ -113,6 +114,7 @@ ROUTE_ASSOCIATION_RULES_METRICS = {
     "rule_support": ("Độ hỗ trợ (Support)", "MAX(support)", ".4%"),
     "rule_confidence": ("Độ tin cậy (Confidence)", "MAX(confidence)", ".2%"),
     "rule_lift": ("Độ nâng (Lift)", "MAX(lift)", ",.4f"),
+    "rule_stability": ("Độ ổn định luật", "MAX(stability_score)", ".2%"),
 }
 
 DQ_BATCH_METRICS = {
@@ -630,7 +632,7 @@ def ensure_chart(
     chart.viz_type = viz_type
     chart.params = chart_params(dataset, viz_type, **params)
     chart.description = description or f"Green Taxi certified chart using analytics.{dataset.table_name}."
-    exploratory = dataset.table_name in {"driver_segments", "route_association_rules", "vehicle_performance_monthly"}
+    exploratory = dataset.table_name in {"current_driver_segments", "current_route_association_rules", "vehicle_performance_monthly"}
     chart.certified_by = None if exploratory else CERTIFIED_BY
     chart.certification_details = (
         "Exploratory chart; validate model run and provisional thresholds before action."
@@ -934,9 +936,9 @@ def main() -> None:
     )
     ensure_metrics(datasets["olap_trip_cube"], OLAP_TRIP_METRICS)
     ensure_metrics(datasets["olap_shift_cube"], OLAP_SHIFT_METRICS)
-    ensure_metrics(datasets["driver_segments"], DRIVER_SEGMENTS_METRICS, certified=False)
+    ensure_metrics(datasets["current_driver_segments"], DRIVER_SEGMENTS_METRICS, certified=False)
     ensure_metrics(
-        datasets["route_association_rules"], ROUTE_ASSOCIATION_RULES_METRICS, certified=False
+        datasets["current_route_association_rules"], ROUTE_ASSOCIATION_RULES_METRICS, certified=False
     )
     db.session.flush()
 
@@ -1217,17 +1219,17 @@ def main() -> None:
         }),
 
         # Tab 6: Exploratory Models
-        "c_dm_model_run": (datasets["driver_segments"], "Published driver-segmentation model run", "table", {
+        "c_dm_model_run": (datasets["current_driver_segments"], "Published driver-segmentation model run", "table", {
             "query_mode": "aggregate",
             "show_cell_bars": False,
-            "groupby": ["model_run_at", "training_start", "training_end", "feature_set", "model_k", "silhouette_score"],
-            "metrics": ["driver_count"],
+            "groupby": ["model_run_at", "training_start", "training_end", "feature_set", "model_k", "silhouette_score", "davies_bouldin_score", "stability_ari"],
+            "metrics": ["driver_count", "model_stability_ari"],
             "order_by_cols": [json.dumps(["model_run_at", False])],
             "page_length": 5,
             "row_limit": 5,
             "table_timestamp_format": "%d %b %Y %H:%M",
         }),
-        "c_dm_driver_scatter": (datasets["driver_segments"], "Driver segments — utilization vs revenue per shift hour", "bubble", {
+        "c_dm_driver_scatter": (datasets["current_driver_segments"], "Driver segments — utilization vs revenue per shift hour", "bubble", {
             "series": "segment_label",
             "entity": "driver_id",
             "x": "avg_driver_utilization_rate",
@@ -1236,7 +1238,7 @@ def main() -> None:
             "row_limit": 1000,
             "show_legend": True,
         }),
-        "c_dm_driver_table": (datasets["driver_segments"], "Segment profile — exploratory driver averages", "table", {
+        "c_dm_driver_table": (datasets["current_driver_segments"], "Segment profile — exploratory driver averages", "table", {
             "query_mode": "aggregate",
             "groupby": ["segment_label"],
             "metrics": ["driver_count", "completed_shifts", "avg_driver_revenue_per_hour", "avg_driver_utilization_rate", "idle_minutes_per_shift", "trips_per_shift"],
@@ -1244,7 +1246,7 @@ def main() -> None:
             "timeseries_limit_metric": "avg_driver_revenue_per_hour",
             "order_desc": True,
         }),
-        "c_dm_rules_run": (datasets["route_association_rules"], "Published association-rule model run", "table", {
+        "c_dm_rules_run": (datasets["current_route_association_rules"], "Published association-rule model run", "table", {
             "query_mode": "aggregate",
             "show_cell_bars": False,
             "groupby": ["model_run_at", "training_start", "training_end", "basket_count", "rules_generated", "min_support", "min_confidence", "min_lift"],
@@ -1253,11 +1255,11 @@ def main() -> None:
             "row_limit": 5,
             "table_timestamp_format": "%d %b %Y %H:%M",
         }),
-        "c_dm_rules_table": (datasets["route_association_rules"], "Published association rules — ranked by lift", "table", {
+        "c_dm_rules_table": (datasets["current_route_association_rules"], "Published association rules — ranked by lift", "table", {
             "query_mode": "aggregate",
             "show_cell_bars": False,
             "groupby": ["antecedent", "consequent"],
-            "metrics": ["rule_support", "rule_confidence", "rule_lift"],
+            "metrics": ["rule_support", "rule_confidence", "rule_lift", "rule_stability"],
             "order_by_cols": [json.dumps(["rule_lift", False])],
             "timeseries_limit_metric": "rule_lift",
             "order_desc": True,

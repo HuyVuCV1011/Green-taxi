@@ -15,10 +15,33 @@ DROP VIEW IF EXISTS analytics.top_pickup_zone_hour CASCADE;
 DROP VIEW IF EXISTS analytics.driver_performance_summary CASCADE;
 DROP VIEW IF EXISTS analytics.driver_performance_monthly CASCADE;
 DROP VIEW IF EXISTS analytics.vehicle_performance_monthly CASCADE;
+DROP VIEW IF EXISTS analytics.current_driver_segments CASCADE;
+DROP VIEW IF EXISTS analytics.current_route_association_rules CASCADE;
+DROP VIEW IF EXISTS analytics.current_model_runs CASCADE;
+
+-- Exploratory model-run ledger. Result tables retain successful run history;
+-- dashboard datasets read the current views below, never a mixed run population.
+CREATE TABLE IF NOT EXISTS analytics.model_runs (
+    model_run_id UUID PRIMARY KEY,
+    model_type VARCHAR(64) NOT NULL CHECK (model_type IN ('DRIVER_SEGMENTATION', 'ROUTE_ASSOCIATION')),
+    status VARCHAR(32) NOT NULL CHECK (status IN ('SUCCEEDED', 'FAILED')),
+    model_run_at TIMESTAMPTZ NOT NULL,
+    training_start DATE,
+    training_end DATE,
+    input_row_count BIGINT NOT NULL,
+    eligible_row_count BIGINT NOT NULL,
+    sample_method TEXT NOT NULL,
+    parameters JSONB NOT NULL,
+    evaluation_metrics JSONB NOT NULL,
+    is_current BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_model_runs_current_type
+    ON analytics.model_runs (model_type) WHERE is_current;
 
 -- Physical table for K-Means driver segments
 CREATE TABLE IF NOT EXISTS analytics.driver_segments (
-    driver_key VARCHAR(50) PRIMARY KEY,
+    driver_key VARCHAR(50) NOT NULL,
     driver_id VARCHAR(50),
     driver_name VARCHAR(100),
     completed_shifts INTEGER,
@@ -47,6 +70,9 @@ ALTER TABLE analytics.driver_segments
     ADD COLUMN IF NOT EXISTS feature_set TEXT,
     ADD COLUMN IF NOT EXISTS model_k SMALLINT,
     ADD COLUMN IF NOT EXISTS silhouette_score NUMERIC(8, 6);
+ALTER TABLE analytics.driver_segments DROP CONSTRAINT IF EXISTS driver_segments_pkey;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_driver_segments_run_driver
+    ON analytics.driver_segments (model_run_id, driver_key);
 
 -- Physical table for Route Association Rules
 CREATE TABLE IF NOT EXISTS analytics.route_association_rules (
@@ -74,7 +100,9 @@ CREATE TABLE IF NOT EXISTS analytics.route_association_rules (
     antecedent_day_type VARCHAR(50),
     antecedent_vendor VARCHAR(100),
     consequent_dropoff_borough VARCHAR(100),
-    consequent_dropoff_zone VARCHAR(100)
+    consequent_dropoff_zone VARCHAR(100),
+    antecedent_count INTEGER,
+    stability_score NUMERIC(8, 6)
 );
 
 ALTER TABLE analytics.route_association_rules
@@ -94,7 +122,44 @@ ALTER TABLE analytics.route_association_rules
     ADD COLUMN IF NOT EXISTS antecedent_day_type VARCHAR(50),
     ADD COLUMN IF NOT EXISTS antecedent_vendor VARCHAR(100),
     ADD COLUMN IF NOT EXISTS consequent_dropoff_borough VARCHAR(100),
-    ADD COLUMN IF NOT EXISTS consequent_dropoff_zone VARCHAR(100);
+    ADD COLUMN IF NOT EXISTS consequent_dropoff_zone VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS antecedent_count INTEGER,
+    ADD COLUMN IF NOT EXISTS stability_score NUMERIC(8, 6);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_route_rules_run_rule
+    ON analytics.route_association_rules (model_run_id, antecedent, consequent);
+
+-- Current-run boundary for Superset. Historical rows remain available for audit
+-- through the physical tables and the run ledger.
+CREATE OR REPLACE VIEW analytics.current_model_runs AS
+SELECT
+    model_run_id, model_type, status, model_run_at, training_start, training_end,
+    input_row_count, eligible_row_count, sample_method, parameters,
+    evaluation_metrics, is_current, created_at
+FROM analytics.model_runs
+WHERE is_current AND status = 'SUCCEEDED';
+
+CREATE OR REPLACE VIEW analytics.current_driver_segments AS
+SELECT
+    ds.*,
+    mr.input_row_count AS model_input_driver_count,
+    mr.eligible_row_count AS model_eligible_driver_count,
+    mr.sample_method AS model_sample_method,
+    mr.parameters ->> 'scaler' AS model_scaler,
+    (mr.evaluation_metrics ->> 'davies_bouldin')::numeric AS davies_bouldin_score,
+    (mr.evaluation_metrics ->> 'calinski_harabasz')::numeric AS calinski_harabasz_score,
+    (mr.evaluation_metrics ->> 'stability_ari')::numeric AS stability_ari
+FROM analytics.driver_segments ds
+JOIN analytics.current_model_runs mr ON mr.model_run_id = ds.model_run_id
+WHERE mr.model_type = 'DRIVER_SEGMENTATION';
+
+CREATE OR REPLACE VIEW analytics.current_route_association_rules AS
+SELECT
+    rr.*,
+    mr.sample_method AS model_sample_method,
+    (mr.evaluation_metrics ->> 'rule_coverage')::numeric AS rule_coverage
+FROM analytics.route_association_rules rr
+JOIN analytics.current_model_runs mr ON mr.model_run_id = rr.model_run_id
+WHERE mr.model_type = 'ROUTE_ASSOCIATION';
 
 -- Grain: one row per trip. Default temporal/location role: pickup.
 CREATE OR REPLACE VIEW analytics.trip_pickup AS

@@ -70,7 +70,7 @@ Dispatch Shift và Trip Assignment để trả lời 5 nhóm câu hỏi nghiệp
 | Warehouse target | PostgreSQL `Staging -> DQ/Audit -> NDS -> DDS` |
 | Processing mode | Historical monthly batch; không dùng ODS, streaming hoặc CDC |
 | BI layer | Approved analytics views + Apache Superset local demo |
-| Analytics extension | PostgreSQL ROLAP views, K-Means driver segmentation, association rules |
+| Analytics extension | PostgreSQL ROLAP views, history-preserving K-Means segmentation và stratified association rules |
 
 ---
 

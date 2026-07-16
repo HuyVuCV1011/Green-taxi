@@ -141,9 +141,11 @@ Sau khi DDS và analytics views đã sẵn sàng, chạy Data Mining outputs:
 python scripts/run_data_mining.py
 ```
 
-Script ghi `analytics.driver_segments` và
-`analytics.route_association_rules`, sau đó Superset provisioning sẽ hiển thị
-các kết quả này trong tab **Exploratory models**.
+Script append lịch sử vào `analytics.driver_segments` và
+`analytics.route_association_rules`, đồng thời publish một successful run cho
+mỗi model type trong `analytics.model_runs`. Superset chỉ đọc
+`analytics.current_driver_segments` và `analytics.current_route_association_rules`
+trong tab **Exploratory models**, nên không trộn nhiều lần fit.
 
 Benchmark Superset sau khi đổi chart/layout:
 

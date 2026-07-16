@@ -22,7 +22,7 @@ understanding, preparation, modeling, evaluation và deployment vào analytics.
 | Method | Clustering, ưu tiên K-Means |
 | Learning type | Unsupervised |
 | Input grain | Một dòng mỗi driver hoặc driver-month |
-| Output | `analytics.driver_segments` hoặc bảng kết quả tương đương |
+| Output | History `analytics.driver_segments`; dashboard `analytics.current_driver_segments` |
 
 Candidate features:
 
@@ -57,7 +57,7 @@ Business deployment:
 | Method | Association rules bằng Apriori |
 | Learning type | Unsupervised |
 | Input grain | Một basket theo trip hoặc zone-hour bucket |
-| Output | `analytics.route_association_rules` hoặc bảng kết quả tương đương |
+| Output | History `analytics.route_association_rules`; dashboard `analytics.current_route_association_rules` |
 
 Candidate basket items:
 
@@ -98,7 +98,7 @@ Business deployment:
 ## Acceptance criteria
 
 - Có notebook hoặc script reproducible cho từng bài toán. (Đã có script `scripts/run_data_mining.py` và module `src/analytics/data_mining.py`)
-- Có bảng/view kết quả trong `analytics` hoặc schema kết quả được phê duyệt. (Bảng `analytics.driver_segments` và `analytics.route_association_rules`)
+- Có bảng/view kết quả trong `analytics`: history tables, `analytics.model_runs` ledger và current-run dashboard views.
 - Có giải thích feature, thuật toán, tham số, metric đánh giá và giới hạn. (Xem chi tiết bên dưới)
 - Kết quả hiển thị được trong Superset mà không query trực tiếp staging/NDS. (Tab 6: Exploratory models trên Superset dashboard)
 - Kết luận gắn với quyết định vận hành cụ thể.
@@ -106,19 +106,20 @@ Business deployment:
 ## Implementation details
 
 ### DM01 - Driver Segmentation (K-Means)
-- **Features used**: `revenue_per_hour`, `utilization_rate`, `trips_per_shift`, `average_trip_distance`, `tips_per_trip`, `idle_minutes_per_shift`, `completed_shifts`.
-- **Scaling**: StandardScaler được sử dụng để chuẩn hóa các thuộc tính trước khi clustering.
-- **Algorithm**: K-Means với \(k = 3\) cụm.
-- **Dynamic Labeling**: Thay vì hard-code nhãn, centroids thực tế của các cụm được so sánh trực tiếp sau khi huấn luyện:
-  - Cụm có `revenue_per_hour` trung bình cao nhất được gán nhãn `High productivity`.
-  - Cụm có `idle_minutes_per_shift` trung bình cao nhất trong các cụm còn lại được gán nhãn `High idle`.
-  - Cụm cuối cùng được gán nhãn `Average stable`.
-- **Database output**: Bảng `analytics.driver_segments` lưu thông tin tài xế kèm nhãn phân cụm nghiệp vụ.
+
+- **Eligibility và missing policy**: chỉ driver có ít nhất 10 completed shifts được fit. Metric trip bị thiếu do không có chuyến được thay bằng 0; vô cực được thay bằng 0 và policy này được lưu trong provenance.
+- **Outlier và scaling**: mỗi feature bị winsorize ở quantile 1%/99%, sau đó dùng `RobustScaler`, giảm ảnh hưởng của outlier hơn `StandardScaler`.
+- **Chọn mô hình**: thử `k=2..8`; loại nghiệm có cụm nhỏ hơn `max(5, ceil(2% số driver))`; chọn silhouette lớn nhất, tie-break bằng Davies–Bouldin nhỏ nhất rồi `k` nhỏ hơn. Báo cáo thêm Calinski–Harabasz.
+- **Stability**: fit lại với năm seed và báo cáo mean Adjusted Rand Index (ARI) so với seed baseline. Đây là kiểm tra độ lặp của partition, không phải accuracy vì bài toán không có nhãn thật.
+- **Labeling**: nhãn trung tính `Revenue profile rank r of k`, xếp theo revenue/hour centroid trên thang gốc. Không biến nhãn exploratory thành đánh giá nhân sự.
+- **Database output**: `analytics.driver_segments` giữ lịch sử; `analytics.current_driver_segments` chỉ expose run thành công hiện hành. `analytics.model_runs` giữ parameters và evaluation metrics.
 
 ### DM02 - Route/Demand Association Rules (Apriori)
-- **Algorithm**: Thuật toán Apriori tự code bằng Python thuần để tránh thêm các dependencies bên ngoài.
-- **Parameters**: `min_support = 0.005`, `min_confidence = 0.2`, `min_lift = 1.1`.
+- **Sample**: tối đa 500 trip cho mỗi tổ hợp tháng pickup và pickup borough; thứ tự lấy mẫu theo `md5(trip_id)` nên pseudo-random nhưng xác định/reproducible, tránh bias của “50.000 trip đầu”.
+- **Algorithm**: Apriori tự code, frequent itemset tối đa bậc 3 để kiểm soát chi phí.
+- **Parameters**: `min_support = 0.005`, `min_confidence = 0.2`, `min_lift = 1.1`, tối thiểu 50 antecedent observations và stability score tối thiểu 0.70.
 - **Item formatting**: Để đảm bảo tính nhân quả và giá trị vận hành thực tế, các luật được lọc sao cho:
   - Antecedent chỉ chứa các điều kiện đón và thời gian (`pickup_borough`, `pickup_zone`, `hour_bucket`, `day_name`, `day_type`, `vendor`).
   - Consequent chỉ chứa thông tin đến (`dropoff_borough`, `dropoff_zone`).
-- **Database output**: Bảng `analytics.route_association_rules` chứa 100 luật hàng đầu sắp xếp theo chỉ số Lift giảm dần.
+- **Quality**: loại luật redundant khi luật tổng quát hơn có confidence gần tương đương; stability là `1 - |confidence_nửa_đầu - confidence_nửa_sau|`; report rule coverage của các luật công bố.
+- **Database output**: `analytics.route_association_rules` giữ lịch sử; `analytics.current_route_association_rules` chỉ chứa run thành công hiện hành, tối đa 100 luật xếp theo lift rồi support.
