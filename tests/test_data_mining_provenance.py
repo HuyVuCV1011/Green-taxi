@@ -2,10 +2,30 @@
 
 import unittest
 
-from src.analytics.data_mining import rule_dimension_fields, run_apriori
+from src.analytics.data_mining import (
+    KMEANS_BASELINE_SEED,
+    KMEANS_SEEDS,
+    _filter_stable_rules,
+    rule_dimension_fields,
+    run_apriori,
+)
 
 
 class DataMiningProvenanceTests(unittest.TestCase):
+    def test_stability_seeds_exclude_the_baseline_fit(self) -> None:
+        self.assertNotIn(KMEANS_BASELINE_SEED, KMEANS_SEEDS)
+        self.assertEqual(len(KMEANS_SEEDS), len(set(KMEANS_SEEDS)))
+
+    def test_rule_filter_preserves_pre_stability_telemetry(self) -> None:
+        rules = [
+            {"stability_score": 0.90},
+            {"stability_score": 0.70},
+            {"stability_score": 0.69},
+        ]
+        retained, generated_before_stability = _filter_stable_rules(rules, 0.70)
+        self.assertEqual(3, generated_before_stability)
+        self.assertEqual(2, len(retained))
+
     def test_rule_dimension_fields_parse_known_prefixes(self) -> None:
         fields = rule_dimension_fields(
             {"pb:Manhattan", "pz:Midtown", "hb:Evening", "dt:Weekday", "vn:Vendor A"},

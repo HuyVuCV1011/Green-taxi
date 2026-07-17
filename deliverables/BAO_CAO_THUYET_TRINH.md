@@ -626,7 +626,8 @@ K-Means nhóm các driver có profile vận hành tương tự để hỗ trợ 
 1. Aggregate về một dòng mỗi driver, chỉ giữ driver có ít nhất 10 completed shifts.
 2. Winsorize mỗi feature ở quantile 1%/99%, rồi dùng `RobustScaler`.
 3. Thử K-Means với `k=2..8`, loại cụm quá nhỏ; chọn silhouette cao nhất, tie-break bằng Davies–Bouldin thấp hơn và `k` thấp hơn.
-4. Báo cáo silhouette, Davies–Bouldin, Calinski–Harabasz và mean ARI qua năm seed.
+4. Fit baseline bằng seed 42; báo cáo silhouette, Davies–Bouldin,
+   Calinski–Harabasz và mean ARI qua năm seed khác baseline.
 5. Gắn nhãn trung tính theo thứ hạng revenue/hour centroid: `Revenue profile rank r of k`.
 6. Append kết quả và provenance vào history; current view chỉ hiển thị run thành công hiện hành.
 
@@ -648,16 +649,18 @@ phối Euclidean distance dù không quan trọng hơn feature tỷ lệ.
 
 **Đáp:** Không cố định k. Code thử từ 2 đến 8, loại nghiệm có cụm quá nhỏ, ưu
 tiên silhouette lớn nhất; nếu hòa thì Davies–Bouldin thấp hơn, rồi k nhỏ hơn.
-Sau đó đo mean ARI qua năm seed. Em vẫn chỉ coi đó là lựa chọn exploratory,
-vì metric tốt không tự đảm bảo segment có ý nghĩa nghiệp vụ.
+Sau đó đo mean ARI với năm seed khác seed baseline 42. Không đưa baseline vào
+trung bình vì ARI của một partition với chính nó luôn bằng 1 và sẽ làm stability
+tăng giả tạo. Em vẫn chỉ coi đó là lựa chọn exploratory, vì metric tốt không tự
+đảm bảo segment có ý nghĩa nghiệp vụ.
 
 **Hỏi:** “Revenue profile rank 1” có phải driver giỏi nhất không?
 
 **Đáp:** Không. Nhãn là mô tả tương đối theo centroid của tập feature và kỳ dữ
 liệu; không đo nhân quả, chất lượng phục vụ hay công bằng nhân sự.
 
-Code: [K-Means constants](../src/analytics/data_mining.py#L28-L42),
-[driver segmentation](../src/analytics/data_mining.py#L207-L303).
+Code: [K-Means constants](../src/analytics/data_mining.py#L32-L45),
+[driver segmentation](../src/analytics/data_mining.py#L214-L294).
 
 ## 14. Apriori và association rules
 
@@ -708,13 +711,27 @@ hiện tại không tối ưu cho tập rất lớn và không đầy đủ như
 `md5(trip_id)` xác định để tái lập. Tuy nhiên đây vẫn là sample lịch sử, không
 chứng minh pattern sẽ giữ nguyên ở kỳ tương lai; vì vậy output vẫn exploratory.
 
-Code: [Apriori](../src/analytics/data_mining.py#L102-L165),
-[build basket và publish rules](../src/analytics/data_mining.py#L305-L368),
+**Hỏi vặn cấp hai:** `rules_generated` là số trước hay sau stability filter?
+
+**Đáp:** Là số rule đã qua support/confidence/lift, antecedent-count và redundancy
+pruning nhưng **trước** stability filter. Run ledger ghi thêm
+`rules_retained_after_stability`; `rules_published` là số cuối cùng sau stability
+và cap 100. Tách ba mốc giúp biết rule giảm ở quality gate nào.
+
+Code: [Apriori rule generation](../src/analytics/data_mining.py#L98-L172),
+[stability filter](../src/analytics/data_mining.py#L181-L198),
+[build basket và publish rules](../src/analytics/data_mining.py#L297-L361),
 [provenance test](../tests/test_data_mining_provenance.py).
 
 ## 15. Giới hạn và giá trị của đồ án
 
-### Đã triển khai và kiểm chứng
+### Trạng thái triển khai và mức bằng chứng
+
+Các mục ETL/DDS bên dưới có runtime evidence đã lưu trong repository. Với phần
+ML vừa nâng cấp, code và unit/static contract tests đã được kiểm tra; migration,
+model run và Superset runtime **chưa được tái kiểm chứng sau nâng cấp** vì Docker
+engine không chạy trong phiên thực hiện. Vì vậy không dùng test tĩnh để khẳng
+định database/dashboard runtime đã PASS.
 
 - Heterogeneous source simulation và source-specific ingestion.
 - Staging metadata, checksum, row hash và audit.
@@ -1616,12 +1633,12 @@ view, grain, read-only boundary, ratio/revenue decision và traceability.
 
 ### K-Means
 
-Code: [run_driver_segmentation](../src/analytics/data_mining.py#L207-L303).
+Code: [run_driver_segmentation](../src/analytics/data_mining.py#L214-L294).
 
 - SQL aggregate đúng driver grain.
 - Chỉ dùng driver có ít nhất 10 ca; clip outlier 1%/99% rồi `RobustScaler`.
 - So sánh `k=2..8`, loại cụm nhỏ, chọn bằng silhouette/DB tie-break.
-- Mean ARI qua năm seed kiểm tra stability; silhouette/DB/CH và provenance lưu theo run.
+- Mean ARI qua năm seed khác baseline kiểm tra stability; silhouette/DB/CH và provenance lưu theo run.
 
 Feature query dùng ratio-of-sums ở driver grain, sau đó `COALESCE(..., 0)` cho
 missing trip features. Điều này giúp model chạy ổn định nhưng giá trị 0 có thể
@@ -1634,8 +1651,8 @@ không phải ground-truth class hoặc đánh giá nhân sự.
 
 ### Apriori
 
-Code: [run_apriori](../src/analytics/data_mining.py#L102-L165) và
-[run_route_association_rules](../src/analytics/data_mining.py#L305-L368).
+Code: [run_apriori](../src/analytics/data_mining.py#L136-L172) và
+[run_route_association_rules](../src/analytics/data_mining.py#L297-L361).
 
 - Tạo frequent 1/2/3-itemsets.
 - Prune candidate 3-itemset nếu các subset 2-item không frequent — áp dụng tính
@@ -2052,11 +2069,22 @@ invariant. `is_dds_ready()` yêu cầu overall success và marker success. Nếu
 riêng marker step, contract có thể cho success mà không chứng minh warehouse;
 UI readiness nên chỉ dùng full configured run.
 
-### 38. Tại sao mining `TRUNCATE` output?
+### 38. Tại sao mining không còn `TRUNCATE` output?
 
-Thiết kế hiện coi table là current published model output, và truncate+insert nằm
-trong transaction. Nó đơn giản cho dashboard nhưng mất lịch sử run; muốn model
-monitoring phải append theo `model_run_id` và có current-view riêng.
+Physical tables append kết quả theo `model_run_id`; `analytics.model_runs` lưu
+provenance và chỉ đánh dấu một successful run hiện hành cho mỗi model type.
+Dashboard đọc `analytics.current_driver_segments` và
+`analytics.current_route_association_rules`, nên vừa có current-state boundary
+đơn giản vừa giữ được lịch sử phục vụ audit/model monitoring. Việc đổi cờ
+`is_current`, ghi run ledger và insert result cùng transaction bảo toàn run cũ
+nếu publish mới thất bại.
+
+**Hỏi vặn cấp hai:** Nếu hai model run chạy đồng thời thì cờ `is_current` có chắc
+chỉ còn một dòng không?
+
+**Đáp:** Database có unique partial index theo `model_type WHERE is_current`, nên
+không thể commit hai current run cùng loại. Một transaction có thể bị conflict và
+phải retry; đây là bảo vệ tính nhất quán, không phải cơ chế scheduler phân tán.
 
 ### 39. Superset “idempotent provision” nghĩa là gì?
 

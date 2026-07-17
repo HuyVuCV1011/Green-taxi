@@ -266,7 +266,7 @@ COLUMN_LABEL_OVERRIDES = {
     "antecedent": "If",
     "consequent": "Then",
     "basket_count": "Baskets",
-    "rules_generated": "Rules generated",
+    "rules_generated": "Rules before stability filter",
     "rules_published": "Rules published",
     "min_support": "Minimum support",
     "min_confidence": "Minimum confidence",
