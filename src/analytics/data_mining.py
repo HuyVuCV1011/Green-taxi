@@ -31,7 +31,8 @@ sys.stdout.reconfigure(line_buffering=True) if hasattr(sys.stdout, "reconfigure"
 
 MIN_COMPLETED_SHIFTS = 10
 K_CANDIDATES = range(2, 9)
-KMEANS_SEEDS = (17, 29, 42, 61, 73)
+KMEANS_BASELINE_SEED = 42
+KMEANS_SEEDS = (17, 29, 61, 73, 97)
 OUTLIER_LOWER_QUANTILE = 0.01
 OUTLIER_UPPER_QUANTILE = 0.99
 MIN_CLUSTER_SHARE = 0.02
@@ -190,6 +191,13 @@ def _score_rule_stability(rules, transactions, timestamps):
     return rules
 
 
+def _filter_stable_rules(rules, min_stability):
+    """Return stable rules and the pre-stability count used by run telemetry."""
+    generated_before_stability = len(rules)
+    retained = [rule for rule in rules if rule["stability_score"] >= min_stability]
+    return retained, generated_before_stability
+
+
 def _publish_model_run(cur, model_type, model_run_id, model_run_at, training_start, training_end,
                        input_row_count, eligible_row_count, sample_method, parameters, metrics):
     cur.execute("UPDATE analytics.model_runs SET is_current = FALSE WHERE model_type = %s AND is_current", (model_type,))
@@ -245,7 +253,7 @@ def run_driver_segmentation(conn) -> int:
     for k in K_CANDIDATES:
         if k >= len(df):
             continue
-        labels = KMeans(n_clusters=k, random_state=42, n_init=20).fit_predict(scaled)
+        labels = KMeans(n_clusters=k, random_state=KMEANS_BASELINE_SEED, n_init=20).fit_predict(scaled)
         if np.bincount(labels).min() < min_cluster_size:
             continue
         candidates.append({"k": k, "labels": labels, "silhouette": float(silhouette_score(scaled, labels)),
@@ -319,7 +327,8 @@ def run_route_association_rules(conn) -> int:
         min_antecedent_count=RULE_MIN_ANTECEDENT_COUNT,
     )
     rules = _score_rule_stability(rules, transactions, pd.to_datetime(df["pickup_datetime"]))
-    rules = [rule for rule in rules if rule["stability_score"] >= RULE_MIN_STABILITY]
+    rules, generated_before_stability = _filter_stable_rules(rules, RULE_MIN_STABILITY)
+    retained_after_stability = len(rules)
     published = rules[:MAX_PUBLISHED_RULES]
     coverage = (sum(any(rule["antecedent_items"].issubset(basket) and rule["consequent_item"] in basket for rule in published) for basket in transactions) / len(transactions)) if published else 0.0
     training_start, training_end = pd.to_datetime(df.pickup_datetime).min().date(), pd.to_datetime(df.pickup_datetime).max().date()
@@ -331,7 +340,9 @@ def run_route_association_rules(conn) -> int:
                                "min_confidence": RULE_MIN_CONFIDENCE, "min_lift": RULE_MIN_LIFT,
                                "min_antecedent_count": RULE_MIN_ANTECEDENT_COUNT, "min_stability": RULE_MIN_STABILITY,
                                "sample_per_stratum": RULE_SAMPLE_PER_STRATUM,
-                           }, {"rules_generated_before_stability": len(rules), "rules_published": len(published), "rule_coverage": coverage})
+                           }, {"rules_generated_before_stability": generated_before_stability,
+                               "rules_retained_after_stability": retained_after_stability,
+                               "rules_published": len(published), "rule_coverage": coverage})
         insert = """INSERT INTO analytics.route_association_rules (
             antecedent, consequent, support, confidence, lift, antecedent_support, consequent_support,
             model_run_id, model_run_at, training_start, training_end, basket_count, rules_generated,
@@ -342,7 +353,7 @@ def run_route_association_rules(conn) -> int:
         for rule in published:
             cur.execute(insert, (rule["antecedent"], rule["consequent"], rule["support"], rule["confidence"], rule["lift"],
                 rule["antecedent_support"], rule["consequent_support"], str(model_run_id), model_run_at, training_start, training_end,
-                len(transactions), len(rules), len(published), RULE_MIN_SUPPORT, RULE_MIN_CONFIDENCE, RULE_MIN_LIFT,
+                len(transactions), generated_before_stability, len(published), RULE_MIN_SUPPORT, RULE_MIN_CONFIDENCE, RULE_MIN_LIFT,
                 rule["antecedent_count"], rule["stability_score"], rule["antecedent_pickup_borough"], rule["antecedent_pickup_zone"],
                 rule["antecedent_hour_bucket"], rule["antecedent_day_type"], rule["antecedent_vendor"],
                 rule["consequent_dropoff_borough"], rule["consequent_dropoff_zone"]))

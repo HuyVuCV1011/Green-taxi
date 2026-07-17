@@ -195,5 +195,6 @@ phải ghi rõ khi metric là exploratory thay vì certified.
 - Các current mining views là exploratory, không được gắn certified owner.
   Physical tables giữ lịch sử run; `analytics.model_runs.is_current` chọn đúng
   một successful run cho mỗi model type, nên dashboard không trộn row của nhiều
-  lần fit. Association rules còn lưu basket/rule generated/published, stability
+  lần fit. Association rules còn lưu basket, số rule sinh trước stability filter,
+  số rule retained sau stability filter, số rule published, stability
   và dimensions đã parse để kiểm chứng.

@@ -250,3 +250,19 @@ Một task chỉ được xem là hoàn thành khi:
 - docs/contracts/ADR liên quan đã đồng bộ;
 - không có secret hoặc dữ liệu lớn vô tình được thêm vào Git;
 - phần bàn giao cuối nêu ngắn gọn kết quả, file thay đổi và rủi ro còn lại.
+
+## Multi-agent defense review
+
+Khi người dùng yêu cầu dùng hội đồng, Professor/Executor/Examiner, hỏi vặn đồ án
+hoặc multi-agent review, áp dụng workflow tại
+`docs/workflows/multi-agent-defense-review.md` và các project-scoped custom agents
+trong `.codex/agents/`.
+
+- Main thread là Primary Owner và giữ quyền quyết định cuối cùng.
+- `professor` tạo rubric và chấm bài; không sửa file.
+- `executor` chỉ triển khai sau khi có rubric và phải trả evidence.
+- `examiner` review độc lập sau khi Executor hoàn tất; không sửa file.
+- Với cùng một slice, chạy theo thứ tự Professor → Executor → Examiner. Chỉ quay
+  lại Professor khi có finding hoặc blocker; không tạo vòng lặp vô hạn.
+- Không commit, push, merge hoặc deploy chỉ vì agents đã PASS; vẫn cần yêu cầu rõ
+  của người dùng và gate cuối của Primary Owner.

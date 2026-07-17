@@ -36,11 +36,16 @@ Candidate features:
 
 Evaluation:
 
-- Chuẩn hóa feature trước khi clustering.
-- Kiểm tra phân phối feature và outlier trước khi fit.
-- Chọn `k` bằng elbow/silhouette, sau đó đối chiếu với ý nghĩa nghiệp vụ.
-- Không hard-code cluster label theo số cụm. Phải đọc centroid rồi đặt nhãn như
-  `High productivity`, `High idle`, `Average stable`.
+- Chỉ fit driver có ít nhất 10 completed shifts; metric trip thiếu được thay bằng
+  0 theo policy đã lưu trong provenance.
+- Winsorize từng feature ở quantile 1%/99%, sau đó dùng `RobustScaler`.
+- Thử `k=2..8`, loại nghiệm có cụm nhỏ hơn
+  `max(5, ceil(2% số driver))`; chọn silhouette lớn nhất, tie-break bằng
+  Davies–Bouldin nhỏ nhất rồi `k` nhỏ hơn. Calinski–Harabasz là metric báo cáo.
+- Fit baseline bằng seed 42; mean ARI chỉ so với năm seed khác baseline để không
+  làm điểm stability tăng giả tạo bởi self-comparison.
+- Không hard-code nhãn đánh giá nhân sự. Đọc centroid trên thang gốc và đặt nhãn
+  trung tính `Revenue profile rank r of k`.
 
 Business deployment:
 
@@ -110,7 +115,7 @@ Business deployment:
 - **Eligibility và missing policy**: chỉ driver có ít nhất 10 completed shifts được fit. Metric trip bị thiếu do không có chuyến được thay bằng 0; vô cực được thay bằng 0 và policy này được lưu trong provenance.
 - **Outlier và scaling**: mỗi feature bị winsorize ở quantile 1%/99%, sau đó dùng `RobustScaler`, giảm ảnh hưởng của outlier hơn `StandardScaler`.
 - **Chọn mô hình**: thử `k=2..8`; loại nghiệm có cụm nhỏ hơn `max(5, ceil(2% số driver))`; chọn silhouette lớn nhất, tie-break bằng Davies–Bouldin nhỏ nhất rồi `k` nhỏ hơn. Báo cáo thêm Calinski–Harabasz.
-- **Stability**: fit lại với năm seed và báo cáo mean Adjusted Rand Index (ARI) so với seed baseline. Đây là kiểm tra độ lặp của partition, không phải accuracy vì bài toán không có nhãn thật.
+- **Stability**: baseline dùng seed 42; fit lại với năm seed khác baseline và báo cáo mean Adjusted Rand Index (ARI). Không đưa chính baseline vào trung bình vì ARI tự so sánh luôn bằng 1. Đây là kiểm tra độ lặp của partition, không phải accuracy vì bài toán không có nhãn thật.
 - **Labeling**: nhãn trung tính `Revenue profile rank r of k`, xếp theo revenue/hour centroid trên thang gốc. Không biến nhãn exploratory thành đánh giá nhân sự.
 - **Database output**: `analytics.driver_segments` giữ lịch sử; `analytics.current_driver_segments` chỉ expose run thành công hiện hành. `analytics.model_runs` giữ parameters và evaluation metrics.
 
@@ -121,5 +126,5 @@ Business deployment:
 - **Item formatting**: Để đảm bảo tính nhân quả và giá trị vận hành thực tế, các luật được lọc sao cho:
   - Antecedent chỉ chứa các điều kiện đón và thời gian (`pickup_borough`, `pickup_zone`, `hour_bucket`, `day_name`, `day_type`, `vendor`).
   - Consequent chỉ chứa thông tin đến (`dropoff_borough`, `dropoff_zone`).
-- **Quality**: loại luật redundant khi luật tổng quát hơn có confidence gần tương đương; stability là `1 - |confidence_nửa_đầu - confidence_nửa_sau|`; report rule coverage của các luật công bố.
+- **Quality**: loại luật redundant khi luật tổng quát hơn có confidence gần tương đương; stability là `1 - |confidence_nửa_đầu - confidence_nửa_sau|`; report rule coverage của các luật công bố. Telemetry phân biệt `rules_generated_before_stability`, `rules_retained_after_stability` và `rules_published`; cột `rules_generated` trên từng result row giữ số trước stability filter.
 - **Database output**: `analytics.route_association_rules` giữ lịch sử; `analytics.current_route_association_rules` chỉ chứa run thành công hiện hành, tối đa 100 luật xếp theo lift rồi support.
